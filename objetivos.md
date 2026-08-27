@@ -2,7 +2,7 @@
 
 ## 📌 Objetivo General
 
-Desarrollar una **plataforma web integral** enfocada exclusivamente en automatizar la gestión de citas y agendas clínicas, integrando **asistencia por inteligencia artificial**, flujos de **triaje de pacientes** y **sincronización de calendarios digitales** para:
+Desarrollar una **plataforma web integral** enfocada exclusivamente en automatizar la gestión de citas y agendas clínicas, integrando **asistencia por inteligencia artificial conectada a WhatsApp**, flujos de **triaje de pacientes** y **sincronización de calendarios digitales** para:
 - Optimizar el control estricto de horarios.
 - Reducir la saturación administrativa.
 - Disminuir los índices de ausentismo de pacientes.
@@ -11,9 +11,9 @@ Desarrollar una **plataforma web integral** enfocada exclusivamente en automatiz
 
 ## 🎯 Objetivos Específicos
 
-1. **Implementar asistencia inteligente y triaje**
-   - Integrar un módulo de **Asistente Virtual (Chatbot IA)** operativo 24/7 para guiar al paciente en la reserva y resolver preguntas frecuentes.
-   - Aplicar un flujo de triaje preliminar para clasificar el motivo de la consulta antes de derivar y asignar la especialidad médica adecuada.
+1. **Implementar asistencia inteligente y triaje vía WhatsApp**
+   - Integrar un **Chatbot con Inteligencia Artificial conectado a WhatsApp** operativo 24/7 para guiar al paciente en la reserva de citas y resolver preguntas frecuentes.
+   - Aplicar un flujo de triaje conversacional preliminar a través de WhatsApp para clasificar el motivo de la consulta antes de derivar y asignar la especialidad médica adecuada.
 
 2. **Garantizar el control estricto de horarios**
    - Desarrollar un **motor de agendamiento** respaldado en **PostgreSQL**.
@@ -21,7 +21,7 @@ Desarrollar una **plataforma web integral** enfocada exclusivamente en automatiz
 
 3. **Reducir el ausentismo de pacientes**
    - Habilitar la sincronización digital directa de las reservas con calendarios personales de los usuarios (como **Google Calendar**).
-   - Automatizar recordatorios y notificaciones previas a las citas programadas.
+   - Automatizar recordatorios y confirmaciones previas a las citas programadas mediante mensajes directos de **WhatsApp** y alertas de calendario.
 
 4. **Desarrollar interfaces orientadas a roles**
    - Construir portales específicos y responsivos utilizando **Astro** adaptados a cada tipo de usuario:
