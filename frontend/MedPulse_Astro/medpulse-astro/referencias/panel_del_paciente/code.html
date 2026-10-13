@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MedPulse Clinic - Patient Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#d7e2ff",
+                        "surface-container": "#e6eff8",
+                        "outline-variant": "#c2c6d4",
+                        "on-primary-fixed-variant": "#004491",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#002106",
+                        "on-tertiary-fixed-variant": "#00531a",
+                        "error-container": "#ffdad6",
+                        "primary": "#003f87",
+                        "inverse-primary": "#acc7ff",
+                        "secondary-fixed-dim": "#bdc7d6",
+                        "on-tertiary-container": "#6fe87c",
+                        "on-tertiary": "#ffffff",
+                        "surface-dim": "#d2dbe4",
+                        "on-primary-container": "#bbd0ff",
+                        "tertiary-fixed-dim": "#66df75",
+                        "inverse-surface": "#293138",
+                        "on-primary-fixed": "#001a40",
+                        "background": "#f6faff",
+                        "surface-variant": "#dbe4ed",
+                        "surface-bright": "#f6faff",
+                        "on-error": "#ffffff",
+                        "primary-fixed-dim": "#acc7ff",
+                        "surface-container-low": "#ecf5fe",
+                        "secondary-fixed": "#d9e3f2",
+                        "surface-container-highest": "#dbe4ed",
+                        "on-surface": "#141d23",
+                        "surface-container-high": "#e0e9f2",
+                        "secondary": "#555f6c",
+                        "on-secondary-fixed": "#131c27",
+                        "surface-tint": "#115cb9",
+                        "tertiary": "#004c17",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#0056b3",
+                        "on-background": "#141d23",
+                        "tertiary-fixed": "#83fc8e",
+                        "surface": "#f6faff",
+                        "outline": "#727784",
+                        "on-secondary-fixed-variant": "#3e4853",
+                        "secondary-container": "#d9e3f2",
+                        "tertiary-container": "#006722",
+                        "on-secondary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-container": "#5b6572",
+                        "inverse-on-surface": "#e9f2fb",
+                        "on-surface-variant": "#424752",
+                        "on-error-container": "#93000a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "margin-mobile": "20px",
+                        "md": "16px",
+                        "gutter": "16px",
+                        "sm": "8px",
+                        "xs": "4px",
+                        "xl": "32px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col pt-[72px] pb-[96px] md:pb-0">
+<!-- TopAppBar -->
+<header class="bg-background dark:bg-background docked full-width top-0 shadow-sm fixed w-full z-40 transition-all duration-200">
+<div class="flex justify-between items-center px-margin-mobile py-sm w-full max-w-7xl mx-auto h-[72px]">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a middle-aged hispanic woman, likely a patient named Ana, smiling softly against a clean, modern clinical background with soft, cool-toned medical lighting. The image should convey warmth, trust, and a calm healthcare environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSDpAqGL0CSpYuiScXMynxf7cqn5Vil3hAgT7v9ApCfClWFrc9E0dbML624RiEN3WIZcF7RtLhMIb-RhMOrJiudYZIbAVkROuCXOVMmeJ0kfwDkyVhtYjuvoVty9nEPMsHcdHMqO8_0qut0eJoXEg-_t7AAS4bM1UWT2aFj74Gs1NRzFFSrXUmCZM5H8Ohi27w3o8_hlxRhTOCPH_F_6Th9SDnj5DTRnU3l3rVznF_vonzL5cMaKdo"/>
+</div>
+<h1 class="text-headline-md font-headline-md text-primary dark:text-inverse-primary">MedPulse Clinic</h1>
+</div>
+<button aria-label="Notifications" class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-variant/20 transition-all duration-200 active:scale-95">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-grow px-margin-mobile w-full max-w-md mx-auto space-y-lg md:mt-lg">
+<!-- Welcome Section -->
+<section class="mt-md">
+<p class="font-body-md text-body-md text-on-surface-variant">Buenos días,</p>
+<h2 class="font-headline-lg text-headline-lg text-on-background">Hola, Ana</h2>
+</section>
+<!-- Siguiente Cita Card (High Priority) -->
+<section>
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_4px_12px_rgba(0,63,135,0.08)] p-md relative overflow-hidden border border-outline-variant/30 border-l-4 border-l-primary">
+<div class="flex justify-between items-start mb-sm">
+<div>
+<span class="inline-flex items-center gap-xs px-2 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md">
+<span class="material-symbols-outlined text-[14px]" data-icon="event">event</span> Siguiente Cita
+                        </span>
+</div>
+<div class="flex items-center text-primary">
+<span class="font-headline-sm text-headline-sm mr-1">Mañana</span>
+</div>
+</div>
+<div class="flex items-center gap-md my-md">
+<div class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined" data-icon="cardiology" data-weight="fill" style="font-variation-settings: 'FILL' 1;">cardiology</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-background">Dr. García</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Cardiología • 10:00 AM</p>
+</div>
+</div>
+<div class="mt-md pt-sm border-t border-surface-variant flex gap-sm">
+<button class="flex-1 bg-primary text-on-primary font-label-md text-label-md py-sm px-md rounded-lg flex items-center justify-center gap-sm transition-transform duration-200 active:scale-95 shadow-[0_4px_12px_rgba(0,63,135,0.08)]">
+<span class="material-symbols-outlined text-[18px]" data-icon="login">login</span> Check-in Online
+                     </button>
+<button class="flex-1 bg-transparent border border-outline text-primary font-label-md text-label-md py-sm px-md rounded-lg flex items-center justify-center gap-sm transition-transform duration-200 active:scale-95 hover:bg-surface-variant/20">
+<span class="material-symbols-outlined text-[18px]" data-icon="map">map</span> Ver mapa
+                    </button>
+</div>
+</div>
+</section>
+<!-- Servicios Rápidos Bento Grid -->
+<section>
+<h3 class="font-headline-sm text-headline-sm text-on-background mb-md">Servicios Rápidos</h3>
+<div class="grid grid-cols-2 gap-gutter">
+<!-- Nueva Cita -->
+<button class="bg-surface-container-lowest rounded-xl p-md flex flex-col items-center justify-center gap-sm shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-outline-variant/30 transition-transform duration-200 active:scale-95 hover:bg-surface-variant/10 group aspect-square">
+<div class="w-12 h-12 rounded-full bg-primary-fixed text-on-primary-fixed-variant flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="calendar_add_on">calendar_add_on</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface text-center mt-xs">Nueva Cita</span>
+</button>
+<!-- Recetas -->
+<button class="bg-surface-container-lowest rounded-xl p-md flex flex-col items-center justify-center gap-sm shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-outline-variant/30 transition-transform duration-200 active:scale-95 hover:bg-surface-variant/10 group aspect-square">
+<div class="w-12 h-12 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="prescriptions">prescriptions</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface text-center mt-xs">Recetas</span>
+</button>
+<!-- Laboratorio -->
+<button class="bg-surface-container-lowest rounded-xl p-md flex flex-col items-center justify-center gap-sm shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-outline-variant/30 transition-transform duration-200 active:scale-95 hover:bg-surface-variant/10 group aspect-square">
+<div class="w-12 h-12 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="science">science</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface text-center mt-xs">Laboratorio</span>
+</button>
+<!-- Telemedicina -->
+<button class="bg-surface-container-lowest rounded-xl p-md flex flex-col items-center justify-center gap-sm shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-outline-variant/30 transition-transform duration-200 active:scale-95 hover:bg-surface-variant/10 group aspect-square">
+<div class="w-12 h-12 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="video_camera_front">video_camera_front</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface text-center mt-xs">Telemedicina</span>
+</button>
+</div>
+</section>
+<!-- Floating Chatbot Card / Button Replacement (In-flow for better UX) -->
+<section class="mt-lg">
+<button class="w-full bg-surface-container-lowest border border-primary/20 rounded-xl p-md flex items-center gap-md shadow-[0_4px_12px_rgba(0,63,135,0.08)] transition-transform duration-200 active:scale-95">
+<div class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined" data-icon="smart_toy">smart_toy</span>
+</div>
+<div class="text-left flex-grow">
+<h4 class="font-headline-sm text-headline-sm text-primary">Chatbot de Ayuda</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Resuelve dudas 24/7</p>
+</div>
+<div class="text-primary">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</div>
+</button>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="md:hidden bg-surface-container-lowest dark:bg-surface-container-low fixed bottom-0 w-full z-50 rounded-t-xl shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
+<div class="flex justify-around items-center px-4 pb-4 pt-2">
+<a aria-label="Home" class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 transition-transform duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="home" data-weight="fill" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label-md text-label-md mt-1">Home</span>
+</a>
+<a aria-label="Booking" class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant p-2 hover:bg-primary-fixed-dim/10 rounded-lg transition-transform duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span>
+<span class="font-label-md text-label-md mt-1">Booking</span>
+</a>
+<a aria-label="Chat" class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant p-2 hover:bg-primary-fixed-dim/10 rounded-lg transition-transform duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="smart_toy">smart_toy</span>
+<span class="font-label-md text-label-md mt-1">Chat</span>
+</a>
+<a aria-label="Profile" class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant p-2 hover:bg-primary-fixed-dim/10 rounded-lg transition-transform duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-md text-label-md mt-1">Profile</span>
+</a>
+</div>
+</nav>
+<!-- Optional Floating Action Button (Alternative to in-flow card, strictly for floating requirement if preferred, though in-flow is often better for a main action like this on mobile dashboard. Keeping it as requested in prompt, positioning above nav) -->
+<button aria-label="Chatbot Ayuda Rápida" class="md:hidden fixed bottom-[88px] right-margin-mobile w-14 h-14 bg-primary text-on-primary rounded-2xl shadow-[0_8px_16px_rgba(0,63,135,0.2)] flex items-center justify-center transition-transform duration-200 active:scale-90 z-40 hover:bg-primary-container">
+<span class="material-symbols-outlined text-[28px]" data-icon="smart_toy" data-weight="fill" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</button>
+</body></html>

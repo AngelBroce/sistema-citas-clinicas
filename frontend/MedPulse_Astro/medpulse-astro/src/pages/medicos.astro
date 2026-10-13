@@ -1,0 +1,8 @@
+---
+import Layout from '../layouts/Layout.astro';
+import data from '../data/seeds.json';
+import EntityForm from '../components/EntityForm.astro';
+---
+<Layout title="Médicos" patient={false}>
+{data.medicos.map((row,i)=><EntityForm table="medicos" values={row} title={row.nombre || row.nombres || row.email || "Horario "+(i+1)}/>)}
+<section class="card"><h2>Especialidades de los médicos</h2>{data.medicos_especialidades.map(r=><div class="list-item"><span>{data.medicos.find(m=>m.id===r.medico_id).nombres} · {data.especialidades.find(e=>e.id===r.especialidad_id).nombre}</span><span class="badge">{r.es_principal?"Principal":"Secundaria"}</span></div>)}</section></Layout>

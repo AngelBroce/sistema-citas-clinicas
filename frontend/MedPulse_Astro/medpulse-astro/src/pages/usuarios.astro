@@ -1,0 +1,8 @@
+---
+import Layout from '../layouts/Layout.astro';
+import data from '../data/seeds.json';
+import EntityForm from '../components/EntityForm.astro';
+---
+<Layout title="Usuarios y roles" patient={false}>
+{data.usuarios.map((row,i)=><EntityForm table="usuarios" values={row} title={row.nombre || row.nombres || row.email || "Horario "+(i+1)}/>)}
+<section class="card"><h2>Roles del sistema</h2>{data.roles.map(r=><div class="list-item"><div><h3>{r.nombre}</h3><p>{r.descripcion}</p></div><span class="badge">{r.id}</span></div>)}</section>{data.administradores.map(row=><EntityForm table="administradores" values={row} title="Perfil administrador"/>)}{data.recepcionistas.map(row=><EntityForm table="recepcionistas" values={row} title="Perfil de recepción"/>)}</Layout>

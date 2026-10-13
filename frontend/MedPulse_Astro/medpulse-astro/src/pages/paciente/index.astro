@@ -1,0 +1,9 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import data from '../../data/seeds.json';
+import Appointments from '../../components/Appointments.astro';
+import Calendar from '../../components/Calendar.astro';
+---
+<Layout title="Mi panel" patient={true}>
+<section class="card hero"><p>PORTAL DEL PACIENTE</p><h2>Hola, Juan Carlos.</h2><p>Consulta tu información médica y organiza tus próximas visitas.</p><a class="button secondary" href="/paciente/reservar">Reservar una cita →</a></section><div class="grid two"><div><Appointments patient/><section class="card"><h2>Tu información de salud</h2><div class="grid"><div>Grupo sanguíneo<strong style="display:block">{data.pacientes[0].grupo_sanguineo}</strong></div><div>Alergias<strong style="display:block">{data.pacientes[0].alergias}</strong></div></div><p><a href="/paciente/perfil">Revisar mi perfil →</a></p></section></div><div><Calendar/><section class="card"><h2>Estamos para ayudarte</h2><p>Consulta los servicios y horarios en nuestro asistente de demostración.</p><a class="button secondary" href="/paciente/asistente">Abrir asistente</a></section></div></div>
+</Layout>

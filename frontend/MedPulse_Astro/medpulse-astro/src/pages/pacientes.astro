@@ -1,0 +1,8 @@
+---
+import Layout from '../layouts/Layout.astro';
+import data from '../data/seeds.json';
+import EntityForm from '../components/EntityForm.astro';
+---
+<Layout title="Historial y perfil médico" patient={false}>
+<section class="card"><h2>Pacientes registrados</h2><div class="tools"><input data-search aria-label="Buscar paciente" placeholder="Buscar por nombre, documento o teléfono…"/></div><div class="table-wrap"><table data-table><thead><tr><th>Paciente</th><th>Documento</th><th>Teléfono</th><th>Grupo sanguíneo</th><th>Alergias</th></tr></thead><tbody>{data.pacientes.map(p=><tr><td>{p.nombres} {p.apellidos}<small>{p.email}</small></td><td>{p.documento_tipo} {p.documento_numero}</td><td>{p.telefono}</td><td>{p.grupo_sanguineo}</td><td>{p.alergias}</td></tr>)}</tbody></table><p data-empty hidden>No hay coincidencias.</p></div></section>{data.pacientes.map(p=><EntityForm table="pacientes" values={p} title={p.nombres+' '+p.apellidos}/>)}<section class="card"><h2>Historial de citas</h2><p>El SQL incluye motivos de consulta; no incluye diagnósticos, recetas ni resultados clínicos.</p></section>
+</Layout>

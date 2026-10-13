@@ -1,0 +1,8 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import data from '../../data/seeds.json';
+import EntityForm from '../../components/EntityForm.astro';
+---
+<Layout title="Mi perfil médico" patient={true}>
+<EntityForm table="pacientes" title="Datos personales y de salud" values={data.pacientes[0]}/>
+</Layout>

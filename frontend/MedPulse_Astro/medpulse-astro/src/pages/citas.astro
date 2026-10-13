@@ -1,0 +1,9 @@
+---
+import Layout from '../layouts/Layout.astro';
+import data from '../data/seeds.json';
+import Appointments from '../components/Appointments.astro';
+import Calendar from '../components/Calendar.astro';
+---
+<Layout title="Citas y calendario" patient={false}>
+<Appointments/><Calendar/>
+</Layout>

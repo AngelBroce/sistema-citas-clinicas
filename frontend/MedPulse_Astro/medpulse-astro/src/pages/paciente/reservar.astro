@@ -1,0 +1,8 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import data from '../../data/seeds.json';
+
+---
+<Layout title="Reservar cita" patient={true}>
+<div class="grid two"><section class="card"><span class="badge">1. Servicio · 2. Horario · 3. Confirmación</span><h2 style="margin-top:20px">Encuentra el horario ideal para ti</h2><form id="booking"><div class="form-grid"><label>Paciente<select name="paciente_id">{data.pacientes.map(p=><option value={p.id}>{p.nombres} {p.apellidos}</option>)}</select></label><label>Especialidad<select name="especialidad_id" id="specialty">{data.especialidades.filter(e=>data.medicos_especialidades.some(m=>m.especialidad_id===e.id)).map(e=><option value={e.id}>{e.nombre}</option>)}</select></label><label>Médico<select name="medico_id" id="doctor"></select></label><label>Consultorio<input readonly id="room"/></label><label>Fecha<input name="fecha" type="date" required/></label><label>Hora disponible<select name="hora" id="slot" required><option value="">Selecciona una fecha</option></select></label></div><label style="margin-top:18px">Motivo de consulta<textarea name="motivo_consulta" rows="3" required></textarea></label><p id="booking-info" class="muted"></p><button type="submit">Confirmar reserva de demostración</button><p id="booking-result" role="status"></p></form></section><section class="card"><h2>Una reserva, paso a paso</h2><p>Los médicos y horarios corresponden a los datos iniciales proporcionados.</p><div class="list-item">Duración<span>30 minutos</span></div><div class="list-item">Canal<span>WEB_PACIENTE</span></div><p class="muted">Esta demostración no envía solicitudes ni confirma citas con la clínica.</p></section></div>
+</Layout>

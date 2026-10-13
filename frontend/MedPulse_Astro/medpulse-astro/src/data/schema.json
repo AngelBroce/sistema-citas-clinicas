@@ -1,0 +1,113 @@
+{
+  "roles": [
+    "id",
+    "nombre",
+    "descripcion"
+  ],
+  "especialidades": [
+    "id",
+    "nombre",
+    "descripcion",
+    "duracion_estimada_min",
+    "esta_activa"
+  ],
+  "consultorios": [
+    "id",
+    "nombre",
+    "piso",
+    "sede",
+    "descripcion",
+    "esta_activo"
+  ],
+  "usuarios": [
+    "id",
+    "email",
+    "password_hash",
+    "rol_id",
+    "esta_activo"
+  ],
+  "administradores": [
+    "id",
+    "nombres",
+    "apellidos",
+    "telefono"
+  ],
+  "recepcionistas": [
+    "id",
+    "nombres",
+    "apellidos",
+    "telefono",
+    "sede"
+  ],
+  "medicos": [
+    "id",
+    "numero_colegiatura",
+    "nombres",
+    "apellidos",
+    "telefono",
+    "biografia",
+    "tarifa_consulta",
+    "esta_activo"
+  ],
+  "medicos_especialidades": [
+    "medico_id",
+    "especialidad_id",
+    "es_principal"
+  ],
+  "pacientes": [
+    "id",
+    "usuario_id",
+    "documento_tipo",
+    "documento_numero",
+    "nombres",
+    "apellidos",
+    "fecha_nacimiento",
+    "genero",
+    "telefono",
+    "email",
+    "direccion",
+    "grupo_sanguineo",
+    "alergias",
+    "contacto_emergencia_nombre",
+    "contacto_emergencia_telefono"
+  ],
+  "horarios_medicos": [
+    "medico_id",
+    "consultorio_id",
+    "dia_semana",
+    "hora_inicio",
+    "hora_fin",
+    "duracion_cita_min",
+    "esta_activo"
+  ],
+  "citas": [
+    "id",
+    "codigo_cita",
+    "paciente_id",
+    "medico_id",
+    "especialidad_id",
+    "consultorio_id",
+    "fecha_hora_inicio",
+    "fecha_hora_fin",
+    "estado",
+    "motivo_consulta",
+    "canal_origen"
+  ],
+  "conversaciones_chatbot": [
+    "id",
+    "whatsapp_from",
+    "paciente_id",
+    "estado_conversacion",
+    "contexto_conversacion",
+    "nivel_triaje",
+    "resumen_triaje",
+    "especialidad_sugerida_id"
+  ],
+  "mensajes_chatbot": [
+    "conversacion_id",
+    "remitente",
+    "tipo_mensaje",
+    "contenido",
+    "intencion_detectada"
+  ]
+}

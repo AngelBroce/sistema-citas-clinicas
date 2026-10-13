@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Patient Profile &amp; Medical Record</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#d7e2ff",
+                        "surface-container": "#e6eff8",
+                        "outline-variant": "#c2c6d4",
+                        "on-primary-fixed-variant": "#004491",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#002106",
+                        "on-tertiary-fixed-variant": "#00531a",
+                        "error-container": "#ffdad6",
+                        "primary": "#003f87",
+                        "inverse-primary": "#acc7ff",
+                        "secondary-fixed-dim": "#bdc7d6",
+                        "on-tertiary-container": "#6fe87c",
+                        "on-tertiary": "#ffffff",
+                        "surface-dim": "#d2dbe4",
+                        "on-primary-container": "#bbd0ff",
+                        "tertiary-fixed-dim": "#66df75",
+                        "inverse-surface": "#293138",
+                        "on-primary-fixed": "#001a40",
+                        "background": "#f6faff",
+                        "surface-variant": "#dbe4ed",
+                        "surface-bright": "#f6faff",
+                        "on-error": "#ffffff",
+                        "primary-fixed-dim": "#acc7ff",
+                        "surface-container-low": "#ecf5fe",
+                        "secondary-fixed": "#d9e3f2",
+                        "surface-container-highest": "#dbe4ed",
+                        "on-surface": "#141d23",
+                        "surface-container-high": "#e0e9f2",
+                        "secondary": "#555f6c",
+                        "on-secondary-fixed": "#131c27",
+                        "surface-tint": "#115cb9",
+                        "tertiary": "#004c17",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#0056b3",
+                        "on-background": "#141d23",
+                        "tertiary-fixed": "#83fc8e",
+                        "surface": "#f6faff",
+                        "outline": "#727784",
+                        "on-secondary-fixed-variant": "#3e4853",
+                        "secondary-container": "#d9e3f2",
+                        "tertiary-container": "#006722",
+                        "on-secondary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-container": "#5b6572",
+                        "inverse-on-surface": "#e9f2fb",
+                        "on-surface-variant": "#424752",
+                        "on-error-container": "#93000a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "margin-mobile": "20px",
+                        "md": "16px",
+                        "gutter": "16px",
+                        "sm": "8px",
+                        "xs": "4px",
+                        "xl": "32px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen pb-24 md:pb-0">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-margin-mobile py-sm w-full bg-background shadow-sm sticky top-0 z-50">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full overflow-hidden shrink-0">
+<img alt="User profile photo" class="w-full h-full object-cover" data-alt="A professional headshot of a middle-aged male patient with short grey hair and a calm expression, wearing a simple collared shirt, set against a clean, softly lit white background to convey a sense of calm and clinical precision, fitting the light-mode modern corporate UI aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDxz_KUvhjurDb685UsOHA_jRbqeXz83L2LtixYLqEwil-n9Vj7J9CzINx5yuhjTx5Q_xuXSDJBOC5x4VM6ncGl_59ys2UOp3g9DIFwkeNBaXpLwIX_DZHpJ0cVQupjUItqC-x09gzZZayL8myzLKM9T_l9hKUWeeNcdA9BvZgav-0-0I7nlba7NcfcNCc-5fu-n6tAZOfh0vFZD4Jns9P5AfAPSZ8NcqK_2zdjX2iRCJuWxJf5byqN"/>
+</div>
+<h1 class="font-headline-sm text-headline-sm text-primary">MedPulse Clinic</h1>
+</div>
+<button aria-label="notifications" class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-variant/20 transition-all duration-200 active:scale-95">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</header>
+<main class="max-w-3xl mx-auto px-margin-mobile md:px-lg py-lg space-y-lg">
+<!-- Profile Header Bento -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<!-- Main Info -->
+<div class="md:col-span-2 bg-surface-container-lowest rounded-xl p-md shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col md:flex-row items-center md:items-start gap-lg relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-primary"></div>
+<div class="w-24 h-24 rounded-full overflow-hidden border-4 border-surface-container-lowest shadow-sm shrink-0">
+<img alt="Patient Photo" class="w-full h-full object-cover" data-alt="A professional headshot of a middle-aged male patient with short grey hair and a calm expression, wearing a simple collared shirt, set against a clean, softly lit white background to convey a sense of calm and clinical precision, fitting the light-mode modern corporate UI aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2Grh-q7J021xCe5p9ti4QYgaGISp6Qv3TTCIlVTIyhqP0B4l33CvheW3WE1B7Od6BfZXQ62e_Z-1gpqSCFxX4-ghyf_r5oO__Y7A-FP5l-3MnWLerITSTMAYMjXjx4WWIslTLbjoi9Bn_ot3AXjTd9QfzAyQHUP8zF8dfdj-mq9g-CKaKWT_X2zlzKU7eN0cjC_ayusA3XoCadP2jXEgbb0-bOYwlPjug0P5ZPCu97gQIIBmKJNz0"/>
+</div>
+<div class="text-center md:text-left flex-1">
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-xs">Robert Jenkins</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">ID: P-982-451-B</p>
+<div class="flex flex-wrap justify-center md:justify-start gap-sm">
+<div class="bg-surface-container-low px-sm py-xs rounded-lg flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary text-[16px]">calendar_month</span>
+<span class="font-label-md text-label-md text-on-surface">54 Yrs</span>
+</div>
+<div class="bg-surface-container-low px-sm py-xs rounded-lg flex items-center gap-xs">
+<span class="material-symbols-outlined text-error text-[16px]">bloodtype</span>
+<span class="font-label-md text-label-md text-on-surface">O+</span>
+</div>
+<div class="bg-surface-container-low px-sm py-xs rounded-lg flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary text-[16px]">height</span>
+<span class="font-label-md text-label-md text-on-surface">178 cm</span>
+</div>
+<div class="bg-surface-container-low px-sm py-xs rounded-lg flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary text-[16px]">monitor_weight</span>
+<span class="font-label-md text-label-md text-on-surface">82 kg</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Stats/Vitals -->
+<div class="bg-surface-container-lowest rounded-xl p-md shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between">
+<h3 class="font-label-md text-label-md text-on-surface-variant mb-sm">Últimos Signos Vitales</h3>
+<div class="space-y-sm">
+<div class="flex justify-between items-center">
+<span class="font-body-sm text-body-sm text-on-surface-variant">BP</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">120/80</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-1">
+<div class="bg-tertiary-container h-1 rounded-full" style="width: 50%"></div>
+</div>
+<div class="flex justify-between items-center pt-xs">
+<span class="font-body-sm text-body-sm text-on-surface-variant">HR</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">72 <span class="font-body-sm text-body-sm">bpm</span></span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-1">
+<div class="bg-primary h-1 rounded-full" style="width: 60%"></div>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-sm text-right">hace 2 días</p>
+</div>
+</section>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+<!-- Historial Médico -->
+<section class="space-y-md">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">history</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Historial Médico</h3>
+</div>
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
+<!-- Visit Item -->
+<div class="p-md border-b border-outline-variant/30 flex gap-md hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="w-12 h-12 bg-primary-fixed rounded-lg flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-primary-fixed-variant">stethoscope</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-xs">
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Consulta General</h4>
+<span class="font-body-sm text-body-sm text-on-surface-variant">12 Oct 2023</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">Revisión anual de rutina. Presión arterial normal. Se recomendó aumentar la actividad física moderada.</p>
+<p class="font-label-md text-label-md text-primary mt-sm">Dr. A. Silva</p>
+</div>
+</div>
+<!-- Visit Item -->
+<div class="p-md border-b border-outline-variant/30 flex gap-md hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="w-12 h-12 bg-surface-container rounded-lg flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary">bloodtype</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-xs">
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Análisis de Sangre</h4>
+<span class="font-body-sm text-body-sm text-on-surface-variant">05 Sep 2023</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">Perfil lipídico y glucosa en ayunas. Resultados dentro de los parámetros normales.</p>
+<p class="font-label-md text-label-md text-primary mt-sm">Lab Central</p>
+</div>
+</div>
+<!-- Visit Item -->
+<div class="p-md flex gap-md hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="w-12 h-12 bg-surface-container rounded-lg flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary">healing</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-xs">
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Tratamiento Menor</h4>
+<span class="font-body-sm text-body-sm text-on-surface-variant">14 Jun 2023</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">Sutura de herida superficial en brazo izquierdo. Evolución favorable.</p>
+<p class="font-label-md text-label-md text-primary mt-sm">Dra. M. Gómez</p>
+</div>
+</div>
+<div class="p-sm bg-surface-container text-center cursor-pointer hover:bg-surface-variant transition-colors">
+<span class="font-label-md text-label-md text-primary">Ver todo el historial</span>
+</div>
+</div>
+</section>
+<!-- Alergias y Vacunas -->
+<section class="space-y-lg">
+<!-- Alergias -->
+<div class="space-y-md">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-error">coronavirus</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Alergias</h3>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-md shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+<div class="flex flex-wrap gap-sm">
+<div class="bg-error-container text-on-error-container px-md py-xs rounded-full flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+<span class="font-label-md text-label-md">Penicilina</span>
+</div>
+<div class="bg-error-container text-on-error-container px-md py-xs rounded-full flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+<span class="font-label-md text-label-md">Látex (Leve)</span>
+</div>
+<div class="bg-error-container text-on-error-container px-md py-xs rounded-full flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+<span class="font-label-md text-label-md">Polvo</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Vacunas -->
+<div class="space-y-md">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-tertiary-container">vaccines</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Vacunas</h3>
+</div>
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
+<div class="p-md border-b border-outline-variant/30 flex justify-between items-center">
+<div>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Influenza</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Refuerzo Anual</p>
+</div>
+<div class="bg-tertiary-fixed-dim/20 text-tertiary-container px-sm py-xs rounded-full flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span class="font-label-md text-label-md">Oct 2023</span>
+</div>
+</div>
+<div class="p-md border-b border-outline-variant/30 flex justify-between items-center">
+<div>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Tétanos (Tdap)</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Cada 10 años</p>
+</div>
+<div class="bg-tertiary-fixed-dim/20 text-tertiary-container px-sm py-xs rounded-full flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span class="font-label-md text-label-md">Mar 2020</span>
+</div>
+</div>
+<div class="p-md flex justify-between items-center">
+<div>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">COVID-19</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Dosis de refuerzo</p>
+</div>
+<div class="bg-tertiary-fixed-dim/20 text-tertiary-container px-sm py-xs rounded-full flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span class="font-label-md text-label-md">Ene 2024</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-surface-container-lowest shadow-[0_-2px_8px_rgba(0,0,0,0.04)] rounded-t-xl md:hidden">
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-primary-fixed-dim/10 transition-transform duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-md text-label-md mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-primary-fixed-dim/10 transition-transform duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="font-label-md text-label-md mt-1">Booking</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-primary-fixed-dim/10 transition-transform duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined">smart_toy</span>
+<span class="font-label-md text-label-md mt-1">Chat</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 transition-transform duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined fill">person</span>
+<span class="font-label-md text-label-md mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

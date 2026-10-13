@@ -1,0 +1,399 @@
+{
+  "roles": [
+    {
+      "id": "ADMINISTRADOR",
+      "nombre": "Administrador General",
+      "descripcion": "Control total de configuración, reportes, usuarios y especialidades"
+    },
+    {
+      "id": "RECEPCIONISTA",
+      "nombre": "Personal de Recepción",
+      "descripcion": "Gestión de citas presenciales, confirmación de asistencias y triaje físico"
+    },
+    {
+      "id": "MEDICO",
+      "nombre": "Profesional Médico",
+      "descripcion": "Control y visualización de su agenda diaria, historial y atenciones"
+    },
+    {
+      "id": "PACIENTE",
+      "nombre": "Paciente",
+      "descripcion": "Acceso al portal del paciente para reservas, historial y recordatorios"
+    }
+  ],
+  "especialidades": [
+    {
+      "id": 1,
+      "nombre": "Medicina General",
+      "descripcion": "Atención médica integral primaria y despistaje preventivo",
+      "duracion_estimada_min": 20,
+      "esta_activa": true
+    },
+    {
+      "id": 2,
+      "nombre": "Cardiología",
+      "descripcion": "Prevención, diagnóstico y tratamiento de patologías cardiovasculares",
+      "duracion_estimada_min": 30,
+      "esta_activa": true
+    },
+    {
+      "id": 3,
+      "nombre": "Pediatría",
+      "descripcion": "Atención integral del recién nacido, infante y adolescente",
+      "duracion_estimada_min": 30,
+      "esta_activa": true
+    },
+    {
+      "id": 4,
+      "nombre": "Traumatología y Ortopedia",
+      "descripcion": "Diagnóstico y tratamiento de lesiones del sistema musculoesquelético",
+      "duracion_estimada_min": 30,
+      "esta_activa": true
+    },
+    {
+      "id": 5,
+      "nombre": "Ginecología y Obstetricia",
+      "descripcion": "Salud integral de la mujer y control prenatal",
+      "duracion_estimada_min": 30,
+      "esta_activa": true
+    },
+    {
+      "id": 6,
+      "nombre": "Dermatología",
+      "descripcion": "Tratamiento y cuidado de la piel, uñas y cabello",
+      "duracion_estimada_min": 25,
+      "esta_activa": true
+    },
+    {
+      "id": 7,
+      "nombre": "Oftalmología",
+      "descripcion": "Salud visual integral y diagnóstico ocular",
+      "duracion_estimada_min": 20,
+      "esta_activa": true
+    }
+  ],
+  "consultorios": [
+    {
+      "id": 1,
+      "nombre": "Consultorio 101",
+      "piso": "Piso 1",
+      "sede": "Sede Central",
+      "descripcion": "Equipado para Medicina General y Triaje",
+      "esta_activo": true
+    },
+    {
+      "id": 2,
+      "nombre": "Consultorio 102",
+      "piso": "Piso 1",
+      "sede": "Sede Central",
+      "descripcion": "Ambiente adaptado para Pediatría",
+      "esta_activo": true
+    },
+    {
+      "id": 3,
+      "nombre": "Consultorio 201",
+      "piso": "Piso 2",
+      "sede": "Sede Central",
+      "descripcion": "Equipamiento de Cardiología (Electrocardiograma)",
+      "esta_activo": true
+    },
+    {
+      "id": 4,
+      "nombre": "Consultorio 202",
+      "piso": "Piso 2",
+      "sede": "Sede Central",
+      "descripcion": "Consultorio traumatológico con camilla articulada",
+      "esta_activo": true
+    },
+    {
+      "id": 5,
+      "nombre": "Consultorio 301",
+      "piso": "Piso 3",
+      "sede": "Sede Central",
+      "descripcion": "Consultorio de Ginecología y Dermatología",
+      "esta_activo": true
+    }
+  ],
+  "usuarios": [
+    {
+      "id": "a0000000-0000-0000-0000-000000000001",
+      "email": "admin@clinica.com",
+      "rol_id": "ADMINISTRADOR",
+      "esta_activo": true
+    },
+    {
+      "id": "b0000000-0000-0000-0000-000000000001",
+      "email": "recepcion@clinica.com",
+      "rol_id": "RECEPCIONISTA",
+      "esta_activo": true
+    },
+    {
+      "id": "c0000000-0000-0000-0000-000000000001",
+      "email": "roberto.mendoza@clinica.com",
+      "rol_id": "MEDICO",
+      "esta_activo": true
+    },
+    {
+      "id": "c0000000-0000-0000-0000-000000000002",
+      "email": "carmen.silva@clinica.com",
+      "rol_id": "MEDICO",
+      "esta_activo": true
+    },
+    {
+      "id": "d0000000-0000-0000-0000-000000000001",
+      "email": "juan.perez@gmail.com",
+      "rol_id": "PACIENTE",
+      "esta_activo": true
+    }
+  ],
+  "administradores": [
+    {
+      "id": "a0000000-0000-0000-0000-000000000001",
+      "nombres": "Elvis",
+      "apellidos": "Admin Principal",
+      "telefono": "+51987654321"
+    }
+  ],
+  "recepcionistas": [
+    {
+      "id": "b0000000-0000-0000-0000-000000000001",
+      "nombres": "Laura",
+      "apellidos": "García Paredes",
+      "telefono": "+51987654322",
+      "sede": "Sede Central"
+    }
+  ],
+  "medicos": [
+    {
+      "id": "c0000000-0000-0000-0000-000000000001",
+      "numero_colegiatura": "CMP-45892",
+      "nombres": "Roberto",
+      "apellidos": "Mendoza Valdivia",
+      "telefono": "+51987654323",
+      "biografia": "Especialista en cardiología clínica y preventiva con más de 12 años de trayectoria.",
+      "tarifa_consulta": 120.0,
+      "esta_activo": true
+    },
+    {
+      "id": "c0000000-0000-0000-0000-000000000002",
+      "numero_colegiatura": "CMP-51204",
+      "nombres": "Carmen",
+      "apellidos": "Silva Rojas",
+      "telefono": "+51987654324",
+      "biografia": "Especialista en pediatría y desarrollo infantil integral.",
+      "tarifa_consulta": 100.0,
+      "esta_activo": true
+    }
+  ],
+  "medicos_especialidades": [
+    {
+      "medico_id": "c0000000-0000-0000-0000-000000000001",
+      "especialidad_id": 2,
+      "es_principal": true
+    },
+    {
+      "medico_id": "c0000000-0000-0000-0000-000000000002",
+      "especialidad_id": 3,
+      "es_principal": true
+    },
+    {
+      "medico_id": "c0000000-0000-0000-0000-000000000002",
+      "especialidad_id": 1,
+      "es_principal": false
+    }
+  ],
+  "pacientes": [
+    {
+      "id": "e0000000-0000-0000-0000-000000000001",
+      "usuario_id": "d0000000-0000-0000-0000-000000000001",
+      "documento_tipo": "DNI",
+      "documento_numero": "72849102",
+      "nombres": "Juan Carlos",
+      "apellidos": "Pérez Salazar",
+      "fecha_nacimiento": "1992-05-14",
+      "genero": "MASCULINO",
+      "telefono": "+51912345678",
+      "email": "juan.perez@gmail.com",
+      "direccion": "Av. Javier Prado Este 2450, San Borja",
+      "grupo_sanguineo": "O+",
+      "alergias": "Penicilina",
+      "contacto_emergencia_nombre": "Rosa Salazar (Madre)",
+      "contacto_emergencia_telefono": "+51912345670"
+    },
+    {
+      "id": "e0000000-0000-0000-0000-000000000002",
+      "usuario_id": null,
+      "documento_tipo": "DNI",
+      "documento_numero": "44589201",
+      "nombres": "María Elena",
+      "apellidos": "Gómez Torres",
+      "fecha_nacimiento": "1988-11-20",
+      "genero": "FEMENINO",
+      "telefono": "+51988887777",
+      "email": "maria.gomez@hotmail.com",
+      "direccion": "Jr. Las Begonias 340, San Isidro",
+      "grupo_sanguineo": "A+",
+      "alergias": "Ninguna conocida",
+      "contacto_emergencia_nombre": "Carlos Gómez (Hermano)",
+      "contacto_emergencia_telefono": "+51988887770"
+    }
+  ],
+  "horarios_medicos": [
+    {
+      "medico_id": "c0000000-0000-0000-0000-000000000001",
+      "consultorio_id": 3,
+      "dia_semana": 1,
+      "hora_inicio": "08:00:00",
+      "hora_fin": "13:00:00",
+      "duracion_cita_min": 30,
+      "esta_activo": true
+    },
+    {
+      "medico_id": "c0000000-0000-0000-0000-000000000001",
+      "consultorio_id": 3,
+      "dia_semana": 2,
+      "hora_inicio": "08:00:00",
+      "hora_fin": "13:00:00",
+      "duracion_cita_min": 30,
+      "esta_activo": true
+    },
+    {
+      "medico_id": "c0000000-0000-0000-0000-000000000001",
+      "consultorio_id": 3,
+      "dia_semana": 3,
+      "hora_inicio": "08:00:00",
+      "hora_fin": "13:00:00",
+      "duracion_cita_min": 30,
+      "esta_activo": true
+    },
+    {
+      "medico_id": "c0000000-0000-0000-0000-000000000001",
+      "consultorio_id": 3,
+      "dia_semana": 4,
+      "hora_inicio": "08:00:00",
+      "hora_fin": "13:00:00",
+      "duracion_cita_min": 30,
+      "esta_activo": true
+    },
+    {
+      "medico_id": "c0000000-0000-0000-0000-000000000001",
+      "consultorio_id": 3,
+      "dia_semana": 5,
+      "hora_inicio": "08:00:00",
+      "hora_fin": "13:00:00",
+      "duracion_cita_min": 30,
+      "esta_activo": true
+    },
+    {
+      "medico_id": "c0000000-0000-0000-0000-000000000002",
+      "consultorio_id": 2,
+      "dia_semana": 1,
+      "hora_inicio": "14:00:00",
+      "hora_fin": "19:00:00",
+      "duracion_cita_min": 30,
+      "esta_activo": true
+    },
+    {
+      "medico_id": "c0000000-0000-0000-0000-000000000002",
+      "consultorio_id": 2,
+      "dia_semana": 3,
+      "hora_inicio": "14:00:00",
+      "hora_fin": "19:00:00",
+      "duracion_cita_min": 30,
+      "esta_activo": true
+    },
+    {
+      "medico_id": "c0000000-0000-0000-0000-000000000002",
+      "consultorio_id": 2,
+      "dia_semana": 5,
+      "hora_inicio": "14:00:00",
+      "hora_fin": "19:00:00",
+      "duracion_cita_min": 30,
+      "esta_activo": true
+    }
+  ],
+  "citas": [
+    {
+      "id": "f0000000-0000-0000-0000-000000000001",
+      "codigo_cita": "CIT-2026-0001",
+      "paciente_id": "e0000000-0000-0000-0000-000000000001",
+      "medico_id": "c0000000-0000-0000-0000-000000000001",
+      "especialidad_id": 2,
+      "consultorio_id": 3,
+      "fecha_hora_inicio": "2026-10-05 09:00:00-05",
+      "fecha_hora_fin": "2026-10-05 09:30:00-05",
+      "estado": "CONFIRMADA",
+      "motivo_consulta": "Chequeo de rutina por presión arterial ligeramente elevada",
+      "canal_origen": "WEB_PACIENTE"
+    },
+    {
+      "id": "f0000000-0000-0000-0000-000000000002",
+      "codigo_cita": "CIT-2026-0002",
+      "paciente_id": "e0000000-0000-0000-0000-000000000002",
+      "medico_id": "c0000000-0000-0000-0000-000000000002",
+      "especialidad_id": 3,
+      "consultorio_id": 2,
+      "fecha_hora_inicio": "2026-10-05 15:00:00-05",
+      "fecha_hora_fin": "2026-10-05 15:30:00-05",
+      "estado": "PENDIENTE",
+      "motivo_consulta": "Control pediátrico de desarrollo infantil para su menor hijo",
+      "canal_origen": "CHATBOT_WHATSAPP"
+    }
+  ],
+  "conversaciones_chatbot": [
+    {
+      "id": "10000000-0000-0000-0000-000000000001",
+      "whatsapp_from": "+51988887777",
+      "paciente_id": "e0000000-0000-0000-0000-000000000002",
+      "estado_conversacion": "FINALIZADA",
+      "contexto_conversacion": "{\"paso\": \"reserva_completada\", \"cita_creada\": \"CIT-2026-0002\"}",
+      "nivel_triaje": "LEVE",
+      "resumen_triaje": "Paciente solicitó cita para control preventivo infantil. Sin síntomas de alarma respiratoria ni fiebre.",
+      "especialidad_sugerida_id": 3
+    }
+  ],
+  "mensajes_chatbot": [
+    {
+      "conversacion_id": "10000000-0000-0000-0000-000000000001",
+      "remitente": "USUARIO",
+      "tipo_mensaje": "TEXTO",
+      "contenido": "Hola, buenas tardes, quisiera agendar una cita para mi hijo de 4 años",
+      "intencion_detectada": "AGENDAR_CITA"
+    },
+    {
+      "conversacion_id": "10000000-0000-0000-0000-000000000001",
+      "remitente": "BOT",
+      "tipo_mensaje": "TEXTO",
+      "contenido": "¡Hola! Con gusto te ayudo. ¿Tu pequeño presenta algún malestar urgente como fiebre alta o es un control regular?",
+      "intencion_detectada": "TRIAJE"
+    },
+    {
+      "conversacion_id": "10000000-0000-0000-0000-000000000001",
+      "remitente": "USUARIO",
+      "tipo_mensaje": "TEXTO",
+      "contenido": "Es solo su control de crecimiento y vacunas",
+      "intencion_detectada": "RESPUESTA_TRIAJE"
+    },
+    {
+      "conversacion_id": "10000000-0000-0000-0000-000000000001",
+      "remitente": "BOT",
+      "tipo_mensaje": "TEXTO",
+      "contenido": "Perfecto, te sugiero la especialidad de Pediatría con la Dra. Carmen Silva. Tenemos horario el Lunes 5 de Octubre a las 15:00 hrs. ¿Deseas confirmarla?",
+      "intencion_detectada": "PROPONER_HORARIO"
+    },
+    {
+      "conversacion_id": "10000000-0000-0000-0000-000000000001",
+      "remitente": "USUARIO",
+      "tipo_mensaje": "TEXTO",
+      "contenido": "Sí, confirmo por favor",
+      "intencion_detectada": "CONFIRMAR_CITA"
+    },
+    {
+      "conversacion_id": "10000000-0000-0000-0000-000000000001",
+      "remitente": "BOT",
+      "tipo_mensaje": "TEXTO",
+      "contenido": "¡Excelente! Tu cita quedó reservada con el código CIT-2026-0002. Te enviaremos un recordatorio previo a la cita.",
+      "intencion_detectada": "CITA_GENERADA"
+    }
+  ]
+}

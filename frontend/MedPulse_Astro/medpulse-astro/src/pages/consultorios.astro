@@ -1,0 +1,8 @@
+---
+import Layout from '../layouts/Layout.astro';
+import data from '../data/seeds.json';
+import EntityForm from '../components/EntityForm.astro';
+---
+<Layout title="Consultorios" patient={false}>
+{data.consultorios.map((row,i)=><EntityForm table="consultorios" values={row} title={row.nombre || row.nombres || row.email || "Horario "+(i+1)}/>)}
+</Layout>

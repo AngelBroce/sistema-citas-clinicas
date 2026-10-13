@@ -1,0 +1,8 @@
+---
+import Layout from '../layouts/Layout.astro';
+import data from '../data/seeds.json';
+
+---
+<Layout title="Asistente virtual clínico" patient={false}>
+<div class="grid two"><section class="card"><h2>✧ Asistente virtual <span class="badge">Demo</span></h2><div id="messages" aria-live="polite"><div class="message">¡Hola! Puedo mostrarte las especialidades y los horarios de esta demostración. ¿Qué información necesitas?</div></div><div class="tools"><button class="button secondary" data-chat="Especialidades">Especialidades</button><button class="button secondary" data-chat="Horarios">Horarios</button><a class="button secondary" href="/paciente/reservar">Reservar cita</a></div><form id="chat" class="chat-input"><input name="message" aria-label="Mensaje" placeholder="Escribe un mensaje…" required/><button type="submit">Enviar</button></form><p class="muted">Respuestas predeterminadas. No ofrece diagnóstico ni triaje médico.</p></section><section class="card"><h2>Conversación de ejemplo</h2>{data.mensajes_chatbot.map(m=><div class:list={['message',{'user':m.remitente==='USUARIO'}]}>{m.contenido}</div>)}</section></div>
+</Layout>

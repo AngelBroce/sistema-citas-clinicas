@@ -1,0 +1,9 @@
+---
+import Layout from '../layouts/Layout.astro';
+import data from '../data/seeds.json';
+import Appointments from '../components/Appointments.astro';
+import Calendar from '../components/Calendar.astro';
+---
+<Layout title="Panel principal" patient={false}>
+<div class="grid">{[['Citas registradas',data.citas.length,'Según datos iniciales'],['Pacientes',data.pacientes.length,'Perfiles disponibles'],['Médicos activos',data.medicos.length,'Equipo médico'],['Especialidades',data.especialidades.length,'Servicios de la clínica']].map(([label,value,detail])=><section class="card metric"><span>{label}</span><strong>{value}</strong><small>{detail}</small></section>)}</div><div class="grid two"><div><section class="card hero"><p>BIENVENIDO, ELVIS</p><h2>Una visión clara de tu clínica.</h2><p>Gestiona las citas y consulta la información de pacientes desde un solo lugar.</p><a class="button secondary" href="/citas">Ver agenda →</a></section><Appointments/></div><div><Calendar/><section class="card"><h2>Equipo disponible</h2>{data.medicos.map(m=><a class="list-item" href="/medicos"><span>{m.nombres} {m.apellidos}<small class="muted" style="display:block">{m.numero_colegiatura}</small></span><span class="badge green">Activo</span></a>)}</section></div></div>
+</Layout>
