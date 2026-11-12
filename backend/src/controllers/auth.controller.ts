@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { RolId } from '../types/index.js';
 import { pool } from '../config/db.js';
+import { firmarToken } from '../middlewares/auth.middleware.js';
 
 export interface UsuarioPerfil {
   id: string;
@@ -292,10 +293,12 @@ export class AuthController {
         console.log('PostgreSQL offline, paciente guardado en memoria local:', dbErr.message);
       }
 
+      const token = firmarToken(nuevoPerfil);
+
       return res.status(201).json({
         ok: true,
         mensaje: `¡Paciente ${nuevoPerfil.nombreCompleto} registrado exitosamente!`,
-        token: `mock-jwt-token-paciente-${nuevoPerfil.id}`,
+        token,
         usuario: nuevoPerfil,
         paciente: datosPacienteCompleto
       });
@@ -318,11 +321,13 @@ export class AuthController {
       if (cambiarARol) {
         const usuario = Object.values(USUARIOS_REGISTRADOS).find(u => u.rol === cambiarARol.toUpperCase());
         if (usuario) {
+          const token = firmarToken(usuario);
           return res.json({
             ok: true,
             mensaje: `Sesión iniciada con éxito como ${usuario.rol}.`,
-            token: `mock-jwt-token-${usuario.rol.toLowerCase()}`,
-            usuario
+            token,
+            usuario,
+            data: { usuario, token }
           });
         }
       }
@@ -383,7 +388,7 @@ export class AuthController {
         });
       }
 
-      const token = `mock-jwt-token-${usuario.rol.toLowerCase()}`;
+      const token = firmarToken(usuario);
       return res.json({
         ok: true,
         success: true,
@@ -401,5 +406,22 @@ export class AuthController {
         error: error.message || 'Error en el proceso de autenticación.'
       });
     }
+  }
+
+  /**
+   * Retorna el perfil autenticado verificado a partir del token Bearer.
+   */
+  public static async obtenerPerfilActual(req: Request, res: Response) {
+    if (!req.authUser) {
+      return res.status(401).json({ ok: false, error: 'Sesión no autenticada.' });
+    }
+    const usuario = USUARIOS_REGISTRADOS[req.authUser.email.toLowerCase()] || null;
+    return res.json({
+      ok: true,
+      data: {
+        auth: req.authUser,
+        usuario
+      }
+    });
   }
 }

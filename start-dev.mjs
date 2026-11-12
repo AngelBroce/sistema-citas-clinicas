@@ -53,7 +53,7 @@ ${c.cyan}${c.bold}==============================================================
 
 // Validar directorios
 const backendDir = path.join(__dirname, 'backend');
-const frontendDir = path.join(__dirname, 'frontend', 'MedPulse_Astro', 'medpulse-astro');
+const frontendDir = path.join(__dirname, 'frontend');
 
 if (!fs.existsSync(backendDir)) {
   console.error(`${c.red}❌ Error: No se encontró el directorio del backend en: ${backendDir}${c.reset}`);

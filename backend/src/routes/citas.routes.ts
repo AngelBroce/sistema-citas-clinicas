@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { CitasController } from '../controllers/citas.controller.js';
+import { requerirRoles } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
@@ -15,12 +16,20 @@ router.post('/asignar-automatica', CitasController.asignarCitaAutomatica);
 // Listar todas las citas
 router.get('/', CitasController.listarCitas);
 
-// Actualizar el estado de una cita (ej. PENDIENTE -> CONFIRMADA por Admin o Secretaria)
-router.patch('/:id/estado', CitasController.actualizarEstado);
-router.post('/:id/estado', CitasController.actualizarEstado);
+// Actualizar el estado de una cita (confirmar por Admin/Secretaria/Médico o cancelar por Paciente)
+router.patch(
+  '/:id/estado',
+  requerirRoles(['ADMINISTRADOR', 'RECEPCIONISTA', 'MEDICO', 'PACIENTE']),
+  CitasController.actualizarEstado
+);
+router.post(
+  '/:id/estado',
+  requerirRoles(['ADMINISTRADOR', 'RECEPCIONISTA', 'MEDICO', 'PACIENTE']),
+  CitasController.actualizarEstado
+);
 
-// Limpiar todas las citas
-router.delete('/', CitasController.limpiarCitas);
-router.post('/limpiar', CitasController.limpiarCitas);
+// Limpiar todas las citas (solo Administración / Recepción)
+router.delete('/', requerirRoles(['ADMINISTRADOR', 'RECEPCIONISTA']), CitasController.limpiarCitas);
+router.post('/limpiar', requerirRoles(['ADMINISTRADOR', 'RECEPCIONISTA']), CitasController.limpiarCitas);
 
 export default router;

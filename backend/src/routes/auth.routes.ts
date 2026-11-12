@@ -1,10 +1,14 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/auth.controller.js';
+import { requerirAutenticacion } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
 // Listar los roles y usuarios disponibles en el sistema
 router.get('/roles', AuthController.listarRolesYUsuarios);
+
+// Obtener perfil verificado de la sesión actual
+router.get('/me', requerirAutenticacion, AuthController.obtenerPerfilActual);
 
 // Inicio de sesión o cambio rápido de rol
 router.post('/login', AuthController.login);

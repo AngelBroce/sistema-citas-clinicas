@@ -48,8 +48,8 @@
   2. Se almacena y muestra directamente el **Nombre extraído** (`pacienteNombre`) y la **Cédula Panameña** (`pacienteDocumento`) en la tabla y en el calendario de todos los roles.
   3. Se asigna por defecto al médico activo del portal (`Dr. Roberto Mendoza`, `c0000000-0000-0000-0000-000000000001`) para que las citas de WhatsApp aparezcan de inmediato en la vista del Médico, además de Admin, Secretaria y Paciente.
   4. **Flujo de Aprobación (`PENDIENTE` $\rightarrow$ `CONFIRMADA`):** Las citas solicitadas por pacientes/WhatsApp ingresan siempre en estado **`PENDIENTE`** (etiqueta ámbar). Se habilitó el botón **`✓ Confirmar Cita`** tanto para **Administrador** (`/citas`, `/dashboard`) como para **Secretaria** (`/secretaria`, `/secretaria/citas`) y el endpoint `PATCH /api/citas/:id/estado` para pasarlas a **`CONFIRMADA`** manualmente.
-  5. **Limpieza Total de Citas (`0 citas`):** Se vaciaron todas las citas semilla en [agendamiento.service.ts](file:///c:/Users/fioni/Documents/Proyecto%20de%20SOftware/backend/src/services/agendamiento.service.ts) y [seeds.json](file:///c:/Users/fioni/Documents/Proyecto%20de%20SOftware/frontend/MedPulse_Astro/medpulse-astro/src/data/seeds.json), se reseteó `localStorage` (`medpulse_reset_zero_v2`) y se añadió el botón **`🗑️ Eliminar todas las citas`** (`DELETE /api/citas`) para iniciar las pruebas desde cero.
-  6. **Corrección de Login Administrador (`admin@medpulse.clinic`):** En [login.astro](file:///c:/Users/fioni/Documents/Proyecto%20de%20SOftware/frontend/MedPulse_Astro/medpulse-astro/src/pages/login.astro) y [auth.controller.ts](file:///c:/Users/fioni/Documents/Proyecto%20de%20SOftware/backend/src/controllers/auth.controller.ts), se unificó la respuesta `{ ok: true, success: true, data: { usuario } }`, se agregó el reconocimiento directo de `admin@medpulse.clinic` y se añadieron 4 botones de **Acceso Rápido en 1 Clic** en `/login`.
+  5. **Limpieza Total de Citas (`0 citas`):** Se vaciaron todas las citas semilla en [agendamiento.service.ts](../backend/src/services/agendamiento.service.ts) y [seeds.json](../frontend/src/data/seeds.json), se reseteó `localStorage` (`medpulse_reset_zero_v2`) y se añadió el botón **`🗑️ Eliminar todas las citas`** (`DELETE /api/citas`) para iniciar las pruebas desde cero.
+  6. **Corrección de Login Administrador (`admin@medpulse.clinic`):** En [login.astro](../frontend/src/pages/login.astro) y [auth.controller.ts](../backend/src/controllers/auth.controller.ts), se unificó la respuesta `{ ok: true, success: true, data: { usuario } }`, se agregó el reconocimiento directo de `admin@medpulse.clinic` y se añadieron 4 botones de **Acceso Rápido en 1 Clic** en `/login`.
 
 ## ✅ Bloque 5: Rutas Dedicadas de Agendamiento para Admin y Secretaria + Protección GitHub
 - **Fecha:** 2026-11-12
@@ -58,10 +58,31 @@
 - **Incidencia Resuelta:**
   - Al pulsar **"Agendar cita"** desde el portal Administrador o Secretaria, los enlaces dirigían a `/paciente/reservar?mode=admin`, lo cual cambiaba el `Layout` lateral y la navegación al **Portal del Paciente**.
 - **Solución Aplicada:**
-  1. Se extrajo el componente reutilizable [`StaffBookingForm.astro`](../frontend/MedPulse_Astro/medpulse-astro/src/components/StaffBookingForm.astro) (`role: 'admin' | 'secretaria'`) con detección dinámica de fecha actual (`hoyStr`) para evitar fechas mínimas obsoletas.
-  2. Se habilitaron rutas dedicadas [`/reservar`](../frontend/MedPulse_Astro/medpulse-astro/src/pages/reservar.astro) (`role="admin"`) y [`/secretaria/reservar`](../frontend/MedPulse_Astro/medpulse-astro/src/pages/secretaria/reservar.astro) (`role="secretaria"`), manteniendo el sidebar y contexto de cada rol intactos tras agendar o regresar.
+  1. Se extrajo el componente reutilizable [`StaffBookingForm.astro`](../frontend/src/components/StaffBookingForm.astro) (`role: 'admin' | 'secretaria'`) con detección dinámica de fecha actual (`hoyStr`) para evitar fechas mínimas obsoletas.
+  2. Se habilitaron rutas dedicadas [`/reservar`](../frontend/src/pages/reservar.astro) (`role="admin"`) y [`/secretaria/reservar`](../frontend/src/pages/secretaria/reservar.astro) (`role="secretaria"`), manteniendo el sidebar y contexto de cada rol intactos tras agendar o regresar.
   3. Se actualizaron todos los enlaces de agendamiento en `Layout.astro`, `Calendar.astro`, `Appointments.astro`, `dashboard.astro`, `medicos.astro`, `pacientes.astro` y vistas de `secretaria/`, con redirección de respaldo en `paciente/reservar.astro` si se recibe `?mode=admin`.
   4. Se reforzó `.gitignore` bloqueando `.wa_auth_session/` y `.env.*` (excepto `.env.example`) antes de publicar en GitHub (`origin/main`).
+
+## ✅ Bloque 6: Limpieza de Documentación, Pruebas Automatizadas y Middlewares RBAC
+- **Fecha:** 2026-11-12
+- **Estado:** Cerrado y Verificado (`tsc` + `tsx --test` 15/15 + `astro build`).
+- **Nodos:** Nodo 0 (`README.md`, `GRAPH_INDEX.md`, `package.json`), Nodo 1 (`database/schemas/README.md`), Nodo 2 (`auth.middleware.ts`, `auth.controller.ts`, `auth.routes.ts`, `env.ts`), Nodo 3 (`citas.routes.ts`), Nodo 4 (`whatsapp.routes.ts`), Nodo 5 (`api.ts`, `Appointments.astro`).
+- **Mejoras Aplicadas:**
+  1. **Documentación portable y UTF-8:** Corregido mojibake y enlaces locales en `GRAPH_INDEX.md`, `INCIDENCIAS_Y_CIERRES.md` y `database/schemas/README.md`, y alineado el árbol real en `README.md`.
+  2. **Limpieza del índice de Git (`dist/`):** Retirados del tracking de Git los compilados antiguos de `frontend/MedPulse_Astro/medpulse-astro/dist/` sin borrar archivos locales.
+  3. **Suite de Pruebas Automatizadas (`backend/tests/`):** Añadidos tests para `AgendamientoService` (anti double-booking, slots, asignación automática), `TriajeService`, `ChatbotService` (NLU/guardrails/WhatsApp) y `AuthMiddleware` (HMAC-SHA256 y RBAC).
+  4. **Seguridad Backend (HMAC + RBAC):** Creado `backend/src/middlewares/auth.middleware.ts`, emisión de tokens firmados desde `auth.controller.ts`, ruta `GET /api/auth/me`, protección de rutas administrativas (`DELETE /api/citas`, `/whatsapp/config`, `/whatsapp/qr/iniciar`) y envío de `Authorization: Bearer` desde `api.ts` / `Appointments.astro`.
+
+## ✅ Bloque 7: Parte 5 — Persistencia Dual PostgreSQL + Desanidación de `frontend/` + Spec Kit Global
+- **Fecha:** 2026-11-12
+- **Estado:** Cerrado y Verificado (`tsc` + `tsx --test` 15/15 + `astro build` + `git push origin main`).
+- **Nodos:** Nodo 0 (`start-dev.mjs`, `package.json`, `README.md`, `GEMINI.md`, `GRAPH_INDEX.md`), Nodo 3 (`agendamiento.service.ts`), Nodo 5 (`frontend/`).
+- **Solución Aplicada:**
+  1. **5A — Monorepo Simplificado (`frontend/`):** Reubicada toda la aplicación Astro desde `frontend/MedPulse_Astro/medpulse-astro/` a `frontend/` y actualizadas todas las referencias en scripts, `GEMINI.md`, `README.md`, `GRAPH_INDEX.md` y `docs/`.
+  2. **5B — Persistencia Dual PostgreSQL (`citas`):** Conectado `AgendamientoService` a `pool.query` (`SELECT/INSERT/UPDATE/DELETE` en `citas`, propagación de error `23P01` anti double-booking físico) manteniendo respaldo automático en memoria si PostgreSQL no está disponible en local.
+  3. **GitHub Spec Kit Global:** Instaladas 10 skills `speckit*` desde `github/spec-kit` en `~/.gemini/config/skills/` e integradas en las directivas globales de seguimiento para todos los proyectos.
+
+
 
 
 

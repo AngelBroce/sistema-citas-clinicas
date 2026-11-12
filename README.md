@@ -20,34 +20,36 @@ Proyecto en arquitectura monorepo para la gestión integral de citas médicas co
 ├── frontend/                     # [Elias] Aplicación Web en Astro
 │   ├── public/                   # Recursos estáticos
 │   └── src/
-│       ├── components/           # Componentes UI (chatbot, common, dashboard, forms)
-│       ├── layouts/              # Plantillas estructurales (Layout, Auth, Dashboard)
-│       ├── pages/                # Vistas para Paciente, Recepción, Médico y Administrador
-│       ├── services/             # Clientes de consumo de API Backend
-│       ├── styles/               # Estilos globales y tokens
-│       └── types/                # Definición de tipos TypeScript
+│       ├── components/           # Componentes UI (Calendar, Appointments, StaffBookingForm, EntityForm)
+│       ├── data/                 # Cliente API REST (api.ts), seeds.json e interacciones
+│       ├── layouts/              # Plantilla principal por rol y navegación responsiva (Layout.astro)
+│       ├── pages/                # Vistas para Paciente, Recepción (secretaria/), Médico (doctor/) y Admin
+│       └── styles/               # Estilos globales y tokens (Clinical Pulse Dark)
 │
 ├── backend/                      # [Angel] API REST en Node.js (Express / TypeScript)
+│   ├── api/                      # Entrypoint Serverless para Vercel (index.ts)
 │   └── src/
-│       ├── config/               # Configuración de DB, OAuth e IA
-│       ├── controllers/          # Manejadores de rutas HTTP
-│       ├── middlewares/          # Autenticación, roles y validaciones
+│       ├── config/               # Configuración de DB (PostgreSQL + fallback) y entorno
+│       ├── controllers/          # Controladores HTTP (auth, citas, triaje, whatsapp)
+│       ├── middlewares/          # Middlewares de autenticación, roles y validaciones
 │       ├── routes/               # Enrutadores modulares de la API
-│       ├── services/             # Motor de colisiones, Chatbot IA y Google Calendar
-│       ├── types/                # DTOs y tipos del backend
-│       └── utils/                # Utilidades de fecha, logs y formateo
+│       ├── services/             # Motor anti-colisión, Chatbot WhatsApp IA/QR y Google Calendar
+│       ├── types/                # DTOs y tipos TypeScript del backend
+│       └── utils/                # Utilidades y script de verificación inicial
 │
 ├── database/                     # [Elvis] Base de Datos PostgreSQL
-│   ├── migrations/               # Scripts SQL DDL de construcción de tablas
+│   ├── init_local_db.sql         # Script único ejecutable con esquema y seeds locales
+│   ├── migrations/               # Scripts SQL DDL versionados
 │   ├── seeds/                    # Datos iniciales para pruebas
-│   ├── schemas/                  # DDL consolidado y diagramas
+│   ├── schemas/                  # DDL consolidado y diagramas E-R
 │   └── models/                   # Modelos TypeScript correspondientes
 │
 └── docs/                         # [Project Management & Arquitectura]
     ├── api/                      # Documentación y especificaciones OpenAPI
     ├── architecture/             # Diagramas del sistema y modelo E-R
-    ├── flows/                    # Flujos de reserva, sincronización y chatbot
-    └── pm/                       # Matriz de roles, Roadmap y Backlog
+    ├── flows/                    # Especificaciones UI y flujos (calendario, triaje, WhatsApp)
+    ├── pm/                       # Matriz de roles, Roadmap y Backlog
+    └── INCIDENCIAS_Y_CIERRES.md  # Bitácora de incidencias resueltas y cierres por bloque
 ```
 
 ---

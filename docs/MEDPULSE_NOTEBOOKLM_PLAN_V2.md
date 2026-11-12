@@ -93,7 +93,7 @@ graph TD
 | 2 Backend core | Angel | `backend/src/server.ts`, `backend/src/controllers/auth.controller.ts`, `backend/api/index.ts` |
 | 3 Agendamiento | Angel / Elvis | `citas.controller.ts`, `agendamiento.service.ts`, `googleCalendar.service.ts` |
 | 4 Triaje + WhatsApp | Angel | `triaje.service.ts`, `chatbot.service.ts` (consumidos por el bot) |
-| 5 Frontend | Elias | `frontend/MedPulse_Astro/medpulse-astro/src/` |
+| 5 Frontend | Elias | `frontend/src/` |
 
 ---
 
@@ -150,7 +150,7 @@ Respuestas: `201` con `{ ok, usuario, paciente, token }`; `400` si faltan campos
 Se crean **dos proyectos** en Vercel desde el mismo repositorio (`AngelBroce/sistema-citas-clinicas`):
 
 ### 8.1 Proyecto Frontend
-- **Root Directory:** `frontend/MedPulse_Astro/medpulse-astro`
+- **Root Directory:** `frontend`
 - **Framework:** Astro (detección automática), salida estática (`output: 'static'`).
 - **Build:** `npm run build` · **Output:** `dist`
 - **Variable de entorno:** `PUBLIC_API_URL=https://<proyecto-backend>.vercel.app`

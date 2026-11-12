@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { CrearCitaDTO, AsignarCitaAutomaticaDTO, CitaResponse, SlotDisponible } from '../types/index.js';
 import { GoogleCalendarService } from './googleCalendar.service.js';
+import { pool } from '../config/db.js';
 
 interface MedicoHorarioDef {
   medicoId: string;
@@ -50,14 +51,69 @@ export class AgendamientoService {
   
   private static citas: CitaResponse[] = [];
 
+  private static isDbEnabled(): boolean {
+    return process.env.DISABLE_DB !== 'true' && process.env.NODE_ENV !== 'test';
+  }
+
+  private static async sincronizarDesdePostgres(): Promise<void> {
+    if (!this.isDbEnabled()) return;
+    try {
+      const res = await pool.query(`
+        SELECT c.id, c.codigo_cita, c.paciente_id, c.medico_id, c.especialidad_id,
+               c.consultorio_id, c.fecha_hora_inicio, c.fecha_hora_fin, c.estado,
+               c.motivo_consulta, c.canal_origen, c.reservado_por, c.creado_en,
+               TRIM(COALESCE(p.nombres, '') || ' ' || COALESCE(p.apellidos, '')) AS paciente_nombre,
+               p.documento_numero AS paciente_documento,
+               p.telefono AS paciente_telefono
+        FROM citas c
+        LEFT JOIN pacientes p ON p.id = c.paciente_id
+        ORDER BY c.fecha_hora_inicio ASC
+      `);
+
+      const dbIds = new Set(this.citas.map(c => c.id));
+      for (const row of res.rows) {
+        if (!dbIds.has(row.id)) {
+          this.citas.push({
+            id: row.id,
+            codigoCita: row.codigo_cita,
+            pacienteId: row.paciente_id,
+            pacienteNombre: row.paciente_nombre || undefined,
+            pacienteDocumento: row.paciente_documento || undefined,
+            pacienteTelefono: row.paciente_telefono || undefined,
+            medicoId: row.medico_id,
+            especialidadId: row.especialidad_id,
+            consultorioId: row.consultorio_id || 3,
+            fechaHoraInicio: new Date(row.fecha_hora_inicio).toISOString(),
+            fechaHoraFin: new Date(row.fecha_hora_fin).toISOString(),
+            estado: row.estado,
+            motivoConsulta: row.motivo_consulta || null,
+            canalOrigen: row.canal_origen,
+            reservadoPor: row.reservado_por,
+            googleCalendarEvent: null,
+            creadoEn: new Date(row.creado_en).toISOString()
+          });
+        }
+      }
+    } catch {
+      // Fallback silencioso a memoria si PostgreSQL no está disponible
+    }
+  }
+
   public static async limpiarTodasLasCitas(): Promise<void> {
     this.citas = [];
+    if (!this.isDbEnabled()) return;
+    try {
+      await pool.query('DELETE FROM citas;');
+    } catch {
+      // PostgreSQL apagado u offline: memoria ya quedó limpia
+    }
   }
 
   /**
    * Obtiene la disponibilidad horaria de un médico en una fecha específica
    */
   public static async obtenerDisponibilidad(medicoId: string, fechaStr: string): Promise<SlotDisponible[]> {
+    await this.sincronizarDesdePostgres();
     const fecha = new Date(fechaStr + 'T12:00:00Z');
     const diaSemana = fecha.getDay(); // 0 a 6
 
@@ -133,6 +189,7 @@ export class AgendamientoService {
    * Reserva una nueva cita validando reglas de colisión estricta y sincronizando con Google Calendar
    */
   public static async reservarCita(dto: CrearCitaDTO): Promise<CitaResponse> {
+    await this.sincronizarDesdePostgres();
     const duracion = dto.duracionMin || 30;
     const [h, m] = dto.horaInicio.split(':').map(Number);
     const fechaHoraInicio = new Date(`${dto.fecha}T${dto.horaInicio}:00Z`);
@@ -201,6 +258,38 @@ export class AgendamientoService {
     };
 
     this.citas.push(nuevaCita);
+
+    if (this.isDbEnabled()) {
+      try {
+        await pool.query(
+          `INSERT INTO citas (
+             id, codigo_cita, paciente_id, medico_id, especialidad_id, consultorio_id,
+             fecha_hora_inicio, fecha_hora_fin, estado, motivo_consulta, canal_origen, reservado_por
+           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+          [
+            nuevaCita.id,
+            nuevaCita.codigoCita,
+            nuevaCita.pacienteId,
+            nuevaCita.medicoId,
+            nuevaCita.especialidadId,
+            nuevaCita.consultorioId,
+            nuevaCita.fechaHoraInicio,
+            nuevaCita.fechaHoraFin,
+            nuevaCita.estado,
+            nuevaCita.motivoConsulta,
+            nuevaCita.canalOrigen,
+            nuevaCita.reservadoPor
+          ]
+        );
+      } catch (dbErr: any) {
+        if (dbErr?.code === '23P01') {
+          this.citas = this.citas.filter(c => c.id !== nuevaCita.id);
+          throw new Error('CONFLICTO_HORARIO: Conflicto físico detectado en PostgreSQL (anti double-booking).');
+        }
+        // Si PostgreSQL está apagado o recibe UUID demo sin fila padre (23503/22P02), conserva respaldo en memoria
+      }
+    }
+
     return nuevaCita;
   }
 
@@ -208,9 +297,22 @@ export class AgendamientoService {
    * Actualiza el estado de una cita (ej. cuando Admin o Secretaria confirma la cita PENDIENTE -> CONFIRMADA)
    */
   public static async actualizarEstadoCita(idOrCodigo: string, nuevoEstado: any): Promise<CitaResponse | null> {
+    await this.sincronizarDesdePostgres();
     const cita = this.citas.find(c => c.id === idOrCodigo || c.codigoCita === idOrCodigo);
     if (!cita) return null;
     cita.estado = nuevoEstado;
+
+    if (this.isDbEnabled()) {
+      try {
+        await pool.query(
+          `UPDATE citas SET estado = $1 WHERE id::text = $2 OR codigo_cita = $2`,
+          [nuevoEstado, idOrCodigo]
+        );
+      } catch {
+        // Fallback silencioso a memoria
+      }
+    }
+
     return cita;
   }
 
@@ -218,6 +320,7 @@ export class AgendamientoService {
    * Lista todas las citas registradas, con filtro opcional por rol creador ('PACIENTE' | 'ADMINISTRADOR')
    */
   public static async listarCitas(reservadoPor?: 'PACIENTE' | 'ADMINISTRADOR'): Promise<CitaResponse[]> {
+    await this.sincronizarDesdePostgres();
     if (reservadoPor) {
       return this.citas.filter(c => c.reservadoPor === reservadoPor);
     }

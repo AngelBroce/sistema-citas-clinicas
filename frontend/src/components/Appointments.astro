@@ -395,7 +395,7 @@ if (propRole) {
 
 <script>
   import data from '../data/seeds.json';
-  import { apiUrl } from '../data/api';
+  import { apiUrl, getAuthHeaders } from '../data/api';
 
   const STORAGE_KEY = 'medpulse_citas_v2';
   const section = document.getElementById('appointments-section');
@@ -546,7 +546,7 @@ if (propRole) {
       // Sincronizar también el estado en el servidor backend (:4000)
       fetch(apiUrl(`/api/citas/${encodeURIComponent(targetCita.id || citaId)}/estado`), {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ estado: nuevoEstado })
       }).catch(() => {});
 
@@ -563,7 +563,10 @@ if (propRole) {
   (window as any).limpiarTodasLasCitas = async function() {
     try {
       localStorage.setItem(STORAGE_KEY, '[]');
-      await fetch(apiUrl('/api/citas'), { method: 'DELETE' }).catch(() => {});
+      await fetch(apiUrl('/api/citas'), {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      }).catch(() => {});
       renderAppointments();
       window.dispatchEvent(new CustomEvent('medpulse:cita-creada', { detail: {} }));
       window.dispatchEvent(new CustomEvent('medpulse:cita-synced'));

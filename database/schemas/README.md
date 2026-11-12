@@ -3,9 +3,9 @@
 **Autor / Responsable:** Elvis (DBA)  
 **Motor:** PostgreSQL 14+ con extensiones `uuid-ossp` y `btree_gist`  
 **Ubicación de Scripts:**
-- DDL Consolidado: [`database/schemas/schema.sql`](file:///c:/Git/Antigravity/sistema-citas-clinicas/database/schemas/schema.sql)
-- Migración Versionada: [`database/migrations/001_initial_schema.sql`](file:///c:/Git/Antigravity/sistema-citas-clinicas/database/migrations/001_initial_schema.sql)
-- Seeds Iniciales de Prueba: [`database/seeds/01_initial_seeds.sql`](file:///c:/Git/Antigravity/sistema-citas-clinicas/database/seeds/01_initial_seeds.sql)
+- DDL Consolidado: [`database/schemas/schema.sql`](./schema.sql)
+- Migración Versionada: [`database/migrations/001_initial_schema.sql`](../migrations/001_initial_schema.sql)
+- Seeds Iniciales de Prueba: [`database/seeds/01_initial_seeds.sql`](../seeds/01_initial_seeds.sql)
 
 ---
 
@@ -57,7 +57,7 @@ erDiagram
 
 ## 🛡️ 3. Mecanismo de Garantía Anti-Colisión (Double-Booking)
 
-En la tabla [`citas`](file:///c:/Git/Antigravity/sistema-citas-clinicas/database/schemas/schema.sql#L190-L225), se implementó la siguiente restricción estricta:
+En la tabla [`citas`](./schema.sql#L190-L225), se implementó la siguiente restricción estricta:
 
 ```sql
 CONSTRAINT uq_medico_no_doble_agendamiento EXCLUDE USING gist (

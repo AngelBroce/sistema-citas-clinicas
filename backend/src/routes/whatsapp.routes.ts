@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { WhatsAppController } from '../controllers/whatsapp.controller.js';
+import { requerirRoles } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
@@ -11,11 +12,11 @@ router.post('/webhook', WhatsAppController.procesarMensaje);
 
 // Configuración del número empresarial (+507 6598-2118) y System Prompt IA
 router.get('/config', WhatsAppController.obtenerConfiguracion);
-router.post('/config', WhatsAppController.actualizarConfiguracion);
+router.post('/config', requerirRoles(['ADMINISTRADOR', 'RECEPCIONISTA']), WhatsAppController.actualizarConfiguracion);
 
 // Generación y estado del Código QR de conexión en vivo con WhatsApp
 router.get('/qr', WhatsAppController.obtenerQR);
-router.post('/qr/iniciar', WhatsAppController.iniciarQR);
+router.post('/qr/iniciar', requerirRoles(['ADMINISTRADOR', 'RECEPCIONISTA']), WhatsAppController.iniciarQR);
 
 // Historial de conversaciones y citas agendadas por WhatsApp
 router.get('/conversaciones', WhatsAppController.listarConversaciones);
@@ -27,6 +28,6 @@ router.post('/simular', WhatsAppController.simularMensaje);
 router.post('/reiniciar', WhatsAppController.reiniciarConversacion);
 
 // Enviar mensaje real de prueba vía Meta Cloud API
-router.post('/enviar-prueba', WhatsAppController.enviarMensajePruebaReal);
+router.post('/enviar-prueba', requerirRoles(['ADMINISTRADOR', 'RECEPCIONISTA']), WhatsAppController.enviarMensajePruebaReal);
 
 export default router;

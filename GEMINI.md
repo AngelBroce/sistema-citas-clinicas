@@ -2,7 +2,7 @@
 
 ## 1. Stack y Arquitectura Base
 - **Backend (`backend/`):** Node.js + Express + TypeScript (`tsx`), PostgreSQL 14+ (`pg`) con fallback resiliente en memoria. Puerto `4000`.
-- **Frontend (`frontend/MedPulse_Astro/medpulse-astro/`):** Astro 5 + TypeScript + CSS Dark (`Clinical Pulse Dark`: `#090D16`, `#10B981`, `#06B6D4`, `#8B5CF6`). Puerto `4321`.
+- **Frontend (`frontend/`):** Astro 5 + TypeScript + CSS Dark (`Clinical Pulse Dark`: `#090D16`, `#10B981`, `#06B6D4`, `#8B5CF6`). Puerto `4321`.
 - **Almacenamiento Sincronizado Frontend:** `localStorage` clave `medpulse_citas_v2` + API REST `/api/*`.
 
 ## 2. Mapa Quirúrgico de Nodos (Referencia Rápida sin Escaneo)
@@ -11,7 +11,7 @@
 - **Nodo 2 (Core/Auth):** `backend/src/controllers/auth.controller.ts`, `backend/src/config/db.ts`.
 - **Nodo 3 (Calendario/Citas):** `backend/src/services/agendamiento.service.ts`, `backend/src/controllers/citas.controller.ts`.
 - **Nodo 4 (WhatsApp/Triaje):** `backend/src/services/chatbot.service.ts`, `backend/src/controllers/whatsapp.controller.ts`, `backend/src/services/triaje.service.ts`.
-- **Nodo 5 (UI Astro):** `frontend/MedPulse_Astro/medpulse-astro/src/pages/`, `src/components/Calendar.astro`, `src/components/Appointments.astro`.
+- **Nodo 5 (UI Astro):** `frontend/src/pages/`, `frontend/src/components/Calendar.astro`, `frontend/src/components/Appointments.astro`, `frontend/src/components/StaffBookingForm.astro`.
 
 ## 3. Reglas de Dominio Inmutables (No reinterpretar)
 1. **Anti Double-Booking:** Prohibido solapar turnos de un mismo médico.

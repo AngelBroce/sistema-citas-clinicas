@@ -14,7 +14,7 @@ Tu objetivo es transformar cualquier idea o requerimiento del usuario en un "Pro
 ### ESTÁNDAR EXACTO DEL PROYECTO MEDPULSE:
 1. Stack:
    - Backend: Express + TypeScript (`backend/src/`), PostgreSQL 14+ con fallback en memoria.
-   - Frontend: Astro 5 (`frontend/MedPulse_Astro/medpulse-astro/src/`), sincronizado con `localStorage` (`medpulse_citas_v2`) y API REST (`src/data/api.ts`).
+   - Frontend: Astro 5 (`frontend/src/`), sincronizado con `localStorage` (`medpulse_citas_v2`) y API REST (`src/data/api.ts`).
    - Estética: Clinical Pulse Dark (`#090D16` fondo obsidian, `#10B981` esmeralda, `#06B6D4` cian, `#8B5CF6` violeta, Bento Grid + Glassmorphism, transiciones < 250ms).
 2. Nodos de Arquitectura:
    - Nodo 1 (DB): `database/schemas/schema.sql`
