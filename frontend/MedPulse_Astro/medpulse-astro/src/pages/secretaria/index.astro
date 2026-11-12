@@ -1,0 +1,103 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import data from '../../data/seeds.json';
+import Calendar from '../../components/Calendar.astro';
+import Appointments from '../../components/Appointments.astro';
+---
+
+<Layout title="Mesa de Recepción · Control de Atención" role="secretaria">
+  <!-- Métricas de mesa de recepción -->
+  <div class="grid" style="margin-bottom: 20px;">
+    <section class="card metric" style="border-top: 3px solid #f59e0b;">
+      <span>Llegadas de hoy</span>
+      <strong style="color: #fbbf24; font-size: 26px;">4 citas</strong>
+      <small style="color: #fbbf24;">Sede Principal</small>
+    </section>
+
+    <section class="card metric" style="border-top: 3px solid #10b981;">
+      <span>Médicos en turno hoy</span>
+      <strong style="color: #34d399; font-size: 26px;">{data.medicos.length} activos</strong>
+      <small style="color: #34d399;">Cardiología y Pediatría</small>
+    </section>
+
+    <section class="card metric" style="border-top: 3px solid #06b6d4;">
+      <span>Consultorios Operativos</span>
+      <strong style="color: #22d3ee; font-size: 26px;">{data.consultorios.length} salas</strong>
+      <small style="color: #22d3ee;">Piso 1 y Piso 2</small>
+    </section>
+
+    <section class="card metric" style="border-top: 3px solid #8b5cf6;">
+      <span>Agendamiento Rápido</span>
+      <strong style="color: #c4b5fd; font-size: 26px;">Recepción</strong>
+      <small style="color: #c4b5fd;">Presencial / Llamadas</small>
+    </section>
+  </div>
+
+  <!-- Hero Banner de Recepción con Acciones Inmediatas -->
+  <section class="card hero" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.16) 0%, #131b26 100%); border-color: #d97706; margin-bottom: 20px;">
+    <p style="color: #fbbf24; margin: 0 0 6px 0; font-size: 11px; letter-spacing: 1.5px; font-weight: 700;">
+      PANEL DE RECEPCIÓN Y ATENCIÓN CLÍNICA
+    </p>
+    <h2 style="margin: 0 0 8px 0; font-size: 22px; color: #f8fafc;">Hola, Elena (Mesa de Recepción)</h2>
+    <p style="color: #cbd5e1; font-size: 13px; margin: 0 0 16px 0; max-width: 820px; line-height: 1.5;">
+      Gestiona las llegadas de pacientes, confirma asistencias en sala de espera y coordina nuevas reservas presenciales o telefónicas sin colisiones de horario.
+    </p>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <a class="button" href="/secretaria/reservar" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #0b0f19; font-weight: 700;">
+        ＋ Agendar cita en recepción →
+      </a>
+      <a class="button secondary" href="/secretaria/pacientes">
+        👤 Registrar nuevo paciente
+      </a>
+    </div>
+  </section>
+
+  <!-- Calendario General de la Clínica (A ancho completo para óptima visibilidad mensual y táctil) -->
+  <div style="margin-bottom: 20px;">
+    <Calendar role="secretaria" />
+  </div>
+
+  <!-- Tabla de Citas y Sala de Espera de Recepción a ancho completo -->
+  <div style="margin-bottom: 24px;">
+    <Appointments role="secretaria" />
+  </div>
+
+  <!-- Directorio de Médicos y Consultorios en Turno Hoy (Ubicado debajo de las citas) -->
+  <section class="card" id="medicos-activos-seccion">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <h3 style="margin: 0; color: #f8fafc; font-size: 18px;">🩺 Médicos y Consultorios Activos Hoy</h3>
+        <p class="muted" style="margin: 4px 0 0 0; font-size: 13px;">
+          Especialistas en turno y sus consultorios asignados para la atención presencial de citas.
+        </p>
+      </div>
+      <a href="/secretaria/medicos" class="button secondary" style="font-size: 12px; padding: 6px 14px; white-space: nowrap;">
+        Ver todos los médicos y consultorios →
+      </a>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px;">
+      {data.medicos.map(m => {
+        const espRel = data.medicos_especialidades.find(e => e.medico_id === m.id);
+        const esp = data.especialidades.find(e => e.id === espRel?.especialidad_id);
+        const horario = data.horarios_medicos.find(h => h.medico_id === m.id);
+        const room = data.consultorios.find(c => c.id === horario?.consultorio_id);
+        return (
+          <div style="background: #0d1522; border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 14px;">
+            <div style="min-width: 0; flex: 1;">
+              <strong style="color: #f8fafc; display: block; font-size: 15px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                Dr(a). {m.nombres} {m.apellidos}
+              </strong>
+              <small style="color: #06b6d4; font-size: 13px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                {esp?.nombre} · {room?.nombre} ({room?.piso})
+              </small>
+            </div>
+            <span class="badge green" style="white-space: nowrap !important; flex-shrink: 0; padding: 6px 12px; font-size: 11px;">
+              <span class="badge-dot green"></span> En turno
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  </section>
+</Layout>

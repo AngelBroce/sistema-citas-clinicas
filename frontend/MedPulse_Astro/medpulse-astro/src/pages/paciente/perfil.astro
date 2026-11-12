@@ -1,8 +1,593 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import data from '../../data/seeds.json';
-import EntityForm from '../../components/EntityForm.astro';
+
+const defaultPaciente = data.pacientes[0];
 ---
-<Layout title="Mi perfil médico" patient={true}>
-<EntityForm table="pacientes" title="Datos personales y de salud" values={data.pacientes[0]}/>
+
+<Layout title="Mi Perfil Médico" role="paciente">
+  <!-- Hero Banner del Perfil del Paciente -->
+  <section class="card patient-hero animate-slide-up" style="margin-bottom: 24px;">
+    <div class="patient-hero-content">
+      <div class="patient-hero-badge">
+        <span class="live-pulse-dot"></span>
+        <span style="font-weight: 700; color: #38bdf8; letter-spacing: 0.5px;">FICHA DE SALUD ACTIVA</span>
+        <span class="separator" style="color: #475569;">·</span>
+        <span class="verified-tag" id="profile-verified-badge" style="color: #34d399; font-weight: 600;">✓ Identidad Verificada</span>
+      </div>
+      
+      <h2 id="profile-display-name" style="font-size: 26px; margin: 10px 0 8px 0; color: #ffffff;">
+        Expediente de {defaultPaciente.nombres} {defaultPaciente.apellidos} 👤
+      </h2>
+      <p style="margin: 0 0 16px 0; color: #cbd5e1; max-width: 720px; font-size: 14px; line-height: 1.6;">
+        Gestiona tus datos personales, información de contacto de emergencia y antecedentes médicos para asegurar una atención clínica precisa en tus citas presenciales.
+      </p>
+
+      <div class="patient-quick-tags">
+        <span class="tag-chip" id="profile-tag-doc"><strong>Documento:</strong> {defaultPaciente.documento_tipo} {defaultPaciente.documento_numero}</span>
+        <span class="tag-chip" id="profile-tag-email"><strong>Correo:</strong> {defaultPaciente.email}</span>
+        <span class="tag-chip" id="profile-tag-blood"><strong>Grupo sanguíneo:</strong> {defaultPaciente.grupo_sanguineo}</span>
+        <span class="tag-chip"><strong>Historial Clínico:</strong> HCL-10492</span>
+        <span class="tag-chip"><strong>Sede:</strong> Sede Central</span>
+      </div>
+    </div>
+
+    <div class="patient-hero-actions">
+      <a class="button primary-glow" href="/paciente/citas">
+        <span>📅</span> Mis citas y agenda
+      </a>
+      <a class="button secondary-glow" href="/paciente/reservar">
+        <span>＋</span> Reservar nueva cita
+      </a>
+    </div>
+  </section>
+
+  <!-- Métricas Bento de Ficha Médica -->
+  <div class="patient-bento-grid animate-slide-up delay-1" style="margin-bottom: 24px;">
+    <!-- Card 1: Identidad -->
+    <div class="card bento-card card-accent-cyan">
+      <div class="bento-header">
+        <span class="bento-icon">👤</span>
+        <span class="badge blue">Identidad</span>
+      </div>
+      <div class="bento-body">
+        <span class="bento-label">TITULAR DE ATENCIÓN</span>
+        <strong class="bento-value" id="bento-titular-name">{defaultPaciente.nombres}</strong>
+        <p class="bento-subtext" id="bento-titular-doc">Doc: {defaultPaciente.documento_numero}<br><span id="bento-titular-email" style="color: #38bdf8;">{defaultPaciente.email}</span></p>
+      </div>
+      <div class="bento-footer">
+        <span class="bento-link" style="color: #38bdf8; font-size: 12px;">Cuenta activa en MedPulse</span>
+      </div>
+    </div>
+
+    <!-- Card 2: Contacto Telefónico -->
+    <div class="card bento-card card-accent-green">
+      <div class="bento-header">
+        <span class="bento-icon">📞</span>
+        <span class="badge green">Comunicación</span>
+      </div>
+      <div class="bento-body">
+        <span class="bento-label">TELÉFONO MÓVIL</span>
+        <strong class="bento-value" id="bento-phone">{defaultPaciente.telefono}</strong>
+        <p class="bento-subtext">Recordatorios por WhatsApp automáticos habilitados.</p>
+      </div>
+      <div class="bento-footer">
+        <span class="bento-link" style="color: #34d399; font-size: 12px;">Notificaciones SMS & WhatsApp</span>
+      </div>
+    </div>
+
+    <!-- Card 3: Antecedentes & Alergias -->
+    <div class="card bento-card card-accent-purple">
+      <div class="bento-header">
+        <span class="bento-icon">🩺</span>
+        <span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.45);">Ficha Clínica</span>
+      </div>
+      <div class="bento-body">
+        <span class="bento-label">ALERGIAS DECLARADAS</span>
+        <strong class="bento-value" id="bento-alergias" style="font-size: 16px;">{defaultPaciente.alergias || 'Ninguna'}</strong>
+        <p class="bento-subtext">Grupo sanguíneo: <strong id="bento-blood" style="color: #d8b4fe;">{defaultPaciente.grupo_sanguineo}</strong></p>
+      </div>
+      <div class="bento-footer">
+        <span class="bento-link" style="color: #c084fc; font-size: 12px;">Visible para médico de turno</span>
+      </div>
+    </div>
+
+    <!-- Card 4: Contacto de Emergencia -->
+    <div class="card bento-card card-accent-amber">
+      <div class="bento-header">
+        <span class="bento-icon">🚨</span>
+        <span class="badge amber">Seguridad</span>
+      </div>
+      <div class="bento-body">
+        <span class="bento-label">CONTACTO DE EMERGENCIA</span>
+        <strong class="bento-value" id="bento-emergency-name" style="font-size: 15px;">{defaultPaciente.contacto_emergencia_nombre}</strong>
+        <p class="bento-subtext" id="bento-emergency-phone">Tel: {defaultPaciente.contacto_emergencia_telefono}</p>
+      </div>
+      <div class="bento-footer">
+        <span class="bento-link" style="color: #fbbf24; font-size: 12px;">Protocolo de urgencias activo</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulario de Edición de Perfil -->
+  <section class="card animate-slide-up delay-2" style="background: #0f172a; border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 16px; padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <h2 style="font-size: 18px; margin: 0; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+          <span>📝</span> Actualizar Datos Personales y de Salud
+        </h2>
+        <p class="muted" style="margin: 4px 0 0 0; font-size: 13px;">
+          Mantén tus datos actualizados para recibir tus pases de cita y notificaciones médicas.
+        </p>
+      </div>
+      <span class="badge green" id="profile-session-status">Sesión Sincronizada</span>
+    </div>
+
+    <form id="patient-profile-form">
+      <div style="margin-bottom: 16px; background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.25); border-radius: 10px; padding: 10px 14px; font-size: 12px; color: #7dd3fc;">
+        🇵🇦 <strong>Cédula Oficial de Panamá:</strong> El documento se estructura en Prefijo de Provincia / Extranjero, Tomo y Asiento numéricos.
+      </div>
+
+      <div class="form-grid profile-balanced-grid">
+        <label>
+          <span class="label-text">Primer Nombre *</span>
+          <input type="text" id="prof-primer-nombre" name="primer_nombre" required style="height: 44px;" />
+        </label>
+
+        <label>
+          <span class="label-text">Segundo Nombre (Opcional)</span>
+          <input type="text" id="prof-segundo-nombre" name="segundo_nombre" style="height: 44px;" />
+        </label>
+
+        <label>
+          <span class="label-text">Primer Apellido *</span>
+          <input type="text" id="prof-primer-apellido" name="primer_apellido" required style="height: 44px;" />
+        </label>
+
+        <label>
+          <span class="label-text">Segundo Apellido (Opcional)</span>
+          <input type="text" id="prof-segundo-apellido" name="segundo_apellido" style="height: 44px;" />
+        </label>
+
+        <label>
+          <span class="label-text">Tipo de Documento</span>
+          <select id="prof-doc-tipo" name="documento_tipo" style="height: 44px;">
+            <option value="CEDULA_NACIONAL">Cédula Panameña (Nacional)</option>
+            <option value="CEDULA_E">Cédula E (Extranjero Naturalizado / Residente)</option>
+            <option value="CEDULA_PE">Cédula PE (Panameño nacido en Extranjero)</option>
+            <option value="CEDULA_N">Cédula N (Naturalizado)</option>
+            <option value="CEDULA_PI">Cédula PI (Población Indígena)</option>
+            <option value="CEDULA_AV">Cédula AV (Antes de Vigencia)</option>
+            <option value="PASAPORTE">Pasaporte Internacional</option>
+          </select>
+        </label>
+
+        <label>
+          <span class="label-text">Cédula de Panamá (Prefijo - Tomo - Asiento)</span>
+          <input type="text" id="prof-doc-numero" name="documento_numero" placeholder="ej. 8-1234-56789" required style="height: 44px; font-family: monospace; font-size: 15px; color: #34d399;" />
+        </label>
+
+        <label>
+          <span class="label-text">Correo Electrónico</span>
+          <input type="email" id="prof-email" name="email" required style="height: 44px;" />
+        </label>
+
+        <label>
+          <span class="label-text">Teléfono Celular *</span>
+          <input type="tel" id="prof-telefono" name="telefono" required placeholder="+507 6123-4567" style="height: 44px;" />
+        </label>
+
+        <label>
+          <span class="label-text">Fecha de Nacimiento</span>
+          <input type="date" id="prof-nacimiento" name="fecha_nacimiento" style="height: 44px; color-scheme: dark;" />
+        </label>
+
+        <label>
+          <span class="label-text">Dirección de Domicilio</span>
+          <input type="text" id="prof-direccion" name="direccion" placeholder="Av. Principal 123, Distrito" style="height: 44px;" />
+        </label>
+
+        <!-- Bloque Clínico: Tipo de Sangre y Alergias Declaradas -->
+        <div class="full-row-box" style="grid-column: 1 / -1; background: #0b121e; border: 1px solid #1e293b; border-radius: 12px; padding: 18px; margin-top: 4px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 18px;">🩺</span>
+              <strong style="color: #f8fafc; font-size: 14px;">Condiciones Clínicas: Tipo de Sangre y Alergias Declaradas</strong>
+            </div>
+            <span class="badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);">
+              Visible para médicos en consulta
+            </span>
+          </div>
+
+          <div class="allergy-blood-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px;">
+            <label style="margin: 0;">
+              <span class="label-text">Grupo Sanguíneo y Factor Rh *</span>
+              <select id="prof-grupo-sanguineo" name="grupo_sanguineo" style="height: 44px; font-weight: 700; color: #38bdf8;">
+                <option value="O+">O Positivo (O+) - Donante común</option>
+                <option value="O-">O Negativo (O-) - Donante universal</option>
+                <option value="A+">A Positivo (A+)</option>
+                <option value="A-">A Negativo (A-)</option>
+                <option value="B+">B Positivo (B+)</option>
+                <option value="B-">B Negativo (B-)</option>
+                <option value="AB+">AB Positivo (AB+) - Receptor universal</option>
+                <option value="AB-">AB Negativo (AB-)</option>
+              </select>
+            </label>
+
+            <div>
+              <span class="label-text" style="margin-bottom: 6px;">
+                Añadir Alergia Frecuente (1 Clic):
+              </span>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="quick-allergy-pills">
+                <button type="button" class="allergy-quick-add" data-allergy="Penicilina">＋ Penicilina</button>
+                <button type="button" class="allergy-quick-add" data-allergy="Mariscos">＋ Mariscos</button>
+                <button type="button" class="allergy-quick-add" data-allergy="Polvo / Ácaros">＋ Ácaros</button>
+                <button type="button" class="allergy-quick-add" data-allergy="Maní / Frutos secos">＋ Maní</button>
+                <button type="button" class="allergy-quick-add" data-allergy="Sulfas">＋ Sulfas</button>
+                <button type="button" class="allergy-quick-add" data-allergy="Ibuprofeno">＋ Ibuprofeno</button>
+                <button type="button" class="allergy-quick-add" data-allergy="Látex">＋ Látex</button>
+                <button type="button" id="btn-declarar-sin-alergias" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                  ✓ Sin Alergias Conocidas
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alergias Activas / Tags interactivos -->
+          <div>
+            <span class="label-text" style="margin-bottom: 6px;">
+              Alergias Registradas en tu Historial Clínico:
+            </span>
+            <div id="allergies-active-container" style="display: flex; gap: 8px; flex-wrap: wrap; min-height: 38px; align-items: center; padding: 10px; background: #070c14; border: 1px solid #1e293b; border-radius: 8px; margin-bottom: 10px;">
+              <!-- Los chips se inyectan dinámicamente -->
+            </div>
+
+            <!-- Entrada personalizada -->
+            <div style="display: flex; gap: 8px;">
+              <input
+                type="text"
+                id="custom-allergy-input"
+                placeholder="Escribe otra alergia o medicamento específico..."
+                style="height: 40px; font-size: 13px; flex: 1;"
+              />
+              <button
+                type="button"
+                id="btn-add-custom-allergy"
+                style="padding: 0 16px; height: 40px; background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;"
+              >
+                ＋ Añadir
+              </button>
+            </div>
+          </div>
+
+          <!-- Input oculto para compatibilidad de formulario -->
+          <input type="hidden" id="prof-alergias" name="alergias" value="" />
+        </div>
+
+        <!-- Fila de Contacto y Teléfono de Emergencia Perfectamente Alineados -->
+        <label>
+          <span class="label-text">Contacto de Emergencia (Nombre y Parentesco)</span>
+          <input type="text" id="prof-contacto-nombre" name="contacto_emergencia_nombre" placeholder="Ej: Rosa Mendoza (Madre)" style="height: 44px;" />
+        </label>
+
+        <label>
+          <span class="label-text">Teléfono de Emergencia</span>
+          <input type="tel" id="prof-contacto-tel" name="contacto_emergencia_telefono" placeholder="+507 6123-4567" style="height: 44px;" />
+        </label>
+      </div>
+
+      <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; flex-wrap: wrap;">
+        <button type="button" id="btn-reset-profile" class="button secondary" style="font-size: 13px; padding: 10px 20px;">
+          ↺ Revertir Cambios
+        </button>
+        <button type="submit" id="btn-save-profile" class="button primary-glow" style="font-size: 13px; padding: 10px 24px;">
+          💾 Guardar y Actualizar Perfil
+        </button>
+      </div>
+    </form>
+  </section>
 </Layout>
+
+<style>
+  .profile-balanced-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  @media(max-width: 768px) {
+    .profile-balanced-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .form-grid label {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 6px;
+    font-size: 13px;
+    color: #e2e8f0;
+  }
+
+  .label-text {
+    min-height: 20px;
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    font-size: 12.5px;
+    color: #cbd5e1;
+    line-height: 1.2;
+  }
+
+  .allergy-quick-add {
+    background: #1e293b !important;
+    color: #cbd5e1 !important;
+    border: 1px solid #334155 !important;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .allergy-quick-add:hover {
+    background: rgba(56, 189, 248, 0.2) !important;
+    border-color: #38bdf8 !important;
+    color: #38bdf8 !important;
+    transform: translateY(-1px);
+  }
+</style>
+
+<script>
+  import data from '../../data/seeds.json';
+
+  function initProfilePage() {
+    const defaultP: any = data.pacientes[0];
+    let currentPatient: any = { ...defaultP };
+
+    // 1. Cargar datos desde sesión activa en localStorage
+    try {
+      const session = JSON.parse(localStorage.getItem('medpulse_session') || '{}');
+      if (session?.paciente) {
+        currentPatient = {
+          ...currentPatient,
+          ...session.paciente,
+          id: session.paciente.id || currentPatient.id,
+          email: session.paciente.email || session.paciente.correo || session.usuario?.email || currentPatient.email
+        };
+      } else if (session?.usuario && session.usuario.rol === 'PACIENTE') {
+        const parts = (session.usuario.nombreCompleto || '').split(' ');
+        currentPatient = {
+          ...currentPatient,
+          id: session.usuario.id,
+          nombres: parts[0] || 'Paciente',
+          apellidos: parts.slice(1).join(' ') || '',
+          email: session.usuario.email
+        };
+      }
+    } catch (e) {
+      console.warn('Error leyendo sesión:', e);
+    }
+
+    // 2. Hidratar elementos visuales del Hero y Bento Cards
+    const displayName = document.getElementById('profile-display-name');
+    const tagDoc = document.getElementById('profile-tag-doc');
+    const tagEmail = document.getElementById('profile-tag-email');
+    const tagBlood = document.getElementById('profile-tag-blood');
+
+    const bentoName = document.getElementById('bento-titular-name');
+    const bentoDoc = document.getElementById('bento-titular-doc');
+    const bentoEmail = document.getElementById('bento-titular-email');
+    const bentoPhone = document.getElementById('bento-phone');
+    const bentoAlergias = document.getElementById('bento-alergias');
+    const bentoBlood = document.getElementById('bento-blood');
+    const bentoEmName = document.getElementById('bento-emergency-name');
+    const bentoEmPhone = document.getElementById('bento-emergency-phone');
+
+    const primerNombre = currentPatient.primer_nombre || (currentPatient.nombres ? currentPatient.nombres.split(' ')[0] : 'Juan');
+    const segundoNombre = currentPatient.segundo_nombre || (currentPatient.nombres ? currentPatient.nombres.split(' ').slice(1).join(' ') : 'Carlos');
+    const primerApellido = currentPatient.primer_apellido || (currentPatient.apellidos ? currentPatient.apellidos.split(' ')[0] : 'Pérez');
+    const segundoApellido = currentPatient.segundo_apellido || (currentPatient.apellidos ? currentPatient.apellidos.split(' ').slice(1).join(' ') : 'Salazar');
+    const docNumero = currentPatient.documento_numero || currentPatient.documentoNumero || '8-1234-56789';
+
+    const fullName = `${primerNombre}${segundoNombre ? ' ' + segundoNombre : ''} ${primerApellido}${segundoApellido ? ' ' + segundoApellido : ''}`.trim();
+
+    if (displayName) displayName.textContent = `Expediente de ${fullName} 👤`;
+    if (tagDoc) tagDoc.innerHTML = `<strong>🇵🇦 Cédula:</strong> <span style="color:#34d399; font-family: monospace;">${docNumero}</span>`;
+    if (tagEmail) tagEmail.innerHTML = `<strong>Correo:</strong> ${currentPatient.email}`;
+    if (tagBlood) tagBlood.innerHTML = `<strong>Grupo sanguíneo:</strong> ${currentPatient.grupo_sanguineo || 'O+'}`;
+
+    if (bentoName) bentoName.textContent = fullName;
+    if (bentoDoc) bentoDoc.innerHTML = `🇵🇦 Cédula: <strong style="color: #34d399; font-family: monospace;">${docNumero}</strong><br><span id="bento-titular-email" style="color: #38bdf8;">${currentPatient.email}</span>`;
+    if (bentoPhone) bentoPhone.textContent = currentPatient.telefono || '+507 6123-4567';
+    if (bentoAlergias) bentoAlergias.textContent = currentPatient.alergias || 'Ninguna conocida';
+    if (bentoBlood) bentoBlood.textContent = currentPatient.grupo_sanguineo || 'O+';
+    if (bentoEmName) bentoEmName.textContent = currentPatient.contacto_emergencia_nombre || 'Contacto Familiar';
+    if (bentoEmPhone) bentoEmPhone.textContent = `Tel: ${currentPatient.contacto_emergencia_telefono || '—'}`;
+
+    // 3. Rellenar inputs del formulario
+    const setVal = (id: string, val: any) => {
+      const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
+      if (el && val !== undefined && val !== null) el.value = String(val);
+    };
+
+    setVal('prof-primer-nombre', primerNombre);
+    setVal('prof-segundo-nombre', segundoNombre);
+    setVal('prof-primer-apellido', primerApellido);
+    setVal('prof-segundo-apellido', segundoApellido);
+    setVal('prof-doc-tipo', currentPatient.documento_tipo || 'CEDULA_NACIONAL');
+    setVal('prof-doc-numero', docNumero);
+    setVal('prof-nacimiento', currentPatient.fecha_nacimiento || '1995-05-15');
+    setVal('prof-email', currentPatient.email);
+    setVal('prof-telefono', currentPatient.telefono || '+507 6123-4567');
+    setVal('prof-grupo-sanguineo', currentPatient.grupo_sanguineo || 'O+');
+    setVal('prof-direccion', currentPatient.direccion || '');
+    setVal('prof-contacto-nombre', currentPatient.contacto_emergencia_nombre || '');
+    setVal('prof-contacto-tel', currentPatient.contacto_emergencia_telefono || '');
+
+    // Manejo de Alergias Dinámicas y Grupo Sanguíneo
+    const allergiesContainer = document.getElementById('allergies-active-container');
+    const allergiesHidden = document.getElementById('prof-alergias') as HTMLInputElement | null;
+    const customAllergyInput = document.getElementById('custom-allergy-input') as HTMLInputElement | null;
+    const btnAddCustom = document.getElementById('btn-add-custom-allergy');
+    const btnSinAlergias = document.getElementById('btn-declarar-sin-alergias');
+    const selectBlood = document.getElementById('prof-grupo-sanguineo') as HTMLSelectElement | null;
+
+    let activeAllergies: string[] = [];
+    if (currentPatient.alergias && currentPatient.alergias !== 'Ninguna' && currentPatient.alergias !== 'Ninguna conocida') {
+      activeAllergies = currentPatient.alergias.split(',').map((s: string) => s.trim()).filter(Boolean);
+    }
+
+    function renderAllergies() {
+      if (!allergiesContainer || !allergiesHidden) return;
+      allergiesContainer.innerHTML = '';
+      if (activeAllergies.length === 0) {
+        allergiesContainer.innerHTML = `<span style="color: #64748b; font-size: 12px; font-style: italic;">✓ Declarado sin alergias conocidas actualmente.</span>`;
+        allergiesHidden.value = 'Ninguna';
+        if (bentoAlergias) bentoAlergias.textContent = 'Ninguna conocida';
+        return;
+      }
+
+      const strAlergias = activeAllergies.join(', ');
+      allergiesHidden.value = strAlergias;
+      if (bentoAlergias) bentoAlergias.textContent = strAlergias;
+
+      activeAllergies.forEach((allergy, index) => {
+        const chip = document.createElement('div');
+        chip.style.cssText = 'display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px; color: #fca5a5; font-size: 12px; font-weight: 600;';
+        chip.innerHTML = `<span>⚠️ ${allergy}</span> <button type="button" style="background: none; border: 0; color: #f87171; cursor: pointer; padding: 0 2px; font-size: 13px; font-weight: bold;" title="Eliminar alergia">✕</button>`;
+        chip.querySelector('button')!.addEventListener('click', () => {
+          activeAllergies.splice(index, 1);
+          renderAllergies();
+        });
+        allergiesContainer.appendChild(chip);
+      });
+    }
+
+    function addAllergy(name: string) {
+      const clean = name.trim();
+      if (!clean) return;
+      if (!activeAllergies.some(a => a.toLowerCase() === clean.toLowerCase())) {
+        activeAllergies.push(clean);
+        renderAllergies();
+      }
+    }
+
+    document.querySelectorAll('.allergy-quick-add').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const al = (e.currentTarget as HTMLElement).dataset.allergy;
+        if (al) addAllergy(al);
+      });
+    });
+
+    btnAddCustom?.addEventListener('click', () => {
+      if (customAllergyInput?.value) {
+        addAllergy(customAllergyInput.value);
+        customAllergyInput.value = '';
+      }
+    });
+
+    customAllergyInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        btnAddCustom?.click();
+      }
+    });
+
+    btnSinAlergias?.addEventListener('click', () => {
+      activeAllergies = [];
+      renderAllergies();
+    });
+
+    selectBlood?.addEventListener('change', () => {
+      if (bentoBlood) bentoBlood.textContent = selectBlood.value;
+      if (tagBlood) tagBlood.innerHTML = `<strong>Grupo sanguíneo:</strong> ${selectBlood.value}`;
+    });
+
+    renderAllergies();
+
+    // 4. Manejador para guardar perfil
+    const form = document.getElementById('patient-profile-form') as HTMLFormElement | null;
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const getVal = (id: string) => (document.getElementById(id) as HTMLInputElement)?.value.trim();
+
+      const pNom = getVal('prof-primer-nombre');
+      const sNom = getVal('prof-segundo-nombre');
+      const pApe = getVal('prof-primer-apellido');
+      const sApe = getVal('prof-segundo-apellido');
+      const nomFinal = `${pNom}${sNom ? ' ' + sNom : ''}`.trim();
+      const apeFinal = `${pApe}${sApe ? ' ' + sApe : ''}`.trim();
+
+      const updatedPatient = {
+        ...currentPatient,
+        primer_nombre: pNom,
+        segundo_nombre: sNom,
+        primer_apellido: pApe,
+        segundo_apellido: sApe,
+        nombres: nomFinal,
+        apellidos: apeFinal,
+        nombreCompleto: `${nomFinal} ${apeFinal}`,
+        documento_tipo: getVal('prof-doc-tipo'),
+        documento_numero: getVal('prof-doc-numero'),
+        fecha_nacimiento: getVal('prof-nacimiento'),
+        email: getVal('prof-email'),
+        correo: getVal('prof-email'),
+        telefono: getVal('prof-telefono'),
+        grupo_sanguineo: getVal('prof-grupo-sanguineo'),
+        alergias: getVal('prof-alergias'),
+        direccion: getVal('prof-direccion'),
+        contacto_emergencia_nombre: getVal('prof-contacto-nombre'),
+        contacto_emergencia_telefono: getVal('prof-contacto-tel')
+      };
+
+      // Guardar en sesión
+      try {
+        const session = JSON.parse(localStorage.getItem('medpulse_session') || '{}');
+        session.paciente = updatedPatient;
+        if (session.usuario) {
+          session.usuario.nombreCompleto = updatedPatient.nombreCompleto;
+          session.usuario.email = updatedPatient.email;
+        }
+        localStorage.setItem('medpulse_session', JSON.stringify(session));
+
+        // Actualizar lista de pacientes personalizados
+        const custom = JSON.parse(localStorage.getItem('medpulse_custom_patients') || '[]');
+        const idx = custom.findIndex((p: any) => p.id === updatedPatient.id || p.email === updatedPatient.email);
+        if (idx >= 0) {
+          custom[idx] = updatedPatient;
+        } else {
+          custom.push(updatedPatient);
+        }
+        localStorage.setItem('medpulse_custom_patients', JSON.stringify(custom));
+      } catch (err) {
+        console.warn('Error guardando en localStorage:', err);
+      }
+
+      const toast = document.getElementById('toast');
+      if (toast) {
+        toast.textContent = '✓ ¡Perfil médico y Cédula de Panamá actualizados con éxito!';
+        toast.style.display = 'block';
+        setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3500);
+      }
+
+      initProfilePage();
+    });
+
+    document.getElementById('btn-reset-profile')?.addEventListener('click', () => {
+      initProfilePage();
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initProfilePage);
+  } else {
+    initProfilePage();
+  }
+</script>

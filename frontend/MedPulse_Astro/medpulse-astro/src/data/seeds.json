@@ -171,7 +171,7 @@
       "apellidos": "Mendoza Valdivia",
       "telefono": "+51987654323",
       "biografia": "Especialista en cardiología clínica y preventiva con más de 12 años de trayectoria.",
-      "tarifa_consulta": 120.0,
+      "tarifa_consulta": 120,
       "esta_activo": true
     },
     {
@@ -181,7 +181,7 @@
       "apellidos": "Silva Rojas",
       "telefono": "+51987654324",
       "biografia": "Especialista en pediatría y desarrollo infantil integral.",
-      "tarifa_consulta": 100.0,
+      "tarifa_consulta": 100,
       "esta_activo": true
     }
   ],
@@ -312,34 +312,7 @@
       "esta_activo": true
     }
   ],
-  "citas": [
-    {
-      "id": "f0000000-0000-0000-0000-000000000001",
-      "codigo_cita": "CIT-2026-0001",
-      "paciente_id": "e0000000-0000-0000-0000-000000000001",
-      "medico_id": "c0000000-0000-0000-0000-000000000001",
-      "especialidad_id": 2,
-      "consultorio_id": 3,
-      "fecha_hora_inicio": "2026-10-05 09:00:00-05",
-      "fecha_hora_fin": "2026-10-05 09:30:00-05",
-      "estado": "CONFIRMADA",
-      "motivo_consulta": "Chequeo de rutina por presión arterial ligeramente elevada",
-      "canal_origen": "WEB_PACIENTE"
-    },
-    {
-      "id": "f0000000-0000-0000-0000-000000000002",
-      "codigo_cita": "CIT-2026-0002",
-      "paciente_id": "e0000000-0000-0000-0000-000000000002",
-      "medico_id": "c0000000-0000-0000-0000-000000000002",
-      "especialidad_id": 3,
-      "consultorio_id": 2,
-      "fecha_hora_inicio": "2026-10-05 15:00:00-05",
-      "fecha_hora_fin": "2026-10-05 15:30:00-05",
-      "estado": "PENDIENTE",
-      "motivo_consulta": "Control pediátrico de desarrollo infantil para su menor hijo",
-      "canal_origen": "CHATBOT_WHATSAPP"
-    }
-  ],
+  "citas": [],
   "conversaciones_chatbot": [
     {
       "id": "10000000-0000-0000-0000-000000000001",

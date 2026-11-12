@@ -1,9 +1,238 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import data from '../../data/seeds.json';
-import Appointments from '../../components/Appointments.astro';
-import Calendar from '../../components/Calendar.astro';
+
+const paciente = data.pacientes[0];
+const medicos = data.medicos;
+const especialidades = data.especialidades;
 ---
-<Layout title="Mi panel" patient={true}>
-<section class="card hero"><p>PORTAL DEL PACIENTE</p><h2>Hola, Juan Carlos.</h2><p>Consulta tu información médica y organiza tus próximas visitas.</p><a class="button secondary" href="/paciente/reservar">Reservar una cita →</a></section><div class="grid two"><div><Appointments patient/><section class="card"><h2>Tu información de salud</h2><div class="grid"><div>Grupo sanguíneo<strong style="display:block">{data.pacientes[0].grupo_sanguineo}</strong></div><div>Alergias<strong style="display:block">{data.pacientes[0].alergias}</strong></div></div><p><a href="/paciente/perfil">Revisar mi perfil →</a></p></section></div><div><Calendar/><section class="card"><h2>Estamos para ayudarte</h2><p>Consulta los servicios y horarios en nuestro asistente de demostración.</p><a class="button secondary" href="/paciente/asistente">Abrir asistente</a></section></div></div>
+
+<Layout title="Mi Panel de Salud" role="paciente">
+  <!-- Hero Banner del Paciente Titular -->
+  <section class="card patient-hero animate-slide-up" style="margin-bottom: 24px;">
+    <div class="patient-hero-content">
+      <div class="patient-hero-badge">
+        <span class="live-pulse-dot"></span>
+        <span style="font-weight: 700; color: #6ee7b7; letter-spacing: 0.5px;">PORTAL DEL PACIENTE</span>
+        <span class="separator" style="color: #475569;">·</span>
+        <span class="verified-tag" style="color: #38bdf8; font-weight: 600;">✓ Titular Verificado</span>
+      </div>
+      
+      <h2 id="patient-greeting-title" style="font-size: 26px; margin: 10px 0 8px 0; color: #ffffff;">Hola, {paciente.nombres} 👋</h2>
+      <p style="margin: 0 0 16px 0; color: #cbd5e1; max-width: 720px; font-size: 14px; line-height: 1.6;">
+        Bienvenido a tu consola clínica personal. Consulta tus antecedentes de salud, revisa tu próxima atención médica y agenda nuevas consultas con asignación inteligente.
+      </p>
+
+      <div class="patient-quick-tags">
+        <span class="tag-chip" id="patient-tag-doc"><strong>🇵🇦 Cédula:</strong> <span style="color: #34d399; font-family: monospace;">{paciente.documento_numero}</span></span>
+        <span class="tag-chip" id="patient-tag-blood"><strong>Grupo sanguíneo:</strong> <span style="color: #38bdf8; font-weight: 700;">{paciente.grupo_sanguineo}</span></span>
+        <span class="tag-chip" id="patient-tag-allergies"><strong>Alergias:</strong> <span style="color: #f87171; font-weight: 600;">{paciente.alergias}</span></span>
+        <span class="tag-chip" id="patient-tag-tel"><strong>Teléfono:</strong> {paciente.telefono}</span>
+        <span class="tag-chip"><strong>Sede:</strong> Sede Central</span>
+      </div>
+    </div>
+
+    <div class="patient-hero-actions">
+      <a class="button primary-glow" href="/paciente/reservar">
+        <span>＋</span> Reservar cita médica
+      </a>
+    </div>
+  </section>
+
+  <!-- Tarjeta Destacada: Próxima Cita Médica -->
+  <section class="card animate-slide-up delay-1" style="margin-bottom: 24px; border: 1px solid rgba(16, 185, 129, 0.4); background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.9) 100%); border-radius: 16px; padding: 22px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 16px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 24px;">🩺</span>
+        <div>
+          <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; color: #34d399;">PRÓXIMA CONSULTA EN CLÍNICA</span>
+          <h3 style="margin: 2px 0 0 0; color: #f8fafc; font-size: 18px;">Cardiología Clínica · Dr. Roberto Mendoza Valdivia</h3>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <span class="badge green" style="font-size: 12px; padding: 4px 10px;">✓ Confirmada</span>
+        <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 12px;">Consultorio 201</span>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; background: rgba(11, 18, 32, 0.65); border: 1px solid rgba(30, 41, 59, 0.8); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+      <div>
+        <span class="muted" style="display: block; font-size: 11px; text-transform: uppercase;">FECHA Y HORA PROGRAMADA</span>
+        <strong style="color: #38bdf8; font-size: 16px; display: block; margin-top: 2px;">Lunes 05 Oct · 09:00 AM</strong>
+        <small style="color: #6ee7b7; font-size: 11px;">Duración estimada: 30 minutos</small>
+      </div>
+      <div>
+        <span class="muted" style="display: block; font-size: 11px; text-transform: uppercase;">UBICACIÓN EN SEDE</span>
+        <strong style="color: #f1f5f9; font-size: 14px; display: block; margin-top: 2px;">Pabellón Central · Piso 2</strong>
+        <small style="color: #94a3b8; font-size: 11px;">Módulo de Cardiología</small>
+      </div>
+      <div>
+        <span class="muted" style="display: block; font-size: 11px; text-transform: uppercase;">CÓDIGO DE ATENCIÓN</span>
+        <strong style="color: #34d399; font-family: monospace; font-size: 15px; display: block; margin-top: 2px;">CIT-2026-0001</strong>
+        <small style="color: #94a3b8; font-size: 11px;">Presentar en admisión física</small>
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <p style="margin: 0; font-size: 13px; color: #94a3b8;">
+        💡 Recuerda presentarte 10 minutos antes en la recepción del Pabellón Central.
+      </p>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <a href="/paciente/citas" class="button primary-glow" style="font-size: 13px; padding: 8px 18px;">
+          📋 Ver Todas Mis Citas y Pases →
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Métricas Bento de Salud del Paciente -->
+  <div class="patient-bento-grid cols-auto animate-slide-up delay-2" style="margin-bottom: 28px;">
+    <!-- Card 1: Ficha y Alergias (Actualizable dinámicamente) -->
+    <div class="card bento-card card-accent-amber">
+      <div class="bento-header">
+        <span class="bento-icon">❤️</span>
+        <span class="badge amber">Ficha de Salud</span>
+      </div>
+      <div class="bento-body">
+        <span class="bento-label">GRUPO SANGUÍNEO & ALERGIAS</span>
+        <strong class="bento-value" id="bento-sangre-val" style="font-size: 18px; color: #fbbf24;">{paciente.grupo_sanguineo}</strong>
+        <p class="bento-subtext" style="margin-top: 6px;">
+          Alergias: <strong id="bento-alergias-val" style="color: #f87171;">{paciente.alergias}</strong><br>
+          <span style="color: #94a3b8; font-size: 11px;">Visible para tu médico en cada consulta</span>
+        </p>
+      </div>
+      <div class="bento-footer">
+        <a href="/paciente/perfil" class="bento-link" style="color: #fbbf24;">Modificar tipo de sangre o alergias →</a>
+      </div>
+    </div>
+
+    <!-- Card 2: Citas Activas -->
+    <div class="card bento-card card-accent-purple">
+      <div class="bento-header">
+        <span class="bento-icon">📅</span>
+        <span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.45);" id="bento-citas-counter">2 en Agenda</span>
+      </div>
+      <div class="bento-body">
+        <span class="bento-label">GESTIÓN DE CITAS MÉDICAS</span>
+        <strong class="bento-value">Mis Consultas</strong>
+        <p class="bento-subtext">Visualiza tu calendario clínico, descarga tus pases con QR o cancela citas programadas.</p>
+      </div>
+      <div class="bento-footer">
+        <a href="/paciente/citas" class="bento-link" style="color: #c084fc;">Ir al gestor de citas →</a>
+      </div>
+    </div>
+
+    <!-- Card 4: Contacto de Emergencia -->
+    <div class="card bento-card card-accent-green">
+      <div class="bento-header">
+        <span class="bento-icon">🚨</span>
+        <span class="badge green">Seguridad Clínica</span>
+      </div>
+      <div class="bento-body">
+        <span class="bento-label">CONTACTO DE URGENCIA</span>
+        <strong class="bento-value" id="bento-emergencia-nom" style="font-size: 15px;">{paciente.contacto_emergencia_nombre}</strong>
+        <p class="bento-subtext" id="bento-emergencia-tel" style="margin-top: 4px;">Tel: {paciente.contacto_emergencia_telefono}<br><span style="color: #94a3b8; font-size: 11px;">Protocolo de notificación activo</span></p>
+      </div>
+      <div class="bento-footer">
+        <a href="/paciente/perfil" class="bento-link" style="color: #34d399;">Gestionar contactos →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección: Especialidades Clínicas Disponibles para Reservar -->
+  <section class="card animate-slide-up delay-3" style="background: #0f172a; border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
+      <div>
+        <h3 style="margin: 0; font-size: 18px; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+          <span>🏥</span> Especialidades Médicas y Servicios Clínicos
+        </h3>
+        <p class="muted" style="margin: 4px 0 0 0; font-size: 13px;">
+          Selecciona una especialidad para reservar tu turno con los especialistas certificados de MedPulse Clinic.
+        </p>
+      </div>
+      <a href="/paciente/reservar" class="button secondary" style="font-size: 12px; padding: 6px 14px;">
+        Ver todas las especialidades →
+      </a>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;">
+      {especialidades.slice(0, 4).map(esp => (
+        <div style="background: #080d16; border: 1px solid #1e293b; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.15s ease;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 20px;">🩺</span>
+              <span class="badge blue" style="font-size: 11px;">Disponible</span>
+            </div>
+            <strong style="color: #f1f5f9; font-size: 15px; display: block; margin-bottom: 4px;">{esp.nombre}</strong>
+            <p style="color: #94a3b8; font-size: 12px; margin: 0 0 12px 0; line-height: 1.4;">
+              {esp.descripcion || 'Atención especializada preventiva y diagnóstica con médicos certificados.'}
+            </p>
+          </div>
+          <a href={`/paciente/reservar?especialidad=${encodeURIComponent(esp.id)}`} class="button" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 12px; padding: 7px 12px; justify-content: center;">
+            ＋ Agendar en {esp.nombre}
+          </a>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- Banner Informativo: Acceso al Gestor Completo de Citas -->
+  <section class="card animate-slide-up delay-4" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.9) 100%); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 16px; padding: 22px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <span style="color: #d8b4fe; font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">CENTRO DE CITAS Y PASES</span>
+        <h3 style="margin: 4px 0 6px 0; color: #ffffff; font-size: 18px;">¿Necesitas revisar tu calendario o cancelar una cita?</h3>
+        <p style="margin: 0; color: #94a3b8; font-size: 13px; max-width: 620px;">
+          En la sección de <strong>Mis Citas y Agenda</strong> podrás ver el calendario interactivo mensual completo, consultar el historial de consultas y generar tus pases digitales de atención en PDF/pantalla.
+        </p>
+      </div>
+      <a href="/paciente/citas" class="button" style="background: #a855f7; color: #ffffff; font-weight: 700; font-size: 13px; padding: 10px 20px;">
+        📅 Ir a Mis Citas Agendadas →
+      </a>
+    </div>
+  </section>
 </Layout>
+
+<script>
+  function hydratePatientDashboard() {
+    try {
+      const session = JSON.parse(localStorage.getItem('medpulse_session') || '{}');
+      if (session?.paciente) {
+        const p = session.paciente;
+        const titleEl = document.getElementById('patient-greeting-title');
+        const docEl = document.getElementById('patient-tag-doc');
+        const bloodEl = document.getElementById('patient-tag-blood');
+        const allergiesEl = document.getElementById('patient-tag-allergies');
+        const telEl = document.getElementById('patient-tag-tel');
+
+        const bentoBlood = document.getElementById('bento-sangre-val');
+        const bentoAllergies = document.getElementById('bento-alergias-val');
+        const bentoEmName = document.getElementById('bento-emergencia-nom');
+        const bentoEmTel = document.getElementById('bento-emergencia-tel');
+
+        const nombre = p.primer_nombre || (p.nombres ? p.nombres.split(' ')[0] : 'Paciente');
+        if (titleEl) titleEl.textContent = `Hola, ${nombre} 👋`;
+        if (docEl) docEl.innerHTML = `<strong>🇵🇦 Cédula:</strong> <span style="color: #34d399; font-family: monospace;">${p.documento_numero || '—'}</span>`;
+        if (bloodEl && p.grupo_sanguineo) bloodEl.innerHTML = `<strong>Grupo sanguíneo:</strong> <span style="color: #38bdf8; font-weight: 700;">${p.grupo_sanguineo}</span>`;
+        if (allergiesEl) {
+          const al = p.alergias || 'Ninguna conocida';
+          allergiesEl.innerHTML = `<strong>Alergias:</strong> <span style="color: ${al === 'Ninguna' || al === 'Ninguna conocida' ? '#34d399' : '#f87171'}; font-weight: 600;">${al}</span>`;
+        }
+        if (telEl && p.telefono) telEl.innerHTML = `<strong>Teléfono:</strong> ${p.telefono}`;
+
+        if (bentoBlood && p.grupo_sanguineo) bentoBlood.textContent = p.grupo_sanguineo;
+        if (bentoAllergies) bentoAllergies.textContent = p.alergias || 'Ninguna conocida';
+        if (bentoEmName && p.contacto_emergencia_nombre) bentoEmName.textContent = p.contacto_emergencia_nombre;
+        if (bentoEmTel && p.contacto_emergencia_telefono) bentoEmTel.innerHTML = `Tel: ${p.contacto_emergencia_telefono}<br><span style="color: #94a3b8; font-size: 11px;">Protocolo de notificación activo</span>`;
+      }
+    } catch (e) {
+      console.warn('Error hidratando dashboard de paciente:', e);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', hydratePatientDashboard);
+  } else {
+    hydratePatientDashboard();
+  }
+</script>

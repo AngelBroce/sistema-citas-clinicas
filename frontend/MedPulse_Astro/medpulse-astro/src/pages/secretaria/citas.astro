@@ -1,0 +1,19 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Calendar from '../../components/Calendar.astro';
+import Appointments from '../../components/Appointments.astro';
+---
+
+<Layout title="Gestión Integral de Citas Clínicas" role="secretaria">
+  <div style="margin-bottom: 20px;">
+    <p class="muted" style="margin: 0;">
+      Control centralizado para recepción. Visualiza citas de todos los médicos, agenda citas presenciales y telefónicas, y actualiza el estado de atención de los pacientes.
+    </p>
+  </div>
+
+  <!-- Calendario con vista clínica -->
+  <Calendar role="secretaria" />
+
+  <!-- Tabla con acciones de confirmación -->
+  <Appointments role="secretaria" />
+</Layout>

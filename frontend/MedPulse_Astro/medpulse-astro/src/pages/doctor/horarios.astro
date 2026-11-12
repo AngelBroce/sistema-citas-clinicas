@@ -1,0 +1,73 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import data from '../../data/seeds.json';
+
+const doctor = data.medicos[0];
+const mySchedules = data.horarios_medicos.filter(h => h.medico_id === doctor.id);
+const dayNames: Record<number, string> = { 1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 7: 'Domingo' };
+---
+
+<Layout title="Mis Horarios y Disponibilidad Semanal" role="doctor">
+  <div class="grid two">
+    <section class="card">
+      <h2>Turnos de Atención Configurados</h2>
+      <p class="muted">
+        Estos son los turnos en los que el motor de agendamiento permite a los pacientes y a recepción reservar citas contigo.
+      </p>
+
+      <div style="display: grid; gap: 12px; margin-top: 18px;">
+        {mySchedules.map(h => {
+          const room = data.consultorios.find(c => c.id === h.consultorio_id);
+          return (
+            <div style="padding: 14px 18px; border-radius: 10px; background: #0c162c; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong style="color: #38bdf8; font-size: 16px; display: block;">
+                  📅 {dayNames[h.dia_semana] || 'Día'}
+                </strong>
+                <span class="muted" style="font-size: 13px;">
+                  {room ? `${room.nombre} · ${room.piso} (${room.sede})` : 'Consultorio General'}
+                </span>
+              </div>
+
+              <div style="text-align: right;">
+                <span class="badge blue" style="font-size: 13px; font-weight: 700;">
+                  🕒 {h.hora_inicio.slice(0, 5)} - {h.hora_fin.slice(0, 5)}
+                </span>
+                <small style="display: block; color: #10b981; margin-top: 4px; font-weight: 600;">
+                  Turno Activo ({h.duracion_cita_min} min / cita)
+                </small>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Bloqueos y Excepciones de Agenda</h2>
+      <p class="muted">
+        Programa ausencias justificadas (vacaciones, congresos, capacitaciones médicas o guardias de emergencia). El sistema bloqueará automáticamente la disponibilidad en Google Calendar.
+      </p>
+
+      <form style="display: grid; gap: 14px; margin-top: 18px;">
+        <label>
+          Motivo del bloqueo
+          <input type="text" placeholder="Ej. Congreso Anual de Cardiología" required />
+        </label>
+        <div class="form-grid">
+          <label>
+            Fecha inicio
+            <input type="date" required />
+          </label>
+          <label>
+            Fecha fin
+            <input type="date" required />
+          </label>
+        </div>
+        <button type="button" class="button" style="justify-content: center;">
+          🔒 Registrar bloqueo temporal
+        </button>
+      </form>
+    </section>
+  </div>
+</Layout>

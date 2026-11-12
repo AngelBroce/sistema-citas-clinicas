@@ -1,10 +1,278 @@
 ---
 import '../styles/global.css';
-const {title, patient=false}=Astro.props;
-const links=patient ? [['/paciente','Mi panel','◈'],['/paciente/citas','Mis citas','▦'],['/paciente/reservar','Reservar cita','＋'],['/paciente/perfil','Mi perfil médico','♡'],['/paciente/asistente','Asistente virtual','✧']] : [['/','Panel principal','◈'],['/citas','Citas y calendario','▦'],['/pacientes','Historial y pacientes','♡'],['/asistente','Asistente clínico','✧'],['/medicos','Médicos','✚'],['/horarios','Horarios','◷'],['/especialidades','Especialidades','◇'],['/consultorios','Consultorios','▤'],['/usuarios','Usuarios y roles','◎']];
+
+interface Props {
+  title: string;
+  role?: 'paciente' | 'doctor' | 'secretaria' | 'admin';
+  patient?: boolean; // Compatibilidad hacia atrás
+}
+
+const { title, role: propRole, patient } = Astro.props;
+const pathname = Astro.url.pathname;
+
+// Determinar el rol actual según la prop o la ruta
+let role: 'paciente' | 'doctor' | 'secretaria' | 'admin' = 'admin';
+if (propRole) {
+  role = propRole;
+} else if (patient === true || pathname === '/paciente' || pathname.startsWith('/paciente/')) {
+  role = 'paciente';
+} else if (pathname === '/doctor' || pathname.startsWith('/doctor/')) {
+  role = 'doctor';
+} else if (pathname === '/secretaria' || pathname.startsWith('/secretaria/')) {
+  role = 'secretaria';
+} else {
+  role = 'admin';
+}
+
+// Configuración de navegación y perfiles por rol
+const roleConfig = {
+  paciente: {
+    label: 'PORTAL DEL PACIENTE',
+    userName: 'Juan Carlos Pérez',
+    userRoleTitle: 'Paciente Registrado',
+    avatar: 'JP',
+    badgeClass: 'badge-patient',
+    badgeText: '👤 Paciente',
+    actionText: '＋ Reservar cita',
+    actionHref: '/paciente/reservar',
+    links: [
+      ['/paciente', 'Mi panel', '◈'],
+      ['/paciente/citas', 'Mis citas y agenda', '▦'],
+      ['/paciente/reservar', 'Reservar cita', '＋'],
+      ['/whatsapp', 'WhatsApp IA & QR', '💬'],
+      ['/paciente/perfil', 'Mi perfil médico', '♡'],
+    ]
+  },
+  doctor: {
+    label: 'PORTAL MÉDICO',
+    userName: 'Dr. Roberto Mendoza',
+    userRoleTitle: 'Cardiología · Consultorio 201',
+    avatar: 'RM',
+    badgeClass: 'badge-doctor',
+    badgeText: '🩺 Médico Especialista',
+    actionText: '📅 Mi agenda de hoy',
+    actionHref: '/doctor/agenda',
+    links: [
+      ['/doctor', 'Panel del médico', '◈'],
+      ['/doctor/agenda', 'Mi agenda y citas', '📅'],
+      ['/doctor/pacientes', 'Mis pacientes', '👥'],
+      ['/doctor/horarios', 'Mis turnos y horarios', '◷'],
+    ]
+  },
+  secretaria: {
+    label: 'MESA DE RECEPCIÓN',
+    userName: 'Elena Ramos',
+    userRoleTitle: 'Recepción Central · Sede Principal',
+    avatar: 'ER',
+    badgeClass: 'badge-secretaria',
+    badgeText: '📋 Secretaria / Recepción',
+    actionText: '＋ Agendar cita rápida',
+    actionHref: '/secretaria/reservar',
+    links: [
+      ['/secretaria', 'Mesa de recepción', '◈'],
+      ['/secretaria/citas', 'Gestión de citas', '▦'],
+      ['/secretaria/pacientes', 'Recepción de pacientes', '👤'],
+      ['/whatsapp', 'WhatsApp IA & QR', '💬'],
+      ['/secretaria/medicos', 'Médicos y consultorios', '✚'],
+    ]
+  },
+  admin: {
+    label: 'GESTIÓN CLÍNICA (ADMIN)',
+    userName: 'Elvis · Administrador',
+    userRoleTitle: 'Control General · MedPulse Clinic',
+    avatar: 'EA',
+    badgeClass: 'badge-admin',
+    badgeText: '🛡️ Administrador',
+    actionText: '＋ Agendar cita clínica',
+    actionHref: '/reservar',
+    links: [
+      ['/dashboard', 'Dashboard clínico', '📊'],
+      ['/citas', 'Citas y calendario', '▦'],
+      ['/whatsapp', 'WhatsApp IA & QR', '💬'],
+      ['/pacientes', 'Historial y pacientes', '👥'],
+      ['/medicos', 'Médicos', '✚'],
+      ['/horarios', 'Horarios', '◷'],
+      ['/especialidades', 'Especialidades', '◇'],
+      ['/consultorios', 'Consultorios', '▤'],
+      ['/usuarios', 'Usuarios y roles', '◎'],
+      ['/', 'Selector de portales', '◈'],
+    ]
+  }
+};
+
+const current = roleConfig[role];
+const brandHome = role === 'paciente' ? '/paciente' : (role === 'doctor' ? '/doctor' : (role === 'secretaria' ? '/secretaria' : '/dashboard'));
+
+// Rutas de la barra táctil inferior según el rol activo
+const mobileNav = {
+  paciente: { home: '/paciente', citas: '/paciente/citas', agendar: '/paciente/reservar' },
+  doctor: { home: '/doctor', citas: '/doctor/agenda', agendar: '/doctor/agenda' },
+  secretaria: { home: '/secretaria', citas: '/secretaria/citas', agendar: '/secretaria/reservar' },
+  admin: { home: '/dashboard', citas: '/citas', agendar: '/reservar' }
+}[role];
+const cleanPath = pathname.replace(/\/$/, '') || '/';
 ---
-<!doctype html><html lang="es"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width"/><title>{title} · MedPulse</title></head><body>
-<aside><a class="brand" href="/">✚ <span>MedPulse<small>CLINICAL CLARITY</small></span></a><div class="workspace">{patient?'PORTAL DEL PACIENTE':'GESTIÓN CLÍNICA'}</div><nav>{links.map(([href,label,icon])=><a class:list={{active:Astro.url.pathname.replace(/\/$/,'')===href.replace(/\/$/,'')}} href={href}><span>{icon}</span>{label}</a>)}</nav><div class="aside-bottom"><a href={patient?'/':'/paciente'}>⇄ {patient?'Panel clínico':'Portal paciente'}</a><small>Demostración de interfaz</small></div></aside>
-<header><button id="menu" aria-label="Abrir menú">☰</button><span>Sede Central <span class="badge">{patient?'Paciente':'Equipo clínico'}</span></span><div class="identity"><span class="avatar">{patient?'JP':'EA'}</span><span>{patient?'Juan Carlos Pérez':'Elvis · Administrador'}<small>MedPulse Clinic</small></span></div></header>
-<main><div class="heading"><div><p class="eyebrow">{patient?'TU SALUD, EN UN SOLO LUGAR':'SISTEMA DE GESTIÓN DE CITAS'}</p><h1>{title}</h1></div><a class="button" href="/paciente/reservar">＋ Nueva cita</a></div><div class="demo">Vista de demostración · Datos iniciales del SQL · Los cambios se guardan solo en este navegador.</div><slot/></main><div id="toast" role="status"></div>
-<script>import '../data/interactions.js';</script></body></html>
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title} · MedPulse</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <aside>
+    <a class="brand" href={brandHome}>
+      ✚ <span>MedPulse<small>CLINICAL CLARITY</small></span>
+    </a>
+
+    <div class="workspace">{current.label}</div>
+
+    <nav>
+      {current.links.map(([href, label, icon]) => (
+        <a
+          class:list={{ active: pathname.replace(/\/$/, '') === href.replace(/\/$/, '') }}
+          href={href}
+        >
+          <span>{icon}</span>{label}
+        </a>
+      ))}
+    </nav>
+
+    <div class="aside-bottom">
+      <button type="button" class="btn-logout-sidebar" id="btn-logout-aside" title="Cerrar sesión en MedPulse" style="background: none; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #f87171; padding: 8px 12px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; transition: all 0.2s ease;">
+        <span>🚪</span> <span>Cerrar Sesión</span>
+      </button>
+      <small style="color: #64748b; margin-top: 6px; display: block;">Modo: {current.badgeText}</small>
+    </div>
+  </aside>
+
+  <header>
+    <button id="menu" aria-label="Abrir menú de navegación">☰</button>
+
+    <div class="header-left" style="display: flex; align-items: center; gap: 12px;">
+      <span style="font-weight: 600; color: #94a3b8; font-size: 13px;">Sede Central</span>
+      <span class:list={['badge', current.badgeClass]}>
+        {current.badgeText}
+      </span>
+    </div>
+
+    <!-- Indicador de Telemetría Clínica Central -->
+    <div class="header-center">
+      <span class="telemetry-dot"></span>
+      <span class="telemetry-text">Sistema Operativo</span>
+      <span class="telemetry-separator">·</span>
+      <span class="telemetry-sub">Exclusión Física Anti-Colisiones Activa</span>
+    </div>
+
+    <div class="header-right" style="display: flex; align-items: center; gap: 14px;">
+      <div class="identity">
+        <span class="avatar">{current.avatar}</span>
+        <div>
+          <strong style="color: #f1f5f9; display: block;">{current.userName}</strong>
+          <small>{current.userRoleTitle}</small>
+        </div>
+      </div>
+
+      <!-- Botón de Cerrar Sesión / Desloguear Directo -->
+      <button
+        type="button"
+        id="btn-header-logout"
+        class="button-logout"
+        title="Cerrar sesión de forma segura"
+        style="padding: 7px 14px; font-size: 12px; font-weight: 700; background: rgba(239, 68, 68, 0.12); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;"
+      >
+        <span class="logout-icon">🚪</span> <span class="logout-text">Cerrar Sesión</span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <div class="heading">
+      <div>
+        <p class="eyebrow">{current.label}</p>
+        <h1>{title}</h1>
+      </div>
+      <a class="button" href={current.actionHref}>
+        {current.actionText}
+      </a>
+    </div>
+
+    <slot />
+  </main>
+
+  <div class="mobile-backdrop" id="mobile-backdrop" aria-hidden="true"></div>
+
+  <!-- Barra de navegación táctil inferior para móviles -->
+  <nav class="bottom-nav-mobile" aria-label="Navegación táctil móvil">
+    <a href={mobileNav.home} class:list={['bottom-nav-item', { active: cleanPath === mobileNav.home }]}>
+      <span class="icon">◈</span>
+      <span>Inicio</span>
+    </a>
+    <a href={mobileNav.citas} class:list={['bottom-nav-item', { active: pathname.includes('citas') || pathname.includes('agenda') }]}>
+      <span class="icon">▦</span>
+      <span>Citas</span>
+    </a>
+    <a href={mobileNav.agendar} class:list={['bottom-nav-item', { active: pathname.includes('reservar') }]}>
+      <span class="icon">＋</span>
+      <span>Agendar</span>
+    </a>
+    <button type="button" class="bottom-nav-item btn-logout-mobile" style="background: none; border: 0; color: #f87171; cursor: pointer;">
+      <span class="icon">🚪</span>
+      <span>Salir</span>
+    </button>
+  </nav>
+
+  <div id="toast" role="status"></div>
+  <script>
+    import '../data/interactions.js';
+    document.getElementById('mobile-backdrop')?.addEventListener('click', () => {
+      document.body.classList.remove('menu-open');
+    });
+
+    function ejecutarDeslogueo() {
+      if (confirm('¿Deseas cerrar tu sesión activa en MedPulse?')) {
+        localStorage.removeItem('medpulse_session');
+        const toast = document.getElementById('toast');
+        if (toast) {
+          toast.textContent = 'Sesión cerrada. Redirigiendo a inicio de sesión...';
+          toast.style.display = 'block';
+        }
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 500);
+      }
+    }
+
+    document.getElementById('btn-header-logout')?.addEventListener('click', ejecutarDeslogueo);
+    document.getElementById('btn-logout-aside')?.addEventListener('click', ejecutarDeslogueo);
+    document.querySelectorAll('.btn-logout-mobile').forEach(b => b.addEventListener('click', ejecutarDeslogueo));
+
+    try {
+      const session = JSON.parse(localStorage.getItem('medpulse_session') || '{}');
+      if (session?.paciente && window.location.pathname.startsWith('/paciente')) {
+        const nameEl = document.querySelector('header .identity strong');
+        const avatarEl = document.querySelector('header .identity .avatar');
+        const roleEl = document.querySelector('header .identity small');
+        if (nameEl) nameEl.textContent = `${session.paciente.nombres} ${session.paciente.apellidos}`;
+        if (avatarEl) {
+          const initials = ((session.paciente.nombres?.[0] || 'P') + (session.paciente.apellidos?.[0] || 'T')).toUpperCase();
+          avatarEl.textContent = initials;
+        }
+        if (roleEl) roleEl.textContent = session.paciente.email || session.paciente.correo || 'Paciente Verificado';
+      }
+
+      // Guarda estricta: si el usuario activo es paciente, jamás debe saltar a rutas administrativas
+      const isPatientUser = session?.usuario?.rol === 'PACIENTE' || (session?.paciente && !session?.usuario?.rol);
+      const adminRestricted = ['/citas', '/pacientes', '/medicos', '/horarios', '/especialidades', '/consultorios', '/usuarios'];
+      const curPath = window.location.pathname.replace(/\/$/, '');
+      if (isPatientUser && (adminRestricted.includes(curPath) || curPath === '/secretaria' || curPath.startsWith('/secretaria/'))) {
+        window.location.replace('/paciente/citas');
+      }
+    } catch {}
+  </script>
+</body>
+</html>

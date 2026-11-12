@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "NotebookLMMCP": {
+      "command": "cmd.exe",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "notebooklm-mcp-server",
+        "server"
+      ]
+    },
+    "toon": {
+      "command": "cmd.exe",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "git+https://github.com/kweinmeister/toon-mcp.git"
+      ]
+    }
+  }
+}

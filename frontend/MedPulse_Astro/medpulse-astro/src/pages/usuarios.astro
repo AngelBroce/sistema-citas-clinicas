@@ -1,8 +1,431 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import data from '../data/seeds.json';
-import EntityForm from '../components/EntityForm.astro';
+
+// Enriquecer usuarios cruzando datos de sus perfiles específicos
+const userList = data.usuarios.map(u => {
+  let profileName = 'Usuario del Sistema';
+  let extraInfo = 'Personal Clínico';
+  let phone = '-';
+  let initials = u.email.substring(0, 2).toUpperCase();
+
+  if (u.rol_id === 'ADMINISTRADOR') {
+    const admin = data.administradores.find(a => a.id === u.id);
+    if (admin) {
+      profileName = `${admin.nombres} ${admin.apellidos}`;
+      phone = admin.telefono;
+      extraInfo = 'Supervisión y Seguridad';
+      initials = `${admin.nombres[0]}${admin.apellidos[0]}`;
+    }
+  } else if (u.rol_id === 'RECEPCIONISTA') {
+    const rec = data.recepcionistas.find(r => r.id === u.id);
+    if (rec) {
+      profileName = `${rec.nombres} ${rec.apellidos}`;
+      phone = rec.telefono;
+      extraInfo = rec.sede || 'Sede Central';
+      initials = `${rec.nombres[0]}${rec.apellidos[0]}`;
+    }
+  } else if (u.rol_id === 'MEDICO') {
+    const doc = data.medicos.find(m => m.id === u.id);
+    if (doc) {
+      profileName = `Dr(a). ${doc.nombres} ${doc.apellidos}`;
+      phone = doc.telefono;
+      extraInfo = doc.numero_colegiatura;
+      initials = `${doc.nombres[0]}${doc.apellidos[0]}`;
+    }
+  } else if (u.rol_id === 'PACIENTE') {
+    const pac = data.pacientes.find(p => p.usuario_id === u.id || p.email === u.email);
+    if (pac) {
+      profileName = `${pac.nombres} ${pac.apellidos}`;
+      phone = pac.telefono;
+      extraInfo = `DNI: ${pac.documento_numero} · ${pac.grupo_sanguineo || 'O+'}`;
+      initials = `${pac.nombres[0]}${pac.apellidos[0]}`;
+    }
+  }
+
+  return {
+    id: u.id,
+    email: u.email,
+    rol_id: u.rol_id,
+    esta_activo: u.esta_activo !== false,
+    nombre: profileName,
+    extra: extraInfo,
+    telefono: phone,
+    iniciales: initials
+  };
+});
+
+const totalAdmins = userList.filter(u => u.rol_id === 'ADMINISTRADOR').length;
+const totalMedicos = userList.filter(u => u.rol_id === 'MEDICO').length;
+const totalRecepcion = userList.filter(u => u.rol_id === 'RECEPCIONISTA').length;
+const totalPacientes = userList.filter(u => u.rol_id === 'PACIENTE').length;
 ---
-<Layout title="Usuarios y roles" patient={false}>
-{data.usuarios.map((row,i)=><EntityForm table="usuarios" values={row} title={row.nombre || row.nombres || row.email || "Horario "+(i+1)}/>)}
-<section class="card"><h2>Roles del sistema</h2>{data.roles.map(r=><div class="list-item"><div><h3>{r.nombre}</h3><p>{r.descripcion}</p></div><span class="badge">{r.id}</span></div>)}</section>{data.administradores.map(row=><EntityForm table="administradores" values={row} title="Perfil administrador"/>)}{data.recepcionistas.map(row=><EntityForm table="recepcionistas" values={row} title="Perfil de recepción"/>)}</Layout>
+
+<Layout title="Control de Usuarios y Roles" role="admin">
+  <!-- Fila Bento 1: Métricas de Usuarios y Acceso -->
+  <div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 22px;">
+    <section class="card metric" style="padding: 18px; margin: 0;">
+      <span style="font-size: 13px;">Total Usuarios Activos</span>
+      <strong id="stat-total-users" style="font-size: 28px; color: #ffffff;">{userList.length}</strong>
+      <small style="color: #10b981;">Cuentas operativas</small>
+    </section>
+
+    <section class="card metric" style="padding: 18px; margin: 0; background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, var(--bg-card) 100%);">
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+        <span class="badge-dot purple"></span> Médicos Clínicos
+      </span>
+      <strong style="font-size: 28px; color: #c4b5fd;">{totalMedicos}</strong>
+      <small style="color: #a78bfa;">Especialistas activos</small>
+    </section>
+
+    <section class="card metric" style="padding: 18px; margin: 0; background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, var(--bg-card) 100%);">
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+        <span class="badge-dot amber"></span> Mesa de Recepción
+      </span>
+      <strong style="font-size: 28px; color: #fde68a;">{totalRecepcion}</strong>
+      <small style="color: #fbbf24;">Admisión y ventanilla</small>
+    </section>
+
+    <section class="card metric" style="padding: 18px; margin: 0; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, var(--bg-card) 100%);">
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+        <span class="badge-dot green"></span> Pacientes Registrados
+      </span>
+      <strong style="font-size: 28px; color: #6ee7b7;">{totalPacientes}</strong>
+      <small style="color: #34d399;">Portal de autogestión</small>
+    </section>
+  </div>
+
+  <!-- Fila Bento 2: Directorio Central de Usuarios -->
+  <section class="card" style="margin-bottom: 24px; padding: 22px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 14px;">
+      <div>
+        <h2 style="margin: 0 0 4px 0; font-size: 20px;">Directorio de Cuentas y Accesos</h2>
+        <p style="margin: 0; font-size: 13px; color: #94a3b8;">
+          Administra las credenciales, roles asignados y estados de los usuarios del sistema clínico.
+        </p>
+      </div>
+
+      <button type="button" id="btn-new-user" class="button" style="background: #10b981; font-weight: 700; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);">
+        ＋ Nuevo Usuario
+      </button>
+    </div>
+
+    <!-- Barra de Filtros y Búsqueda -->
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 18px; flex-wrap: wrap;">
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;" class="no-scrollbar">
+        <button type="button" class="role-filter-tab active" data-filter="ALL">Todos ({userList.length})</button>
+        <button type="button" class="role-filter-tab" data-filter="ADMINISTRADOR">🛡️ Administradores ({totalAdmins})</button>
+        <button type="button" class="role-filter-tab" data-filter="MEDICO">🩺 Médicos ({totalMedicos})</button>
+        <button type="button" class="role-filter-tab" data-filter="RECEPCIONISTA">📋 Recepción ({totalRecepcion})</button>
+        <button type="button" class="role-filter-tab" data-filter="PACIENTE">👤 Pacientes ({totalPacientes})</button>
+      </div>
+
+      <div style="flex: 1; max-width: 320px; min-width: 200px;">
+        <input
+          type="search"
+          id="search-users-input"
+          placeholder="Buscar por nombre, correo o matrícula..."
+          style="background: #090e17; border: 1px solid #263342; border-radius: 8px; padding: 9px 14px; width: 100%; font-size: 13px;"
+        />
+      </div>
+    </div>
+
+    <!-- Tabla Estilizada de Usuarios -->
+    <div class="table-wrap no-scrollbar" style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: separate; border-spacing: 0 6px;">
+        <thead>
+          <tr style="color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px;">
+            <th style="padding: 10px 14px; text-align: left;">Usuario / Perfil</th>
+            <th style="padding: 10px 14px; text-align: left;">Rol Clínico</th>
+            <th style="padding: 10px 14px; text-align: left;">Identificación / Matrícula</th>
+            <th style="padding: 10px 14px; text-align: left;">Contacto</th>
+            <th style="padding: 10px 14px; text-align: left;">Estado</th>
+            <th style="padding: 10px 14px; text-align: right;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="users-tbody">
+          {userList.map(u => (
+            <tr class="user-row" data-role={u.rol_id} data-search={`${u.nombre} ${u.email} ${u.extra} ${u.telefono}`.toLowerCase()} style="background: #0d1420; transition: background 0.15s;">
+              <td style="padding: 12px 14px; border-top-left-radius: 8px; border-bottom-left-radius: 8px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <span class="avatar" style="width: 38px; height: 38px; font-size: 14px; flex-shrink: 0; background: #131b26; border-color: #263342; color: #f1f5f9;">
+                    {u.iniciales}
+                  </span>
+                  <div>
+                    <strong style="color: #f8fafc; font-size: 14px; display: block;">{u.nombre}</strong>
+                    <span style="color: #94a3b8; font-size: 12px;">{u.email}</span>
+                  </div>
+                </div>
+              </td>
+
+              <td style="padding: 12px 14px;">
+                {u.rol_id === 'ADMINISTRADOR' && <span class="badge badge-admin"><span class="badge-dot purple"></span>🛡️ Administrador</span>}
+                {u.rol_id === 'MEDICO' && <span class="badge badge-doctor"><span class="badge-dot blue"></span>🩺 Médico Especialista</span>}
+                {u.rol_id === 'RECEPCIONISTA' && <span class="badge badge-secretaria"><span class="badge-dot amber"></span>📋 Recepción</span>}
+                {u.rol_id === 'PACIENTE' && <span class="badge badge-patient"><span class="badge-dot green"></span>👤 Paciente</span>}
+              </td>
+
+              <td style="padding: 12px 14px;">
+                <span style="color: #cbd5e1; font-size: 13px; font-weight: 500;">{u.extra}</span>
+              </td>
+
+              <td style="padding: 12px 14px;">
+                <span style="color: #94a3b8; font-size: 13px;">{u.telefono}</span>
+              </td>
+
+              <td style="padding: 12px 14px;">
+                <span class="badge green" style="font-size: 11px;">
+                  <span class="badge-dot green"></span> Activo
+                </span>
+              </td>
+
+              <td style="padding: 12px 14px; text-align: right; border-top-right-radius: 8px; border-bottom-right-radius: 8px;">
+                <button
+                  type="button"
+                  class="button secondary btn-edit-user"
+                  data-user-id={u.id}
+                  data-user-name={u.nombre}
+                  data-user-email={u.email}
+                  data-user-role={u.rol_id}
+                  data-user-phone={u.telefono}
+                  style="padding: 6px 12px; font-size: 12px;"
+                >
+                  ✎ Editar
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div id="users-empty-message" style="display: none; padding: 32px; text-align: center; color: #94a3b8; font-size: 14px;">
+        No se encontraron usuarios que coincidan con la búsqueda.
+      </div>
+    </div>
+  </section>
+
+  <!-- Fila Bento 3: Matriz de Roles y Privilegios Clínicos -->
+  <section class="card" style="padding: 22px;">
+    <h2 style="font-size: 18px; margin-bottom: 6px;">Matriz de Roles y Privilegios del Sistema</h2>
+    <p style="font-size: 13px; color: #94a3b8; margin: 0 0 18px 0;">
+      Definición funcional de accesos para resguardar la confidencialidad clínica y la separación de responsabilidades:
+    </p>
+
+    <div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 16px;">
+      {data.roles.map(r => (
+        <div style="background: #090e17; border: 1px solid #263342; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <span class="badge" style="font-size: 10px; font-weight: 700;">{r.id}</span>
+              <span style="font-size: 11px; color: #64748b;">Sistema Activo</span>
+            </div>
+            <strong style="color: #f8fafc; font-size: 15px; display: block; margin-bottom: 6px;">{r.nombre}</strong>
+            <p style="font-size: 12px; color: #94a3b8; margin: 0; line-height: 1.5;">{r.descripcion}</p>
+          </div>
+          <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid #1a2535; font-size: 11px; color: #10b981;">
+            ✓ Permisos asignados
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- Modal Glassmorphism de Edición / Creación de Usuario -->
+  <div id="user-modal-overlay" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+    <div class="modal-content" style="background: #131b26; border: 1px solid #263342; border-radius: 16px; width: 100%; max-width: 540px; padding: 26px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); position: relative;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid #263342;">
+        <h3 id="modal-title" style="margin: 0; font-size: 18px; color: #f8fafc;">Editar Credenciales de Usuario</h3>
+        <button type="button" id="btn-close-modal" style="background: transparent; border: 0; color: #94a3b8; font-size: 20px; cursor: pointer;">✕</button>
+      </div>
+
+      <form id="user-form">
+        <input type="hidden" id="modal-user-id" value="" />
+
+        <div style="display: grid; gap: 14px;">
+          <label>
+            <span style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 4px;">Nombre completo / Titular</span>
+            <input type="text" id="modal-user-name" required placeholder="Ej. Dr. Mario Ramos" style="background: #090e17; border: 1px solid #263342; border-radius: 8px; padding: 10px 14px; width: 100%; font-size: 14px;" />
+          </label>
+
+          <label>
+            <span style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 4px;">Correo electrónico (Acceso Gmail / Clínico)</span>
+            <input type="email" id="modal-user-email" required placeholder="usuario@clinica.com" style="background: #090e17; border: 1px solid #263342; border-radius: 8px; padding: 10px 14px; width: 100%; font-size: 14px;" />
+          </label>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <label>
+              <span style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 4px;">Rol Clínico Asignado</span>
+              <select id="modal-user-role" required style="background: #090e17; border: 1px solid #263342; border-radius: 8px; padding: 10px 14px; width: 100%; height: 44px; font-size: 14px;">
+                <option value="ADMINISTRADOR">🛡️ Administrador</option>
+                <option value="MEDICO">🩺 Médico Especialista</option>
+                <option value="RECEPCIONISTA">📋 Recepción</option>
+                <option value="PACIENTE">👤 Paciente</option>
+              </select>
+            </label>
+
+            <label>
+              <span style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 4px;">Teléfono de Contacto</span>
+              <input type="tel" id="modal-user-phone" placeholder="+51 987 654 321" style="background: #090e17; border: 1px solid #263342; border-radius: 8px; padding: 10px 14px; width: 100%; font-size: 14px;" />
+            </label>
+          </div>
+
+          <label>
+            <span style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 4px;">Estado de Acceso</span>
+            <select id="modal-user-status" style="background: #090e17; border: 1px solid #263342; border-radius: 8px; padding: 10px 14px; width: 100%; height: 44px; font-size: 14px;">
+              <option value="true">Activo (Permite inicio de sesión)</option>
+              <option value="false">Suspendido / Inactivo</option>
+            </select>
+          </label>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; padding-top: 14px; border-top: 1px solid #263342;">
+          <button type="button" id="btn-cancel-modal" class="button secondary">Cancelar</button>
+          <button type="submit" class="button" style="background: #10b981; font-weight: 700;">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .role-filter-tab {
+    background: #090e17;
+    color: #94a3b8;
+    border: 1px solid #263342;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .role-filter-tab:hover {
+    background: #1a2535;
+    color: #f1f5f9;
+  }
+
+  .role-filter-tab.active {
+    background: rgba(16, 185, 129, 0.16);
+    color: #34d399;
+    border-color: #10b981;
+  }
+
+  .user-row:hover {
+    background: #131c2b !important;
+  }
+</style>
+
+<script>
+  function initUserManagement() {
+    const searchInput = document.getElementById('search-users-input') as HTMLInputElement | null;
+    const filterTabs = document.querySelectorAll('.role-filter-tab');
+    const rows = document.querySelectorAll('.user-row');
+    const emptyMsg = document.getElementById('users-empty-message');
+    const modal = document.getElementById('user-modal-overlay');
+    const btnNewUser = document.getElementById('btn-new-user');
+    const btnCloseModal = document.getElementById('btn-close-modal');
+    const btnCancelModal = document.getElementById('btn-cancel-modal');
+    const userForm = document.getElementById('user-form') as HTMLFormElement | null;
+
+    const modalTitle = document.getElementById('modal-title');
+    const modalUserId = document.getElementById('modal-user-id') as HTMLInputElement | null;
+    const modalUserName = document.getElementById('modal-user-name') as HTMLInputElement | null;
+    const modalUserEmail = document.getElementById('modal-user-email') as HTMLInputElement | null;
+    const modalUserRole = document.getElementById('modal-user-role') as HTMLSelectElement | null;
+    const modalUserPhone = document.getElementById('modal-user-phone') as HTMLInputElement | null;
+
+    let currentRoleFilter = 'ALL';
+
+    function applyFilters() {
+      const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+      let visibleCount = 0;
+
+      rows.forEach(r => {
+        const row = r as HTMLElement;
+        const role = row.dataset.role || '';
+        const searchTarget = row.dataset.search || '';
+
+        const matchesRole = currentRoleFilter === 'ALL' || role === currentRoleFilter;
+        const matchesQuery = !query || searchTarget.includes(query);
+
+        if (matchesRole && matchesQuery) {
+          row.style.display = '';
+          visibleCount++;
+        } else {
+          row.style.display = 'none';
+        }
+      });
+
+      if (emptyMsg) {
+        emptyMsg.style.display = visibleCount === 0 ? 'block' : 'none';
+      }
+    }
+
+    searchInput?.addEventListener('input', applyFilters);
+
+    filterTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        filterTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentRoleFilter = (tab as HTMLElement).dataset.filter || 'ALL';
+        applyFilters();
+      });
+    });
+
+    // Abrir modal para nuevo usuario
+    btnNewUser?.addEventListener('click', () => {
+      if (!modal) return;
+      if (modalTitle) modalTitle.textContent = 'Registrar Nuevo Usuario';
+      if (modalUserId) modalUserId.value = '';
+      if (modalUserName) modalUserName.value = '';
+      if (modalUserEmail) modalUserEmail.value = '';
+      if (modalUserRole) modalUserRole.value = 'PACIENTE';
+      if (modalUserPhone) modalUserPhone.value = '';
+      modal.style.display = 'flex';
+    });
+
+    // Abrir modal para editar
+    document.querySelectorAll('.btn-edit-user').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!modal) return;
+        const b = btn as HTMLElement;
+        if (modalTitle) modalTitle.textContent = 'Editar Credenciales de Usuario';
+        if (modalUserId) modalUserId.value = b.dataset.userId || '';
+        if (modalUserName) modalUserName.value = b.dataset.userName || '';
+        if (modalUserEmail) modalUserEmail.value = b.dataset.userEmail || '';
+        if (modalUserRole) modalUserRole.value = b.dataset.userRole || 'PACIENTE';
+        if (modalUserPhone) modalUserPhone.value = b.dataset.userPhone || '';
+        modal.style.display = 'flex';
+      });
+    });
+
+    const closeModal = () => {
+      if (modal) modal.style.display = 'none';
+    };
+
+    btnCloseModal?.addEventListener('click', closeModal);
+    btnCancelModal?.addEventListener('click', closeModal);
+    modal?.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    userForm?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const toast = document.getElementById('toast');
+      const name = modalUserName ? modalUserName.value : 'Usuario';
+      closeModal();
+
+      if (toast) {
+        toast.textContent = `✓ Usuario "${name}" guardado con éxito.`;
+        toast.style.display = 'block';
+        setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3500);
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initUserManagement);
+  } else {
+    initUserManagement();
+  }
+</script>

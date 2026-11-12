@@ -3,7 +3,201 @@ import Layout from '../../layouts/Layout.astro';
 import data from '../../data/seeds.json';
 import Appointments from '../../components/Appointments.astro';
 import Calendar from '../../components/Calendar.astro';
+
+const paciente = data.pacientes[0];
 ---
-<Layout title="Mis citas y calendario" patient={true}>
-<Appointments patient/><Calendar/>
+
+<Layout title="Mis citas y agenda personal" role="paciente">
+  <!-- Hero Banner de Agenda Personal -->
+  <section class="card patient-hero animate-slide-up">
+    <div class="patient-hero-content">
+      <div class="patient-hero-badge">
+        <span class="live-pulse-dot"></span>
+        <span style="font-weight: 700; color: #6ee7b7; letter-spacing: 0.5px;">AGENDA MÉDICA PERSONAL</span>
+        <span class="separator" style="color: #475569;">·</span>
+        <span class="verified-tag" style="color: #38bdf8; font-weight: 600;">✓ Paciente Titular Verificado</span>
+      </div>
+      
+      <h2 style="font-size: 26px; margin: 10px 0 8px 0; color: #ffffff;">Mis citas y turnos de atención 🗓️</h2>
+      <p style="margin: 0 0 16px 0; color: #cbd5e1; max-width: 720px; font-size: 14px; line-height: 1.6;">
+        Revisa tus consultas programadas, visualiza las fechas activas en el calendario y obtén tu pase clínico digital con código de atención para presentar en la sede.
+      </p>
+
+      <div class="patient-quick-tags">
+        <span class="tag-chip" id="hero-patient-name"><strong>Titular:</strong> {paciente.nombres} {paciente.apellidos}</span>
+        <span class="tag-chip" id="hero-patient-doc"><strong>DNI:</strong> {paciente.documento_numero}</span>
+        <span class="tag-chip"><strong>Historial:</strong> HCL-10492</span>
+        <span class="tag-chip"><strong>Sede:</strong> Sede Central</span>
+      </div>
+    </div>
+
+    <div class="patient-hero-actions">
+      <a class="button primary-glow" href="/paciente/reservar">
+        <span>＋</span> Reservar nueva cita
+      </a>
+    </div>
+  </section>
+
+  <!-- Tarjetas Bento de Resumen de Agenda -->
+  <div class="patient-bento-grid animate-slide-up delay-1" style="margin-bottom: 24px;">
+    <!-- Card 1: Próxima Cita -->
+    <div class="card bento-card card-accent-green">
+      <div class="bento-header">
+        <span class="bento-icon">🩺</span>
+        <span class="badge green">Confirmada</span>
+      </div>
+      <div class="bento-body">
+        <span class="bento-label">PRÓXIMA CONSULTA</span>
+        <strong class="bento-value">05 Oct · 09:00 AM</strong>
+        <p class="bento-subtext">Dr. Roberto Mendoza Valdivia<br><span style="color: #34d399; font-weight: 600;">Cardiología · Consultorio 201</span></p>
+      </div>
+      <div class="bento-footer">
+        <button type="button" onclick="window.abrirPaseProximaCita()" class="bento-link" style="background: none; border: none; padding: 0; cursor: pointer; color: #34d399; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+          🎫 Ver pase digital de atención →
+        </button>
+      </div>
+    </div>
+
+    <!-- Card 2: En Agenda -->
+    <div class="card bento-card card-accent-purple">
+      <div class="bento-header">
+        <span class="bento-icon">📅</span>
+        <span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.45);">2 en Agenda</span>
+      </div>
+      <div class="bento-body">
+        <span class="bento-label">ESTADO DE RESERVAS</span>
+        <strong class="bento-value">2 Atenciones</strong>
+        <p class="bento-subtext">1 autogestión web + 1 agendada por recepción clínica.</p>
+      </div>
+      <div class="bento-footer">
+        <a href="#appointments-section" class="bento-link" style="color: #c084fc;">Ver lista completa ↓</a>
+      </div>
+    </div>
+
+    <!-- Card 3: Recomendaciones de Asistencia -->
+    <div class="card bento-card card-accent-amber">
+      <div class="bento-header">
+        <span class="bento-icon">⏰</span>
+        <span class="badge amber">Recomendación</span>
+      </div>
+      <div class="bento-body">
+        <span class="bento-label">ANTES DE ACUDIR</span>
+        <strong class="bento-value">Llegar 10 min antes</strong>
+        <p class="bento-subtext">Presenta tu DNI físico en la ventanilla de recepción o muestra tu pase digital.</p>
+      </div>
+      <div class="bento-footer">
+        <span class="bento-link" style="color: #fbbf24; font-size: 12px;">Admisión rápida en sede</span>
+      </div>
+    </div>
+
+    <!-- Card 4: Pase Clínico Digital -->
+    <div class="card bento-card card-accent-cyan">
+      <div class="bento-header">
+        <span class="bento-icon">🎫</span>
+        <span class="badge" style="background: rgba(6, 182, 212, 0.2); color: #67e8f9; border: 1px solid rgba(6, 182, 212, 0.45);">Pase Clínico</span>
+      </div>
+      <div class="bento-body">
+        <span class="bento-label">ADMISIÓN RÁPIDA</span>
+        <strong class="bento-value">Código QR y Pase</strong>
+        <p class="bento-subtext">Presenta el código en pantalla al ingresar al pabellón para ingresar a sala de espera.</p>
+      </div>
+      <div class="bento-footer">
+        <button type="button" onclick="window.abrirPaseProximaCita()" class="bento-link" style="background: none; border: none; padding: 0; cursor: pointer; color: #38bdf8; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+          Descargar pase en PDF →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pestañas de Vista Rápida -->
+  <div class="patient-section-nav animate-slide-up delay-2">
+    <a href="#calendar-section" class="tab-pill active">
+      <span>🗓️</span> Calendario Mensual
+    </a>
+    <a href="#appointments-section" class="tab-pill">
+      <span>📋</span> Detalle de Citas y Pases
+    </a>
+  </div>
+
+  <!-- Sección 1: Calendario Clínico del Paciente -->
+  <div id="calendar-section" class="patient-section-wrap animate-slide-up delay-2" style="margin-top: 16px;">
+    <div class="section-title-bar">
+      <div>
+        <h2 style="margin: 0; display: flex; align-items: center; gap: 10px; font-size: 20px;">
+          <span>🗓️</span> Calendario Interactivo de Citas
+        </h2>
+        <p class="muted" style="margin: 4px 0 0 0;">
+          Selecciona cualquier día del mes para ver las horas programadas o solicitar un nuevo turno en esa fecha.
+        </p>
+      </div>
+      <a href="/paciente/reservar" class="button primary-glow" style="font-size: 13px; padding: 7px 16px;">
+        ＋ Solicitar fecha
+      </a>
+    </div>
+
+    <Calendar role="paciente" />
+  </div>
+
+  <!-- Sección 2: Tabla de Citas y Pases Digitales -->
+  <div class="patient-section-wrap animate-slide-up delay-3" style="margin-top: 28px;">
+    <Appointments role="paciente" />
+  </div>
 </Layout>
+
+<style>
+  .patient-section-nav {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+
+  .tab-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(51, 65, 85, 0.4);
+    border-radius: 9999px;
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .tab-pill:hover {
+    background: rgba(30, 41, 59, 0.8);
+    color: #f1f5f9;
+    border-color: rgba(56, 189, 248, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .tab-pill.active {
+    background: rgba(16, 185, 129, 0.16);
+    color: #34d399;
+    border-color: #10b981;
+  }
+</style>
+
+<script>
+  function hydratePatientInfo() {
+    try {
+      const session = JSON.parse(localStorage.getItem('medpulse_session') || '{}');
+      if (session?.paciente) {
+        const p = session.paciente;
+        const nameEl = document.getElementById('hero-patient-name');
+        const docEl = document.getElementById('hero-patient-doc');
+        if (nameEl) nameEl.innerHTML = `<strong>Titular:</strong> ${p.nombres} ${p.apellidos}`;
+        if (docEl) docEl.innerHTML = `<strong>${p.documento_tipo || 'DNI'}:</strong> ${p.documento_numero || '—'}`;
+      }
+    } catch {}
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', hydratePatientInfo);
+  } else {
+    hydratePatientInfo();
+  }
+</script>

@@ -1,0 +1,95 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import data from '../../data/seeds.json';
+import Calendar from '../../components/Calendar.astro';
+import Appointments from '../../components/Appointments.astro';
+
+const doctor = data.medicos[0]; // Dr. Roberto Mendoza
+const especialidad = data.especialidades.find(e => e.id === 2); // Cardiología
+const consultorio = data.consultorios.find(c => c.id === 3); // Consultorio 201
+---
+
+<Layout title="Mi Agenda y Calendario de Consultas" role="doctor">
+  <!-- Hero Banner del Médico -->
+  <section class="card patient-hero animate-slide-up" style="margin-bottom: 24px;">
+    <div class="patient-hero-content">
+      <div class="patient-hero-badge">
+        <span class="live-pulse-dot"></span>
+        <span style="font-weight: 700; color: #38bdf8; letter-spacing: 0.5px;">AGENDA CLÍNICA ACTIVA</span>
+        <span class="separator" style="color: #475569;">·</span>
+        <span class="verified-tag" style="color: #34d399; font-weight: 600;">Dr. Roberto Mendoza Valdivia</span>
+      </div>
+      
+      <h2 style="font-size: 24px; margin: 10px 0 8px 0; color: #ffffff;">Agenda de Consultas y Pacientes Programados 📅</h2>
+      <p style="margin: 0 0 16px 0; color: #cbd5e1; max-width: 740px; font-size: 14px; line-height: 1.6;">
+        Visualiza tu programación a mes completo sin recortes. Selecciona cualquier fecha en el calendario interactivo para revisar los expedientes y pasar a los pacientes a atención médica presencial.
+      </p>
+
+      <div class="patient-quick-tags">
+        <span class="tag-chip"><strong>Consultorio:</strong> {consultorio?.nombre} ({consultorio?.piso})</span>
+        <span class="tag-chip"><strong>Especialidad:</strong> {especialidad?.nombre}</span>
+        <span class="tag-chip"><strong>Colegiatura:</strong> {doctor.numero_colegiatura}</span>
+        <span class="tag-chip"><strong>Turno de atención:</strong> 08:00 AM – 01:00 PM</span>
+      </div>
+    </div>
+
+    <div class="patient-hero-actions">
+      <a class="button primary-glow" href="#doctor-calendar-section">
+        <span>🗓️</span> Calendario Mensual
+      </a>
+      <a class="button secondary-glow" href="#appointments-section">
+        <span>📋</span> Pacientes Citados
+      </a>
+    </div>
+  </section>
+
+  <!-- Píldoras de Navegación Rápida -->
+  <div class="patient-section-nav animate-slide-up delay-1" style="display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;">
+    <a href="#doctor-calendar-section" class="tab-pill active">
+      <span>🗓️</span> Calendario Mensual
+    </a>
+    <a href="#appointments-section" class="tab-pill">
+      <span>📋</span> Consultas Asignadas
+    </a>
+  </div>
+
+  <!-- Calendario del Doctor a Ancho Completo -->
+  <div id="doctor-calendar-section" class="patient-section-wrap animate-slide-up delay-2" style="margin-bottom: 28px;">
+    <Calendar role="doctor" doctorId={doctor.id} />
+  </div>
+
+  <!-- Lista de Consultas Asignadas al Doctor -->
+  <div id="appointments-section" class="patient-section-wrap animate-slide-up delay-3">
+    <Appointments role="doctor" doctorId={doctor.id} />
+  </div>
+</Layout>
+
+<style>
+  .tab-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(51, 65, 85, 0.4);
+    border-radius: 9999px;
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .tab-pill:hover {
+    background: rgba(30, 41, 59, 0.8);
+    color: #f1f5f9;
+    border-color: rgba(56, 189, 248, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .tab-pill.active {
+    background: rgba(56, 189, 248, 0.16);
+    color: #38bdf8;
+    border-color: #0284c7;
+  }
+</style>

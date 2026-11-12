@@ -1,8 +1,570 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import data from '../data/seeds.json';
-import EntityForm from '../components/EntityForm.astro';
+
+// Enriquecer datos de médicos con sus especialidades y consultorios habituales
+const doctorsList = data.medicos.map(doc => {
+  const rels = data.medicos_especialidades.filter(r => r.medico_id === doc.id);
+  const principalRel = rels.find(r => r.es_principal) || rels[0];
+  const espPrincipal = principalRel ? data.especialidades.find(e => e.id === principalRel.especialidad_id) : null;
+  const espsSecundarias = rels.filter(r => !r.es_principal).map(r => data.especialidades.find(e => e.id === r.especialidad_id)).filter(Boolean);
+  
+  // Consultorio sugerido según su especialidad
+  const consultorio = data.consultorios.find(c => {
+    if (espPrincipal?.id === 2) return c.id === 3; // Cardiología -> Cons 201
+    if (espPrincipal?.id === 3) return c.id === 2; // Pediatría -> Cons 102
+    return c.id === 1; // General -> Cons 101
+  }) || data.consultorios[0];
+
+  const initials = `${doc.nombres[0]}${doc.apellidos[0]}`;
+
+  return {
+    ...doc,
+    iniciales: initials,
+    especialidadPrincipal: espPrincipal ? espPrincipal.nombre : 'Medicina General',
+    especialidadPrincipalId: espPrincipal ? espPrincipal.id : 1,
+    especialidadesSecundarias: espsSecundarias.map(e => e?.nombre || ''),
+    consultorioNombre: consultorio.nombre,
+    consultorioPiso: consultorio.piso,
+    sede: consultorio.sede
+  };
+});
+
+const totalMedicos = doctorsList.length;
+const totalEspecialidades = data.especialidades.length;
+const totalConsultorios = data.consultorios.length;
 ---
-<Layout title="Médicos" patient={false}>
-{data.medicos.map((row,i)=><EntityForm table="medicos" values={row} title={row.nombre || row.nombres || row.email || "Horario "+(i+1)}/>)}
-<section class="card"><h2>Especialidades de los médicos</h2>{data.medicos_especialidades.map(r=><div class="list-item"><span>{data.medicos.find(m=>m.id===r.medico_id).nombres} · {data.especialidades.find(e=>e.id===r.especialidad_id).nombre}</span><span class="badge">{r.es_principal?"Principal":"Secundaria"}</span></div>)}</section></Layout>
+
+<Layout title="Directorio de Médicos Especialistas" role="admin">
+  <!-- Hero Banner del Directorio Médico -->
+  <section class="card patient-hero animate-slide-up">
+    <div class="patient-hero-content">
+      <div class="patient-hero-badge">
+        <span class="live-pulse-dot"></span>
+        <span style="font-weight: 700; color: #6ee7b7; letter-spacing: 0.5px;">CUADRO MÉDICO Y FACULTATIVOS</span>
+        <span class="separator" style="color: #475569;">·</span>
+        <span class="verified-tag" style="color: #38bdf8; font-weight: 600;">✓ Staff Activo Sede Central</span>
+      </div>
+      
+      <h2 style="font-size: 26px; margin: 10px 0 8px 0; color: #ffffff;">Personal Médico y Especialistas 🩺</h2>
+      <p style="margin: 0 0 16px 0; color: #cbd5e1; max-width: 720px; font-size: 14px; line-height: 1.6;">
+        Supervisa y administra el equipo de especialistas de MedPulse. Consulta sus especialidades acreditadas, consultorios asignados, números de colegiatura (CMP) y agenda de atenciones clínicas.
+      </p>
+
+      <div class="patient-quick-tags">
+        <span class="tag-chip"><strong>Médicos Activos:</strong> {totalMedicos} facultativos</span>
+        <span class="tag-chip"><strong>Especialidades:</strong> {totalEspecialidades} ramas clínicas</span>
+        <span class="tag-chip"><strong>Consultorios:</strong> {totalConsultorios} habilitados</span>
+        <span class="tag-chip"><strong>Exclusión Física:</strong> Activa</span>
+      </div>
+    </div>
+
+    <div class="patient-hero-actions">
+      <button type="button" id="btn-new-doctor" class="button primary-glow">
+        <span>＋</span> Registrar nuevo médico
+      </button>
+      <a class="button secondary-glow" href="/horarios">
+        <span>◷</span> Gestionar turnos y horarios
+      </a>
+    </div>
+  </section>
+
+  <!-- Métricas Bento de Personal Médico -->
+  <div class="patient-bento-grid animate-slide-up delay-1" style="margin-bottom: 24px;">
+    <!-- Metric 1: Especialistas -->
+    <div class="card bento-card card-accent-green">
+      <div class="bento-header">
+        <span class="bento-icon">🩺</span>
+        <span class="badge green">Disponibles</span>
+      </div>
+      <div class="bento-body">
+        <span class="bento-label">CUERPO MÉDICO</span>
+        <strong class="bento-value">{totalMedicos} Especialistas</strong>
+        <p class="bento-subtext">Profesionales activos en agenda web y atención presencial.</p>
+      </div>
+      <div class="bento-footer">
+        <span class="bento-link" style="color: #34d399; font-size: 12px;">Staff Sede Central</span>
+      </div>
+    </div>
+
+    <!-- Metric 2: Especialidades -->
+    <div class="card bento-card card-accent-cyan">
+      <div class="bento-header">
+        <span class="bento-icon">⚕️</span>
+        <span class="badge" style="background: rgba(6, 182, 212, 0.2); color: #67e8f9; border: 1px solid rgba(6, 182, 212, 0.45);">{totalEspecialidades} Ramas</span>
+      </div>
+      <div class="bento-body">
+        <span class="bento-label">ESPECIALIDADES CUBIERTAS</span>
+        <strong class="bento-value">Cardiología · Pediatría</strong>
+        <p class="bento-subtext">Medicina General, Traumatología y Ginecología en catálogo.</p>
+      </div>
+      <div class="bento-footer">
+        <a href="/especialidades" class="bento-link" style="color: #38bdf8;">Ver catálogo clínico →</a>
+      </div>
+    </div>
+
+    <!-- Metric 3: Consultorios -->
+    <div class="card bento-card card-accent-purple">
+      <div class="bento-header">
+        <span class="bento-icon">🏥</span>
+        <span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.45);">5 Ambientes</span>
+      </div>
+      <div class="bento-body">
+        <span class="bento-label">CONSULTORIOS OPERATIVOS</span>
+        <strong class="bento-value">{totalConsultorios} Consultorios</strong>
+        <p class="bento-subtext">Pisos 1, 2 y 3 equipados para consultas y procedimientos.</p>
+      </div>
+      <div class="bento-footer">
+        <a href="/consultorios" class="bento-link" style="color: #c084fc;">Supervisar consultorios →</a>
+      </div>
+    </div>
+
+    <!-- Metric 4: Anti-Colisión -->
+    <div class="card bento-card card-accent-amber">
+      <div class="bento-header">
+        <span class="bento-icon">⚡</span>
+        <span class="badge amber">Protegido</span>
+      </div>
+      <div class="bento-body">
+        <span class="bento-label">CONTROL DE AGENDAMIENTO</span>
+        <strong class="bento-value">Cero Colisiones</strong>
+        <p class="bento-subtext">Exclusión física en PostgreSQL previene traslape de turnos.</p>
+      </div>
+      <div class="bento-footer">
+        <span class="bento-link" style="color: #fbbf24; font-size: 12px;">Validación en tiempo real</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barra de Filtros y Búsqueda -->
+  <section class="card animate-slide-up delay-2" style="margin-bottom: 24px;">
+    <div class="tools" style="margin-bottom: 0;">
+      <input
+        type="search"
+        id="search-doctors-input"
+        aria-label="Buscar médico"
+        placeholder="Buscar por nombre, especialidad, número de colegiatura (CMP) o teléfono…"
+        style="max-width: 440px;"
+      />
+
+      <div class="doctor-filter-tabs">
+        <button type="button" class="doctor-tab active" data-filter="ALL">Todos los Médicos</button>
+        <button type="button" class="doctor-tab" data-filter="Cardiología">Cardiología</button>
+        <button type="button" class="doctor-tab" data-filter="Pediatría">Pediatría</button>
+        <button type="button" class="doctor-tab" data-filter="Medicina General">Medicina General</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Grilla de Tarjetas de Médicos -->
+  <div class="doctors-grid animate-slide-up delay-2" id="doctors-container">
+    {doctorsList.map(doc => (
+      <article 
+        class="card doctor-card" 
+        data-specialty={doc.especialidadPrincipal}
+        data-search={`${doc.nombres} ${doc.apellidos} ${doc.numero_colegiatura} ${doc.especialidadPrincipal} ${doc.consultorioNombre} ${doc.telefono}`.toLowerCase()}
+      >
+        <div class="doctor-card-header">
+          <div style="display: flex; gap: 14px; align-items: center;">
+            <div class="doctor-avatar">
+              <span>{doc.iniciales}</span>
+              <span class="doctor-status-dot"></span>
+            </div>
+            <div>
+              <h3 style="margin: 0; font-size: 17px; color: #ffffff;">Dr(a). {doc.nombres} {doc.apellidos}</h3>
+              <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                <span class="badge" style="background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); font-family: monospace; font-size: 11px;">
+                  {doc.numero_colegiatura}
+                </span>
+                <span style="color: #64748b; font-size: 11px;">·</span>
+                <span class="badge green" style="font-size: 11px;">
+                  {doc.especialidadPrincipal}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <button 
+            type="button" 
+            class="button secondary btn-edit-doctor"
+            data-doctor-id={doc.id}
+            data-doctor-name={`${doc.nombres} ${doc.apellidos}`}
+            data-doctor-nombres={doc.nombres}
+            data-doctor-apellidos={doc.apellidos}
+            data-doctor-cmp={doc.numero_colegiatura}
+            data-doctor-esp={doc.especialidadPrincipal}
+            data-doctor-consultorio={doc.consultorioNombre}
+            data-doctor-phone={doc.telefono}
+            data-doctor-fee={doc.tarifa_consulta}
+            style="padding: 5px 12px; font-size: 12px;"
+          >
+            ✏️ Editar
+          </button>
+        </div>
+
+        <p style="margin: 14px 0; color: #94a3b8; font-size: 13px; line-height: 1.5;">
+          {doc.biografia}
+        </p>
+
+        <div class="doctor-card-meta">
+          <div class="meta-item">
+            <span class="meta-label">CONSULTORIO HABITUAL</span>
+            <strong style="color: #cbd5e1; font-size: 13px;">📍 {doc.consultorioNombre} ({doc.consultorioPiso})</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">TARIFA DE ATENCIÓN</span>
+            <strong style="color: #34d399; font-size: 13px;">S/ {Number(doc.tarifa_consulta).toFixed(2)}</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">CONTACTO CLÍNICO</span>
+            <span style="color: #cbd5e1; font-size: 13px;">📞 {doc.telefono}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">DISPONIBILIDAD</span>
+            <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 11px;">
+              ● Turno Mañana / Tarde
+            </span>
+          </div>
+        </div>
+
+        <div class="doctor-card-footer">
+          <a href="/citas" class="button secondary" style="font-size: 12px; padding: 7px 14px; text-decoration: none;">
+            📅 Ver citas del médico
+          </a>
+          <a href={`/reservar?medicoId=${doc.id}`} class="button primary-glow" style="font-size: 12px; padding: 7px 14px; text-decoration: none;">
+            ＋ Agendar cita con Dr(a)
+          </a>
+        </div>
+      </article>
+    ))}
+  </div>
+
+  <div id="doctors-empty" style="display: none; text-align: center; padding: 40px; background: #0f172a; border-radius: 12px; border: 1px solid #1e293b; margin-top: 16px;">
+    <p style="margin: 0; color: #94a3b8; font-size: 14px;">No se encontraron médicos especialistas que coincidan con la búsqueda o filtro seleccionado.</p>
+  </div>
+
+  <!-- Modal Glassmorphism de Registro / Edición de Médico -->
+  <div id="doctor-modal-overlay" class="ticket-modal-overlay" style="display: none;">
+    <div class="ticket-modal-card">
+      <div class="ticket-modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">🩺</span>
+          <div>
+            <strong id="doctor-modal-title" style="color: #ffffff; font-size: 15px;">Editar Ficha del Especialista</strong>
+            <small style="display: block; color: #10b981; font-weight: 600;">Staff Clínico MedPulse</small>
+          </div>
+        </div>
+        <button type="button" id="btn-close-doctor-modal" class="ticket-close-btn">&times;</button>
+      </div>
+
+      <form id="doctor-modal-form">
+        <div class="ticket-modal-body" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <input type="hidden" id="modal-doc-id" />
+
+          <div>
+            <label style="display: block; font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">NOMBRES</label>
+            <input type="text" id="modal-doc-nombres" required style="width: 100%;" />
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">APELLIDOS</label>
+            <input type="text" id="modal-doc-apellidos" required style="width: 100%;" />
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">COLEGIATURA (CMP)</label>
+            <input type="text" id="modal-doc-cmp" required placeholder="CMP-XXXXX" style="width: 100%;" />
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">ESPECIALIDAD PRINCIPAL</label>
+            <select id="modal-doc-especialidad" style="width: 100%;">
+              {data.especialidades.map(e => (
+                <option value={e.nombre}>{e.nombre}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">CONSULTORIO ASIGNADO</label>
+            <select id="modal-doc-consultorio" style="width: 100%;">
+              {data.consultorios.map(c => (
+                <option value={c.nombre}>{c.nombre} ({c.piso})</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">TELÉFONO DE CONTACTO</label>
+            <input type="tel" id="modal-doc-phone" placeholder="+519XXXXXXXX" style="width: 100%;" />
+          </div>
+
+          <div style="grid-column: span 2;">
+            <label style="display: block; font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">TARIFA DE CONSULTA (S/)</label>
+            <input type="number" id="modal-doc-fee" min="50" max="500" step="10" value="120" style="width: 100%;" />
+          </div>
+        </div>
+
+        <div class="ticket-modal-footer">
+          <button type="button" id="btn-cancel-doctor-modal" class="button secondary">
+            Cancelar
+          </button>
+          <button type="submit" class="button primary-glow">
+            ✓ Guardar especialista
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .doctor-filter-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .doctor-tab {
+    padding: 7px 14px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(51, 65, 85, 0.4);
+    border-radius: 9999px;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .doctor-tab:hover {
+    background: rgba(30, 41, 59, 0.8);
+    color: #f1f5f9;
+    border-color: rgba(56, 189, 248, 0.4);
+  }
+
+  .doctor-tab.active {
+    background: rgba(16, 185, 129, 0.16);
+    color: #34d399;
+    border-color: #10b981;
+  }
+
+  .doctors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+    gap: 20px;
+  }
+
+  @media (max-width: 640px) {
+    .doctors-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .doctor-card {
+    background: #0f172a;
+    border: 1px solid rgba(51, 65, 85, 0.4);
+    border-radius: 14px;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .doctor-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(16, 185, 129, 0.4);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(16, 185, 129, 0.1);
+  }
+
+  .doctor-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .doctor-avatar {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #059669, #0284c7);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 18px;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(5, 150, 105, 0.3);
+  }
+
+  .doctor-status-dot {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 12px;
+    height: 12px;
+    background: #10b981;
+    border: 2px solid #0f172a;
+    border-radius: 50%;
+  }
+
+  .doctor-card-meta {
+    background: rgba(2, 6, 23, 0.4);
+    border: 1px solid rgba(30, 41, 59, 0.7);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .meta-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.5px;
+  }
+
+  .doctor-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(51, 65, 85, 0.3);
+  }
+</style>
+
+<script>
+  function initDoctorsDirectory() {
+    const searchInput = document.getElementById('search-doctors-input') as HTMLInputElement | null;
+    const filterTabs = document.querySelectorAll('.doctor-tab');
+    const doctorCards = document.querySelectorAll('.doctor-card');
+    const emptyNotice = document.getElementById('doctors-empty');
+
+    const modal = document.getElementById('doctor-modal-overlay');
+    const btnNewDoctor = document.getElementById('btn-new-doctor');
+    const btnCloseModal = document.getElementById('btn-close-doctor-modal');
+    const btnCancelModal = document.getElementById('btn-cancel-doctor-modal');
+    const modalForm = document.getElementById('doctor-modal-form') as HTMLFormElement | null;
+    const modalTitle = document.getElementById('doctor-modal-title');
+
+    const inputId = document.getElementById('modal-doc-id') as HTMLInputElement | null;
+    const inputNombres = document.getElementById('modal-doc-nombres') as HTMLInputElement | null;
+    const inputApellidos = document.getElementById('modal-doc-apellidos') as HTMLInputElement | null;
+    const inputCmp = document.getElementById('modal-doc-cmp') as HTMLInputElement | null;
+    const inputEsp = document.getElementById('modal-doc-especialidad') as HTMLSelectElement | null;
+    const inputConsultorio = document.getElementById('modal-doc-consultorio') as HTMLSelectElement | null;
+    const inputPhone = document.getElementById('modal-doc-phone') as HTMLInputElement | null;
+    const inputFee = document.getElementById('modal-doc-fee') as HTMLInputElement | null;
+
+    let currentFilter = 'ALL';
+
+    function filterCards() {
+      const query = (searchInput?.value || '').toLowerCase().trim();
+      let visibleCount = 0;
+
+      doctorCards.forEach(card => {
+        const el = card as HTMLElement;
+        const specialty = el.dataset.specialty || '';
+        const searchTarget = el.dataset.search || '';
+
+        const matchesSpecialty = currentFilter === 'ALL' || specialty.toLowerCase() === currentFilter.toLowerCase();
+        const matchesQuery = !query || searchTarget.includes(query);
+
+        if (matchesSpecialty && matchesQuery) {
+          el.style.display = 'flex';
+          visibleCount++;
+        } else {
+          el.style.display = 'none';
+        }
+      });
+
+      if (emptyNotice) {
+        emptyNotice.style.display = visibleCount === 0 ? 'block' : 'none';
+      }
+    }
+
+    searchInput?.addEventListener('input', filterCards);
+
+    filterTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        filterTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentFilter = (tab as HTMLElement).dataset.filter || 'ALL';
+        filterCards();
+      });
+    });
+
+    const closeModal = () => {
+      if (modal) modal.style.display = 'none';
+    };
+
+    btnCloseModal?.addEventListener('click', closeModal);
+    btnCancelModal?.addEventListener('click', closeModal);
+    modal?.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    // Abrir modal para nuevo médico
+    btnNewDoctor?.addEventListener('click', () => {
+      if (!modal) return;
+      if (modalTitle) modalTitle.textContent = 'Registrar Nuevo Especialista';
+      if (inputId) inputId.value = '';
+      if (inputNombres) inputNombres.value = '';
+      if (inputApellidos) inputApellidos.value = '';
+      if (inputCmp) inputCmp.value = '';
+      if (inputEsp) inputEsp.value = 'Medicina General';
+      if (inputConsultorio) inputConsultorio.value = 'Consultorio 101';
+      if (inputPhone) inputPhone.value = '+519';
+      if (inputFee) inputFee.value = '100';
+      modal.style.display = 'flex';
+    });
+
+    // Abrir modal para editar médico
+    document.querySelectorAll('.btn-edit-doctor').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!modal) return;
+        const b = btn as HTMLElement;
+        if (modalTitle) modalTitle.textContent = `Editar: Dr(a). ${b.dataset.doctorName}`;
+        if (inputId) inputId.value = b.dataset.doctorId || '';
+        if (inputNombres) inputNombres.value = b.dataset.doctorNombres || '';
+        if (inputApellidos) inputApellidos.value = b.dataset.doctorApellidos || '';
+        if (inputCmp) inputCmp.value = b.dataset.doctorCmp || '';
+        if (inputEsp) inputEsp.value = b.dataset.doctorEsp || 'Cardiología';
+        if (inputConsultorio) inputConsultorio.value = b.dataset.doctorConsultorio || 'Consultorio 201';
+        if (inputPhone) inputPhone.value = b.dataset.doctorPhone || '';
+        if (inputFee) inputFee.value = b.dataset.doctorFee || '120';
+        modal.style.display = 'flex';
+      });
+    });
+
+    modalForm?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const doctorName = inputNombres ? `${inputNombres.value} ${inputApellidos?.value || ''}` : 'Especialista';
+      closeModal();
+
+      const toast = document.getElementById('toast');
+      if (toast) {
+        toast.textContent = `✓ Ficha médica del Dr(a). ${doctorName} actualizada exitosamente.`;
+        toast.style.display = 'block';
+        setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3500);
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDoctorsDirectory);
+  } else {
+    initDoctorsDirectory();
+  }
+</script>

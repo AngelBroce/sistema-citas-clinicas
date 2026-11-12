@@ -1,0 +1,744 @@
+---
+import data from '../data/seeds.json';
+
+interface Props {
+  role?: 'admin' | 'secretaria';
+}
+
+const { role = 'admin' } = Astro.props;
+const isAdmin = role === 'admin';
+const citasHref = isAdmin ? '/citas' : '/secretaria/citas';
+const homeHref = isAdmin ? '/dashboard' : '/secretaria';
+const roleBadge = isAdmin ? '🛡️ Administración · Agendamiento de Citas' : '📋 Recepción / Secretaría · Agendamiento de Citas';
+const accentGradient = isAdmin
+  ? 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)'
+  : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+const btnTextColor = isAdmin ? '#ffffff' : '#0b0f19';
+const submitLabel = isAdmin ? '🛡️ Guardar y Confirmar Cita (Admin)' : '📋 Guardar y Confirmar Cita (Recepción)';
+---
+
+<div class="grid two" id="staff-booking-root" data-staff-role={role} data-citas-href={citasHref}>
+  <section class="card" style="position: relative; overflow: hidden;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+      <span class={`badge ${isAdmin ? 'badge-admin' : 'amber'}`} style="font-weight: 700;">{roleBadge}</span>
+      <span class="badge green">Algoritmo Anti-Colisión Activo</span>
+    </div>
+
+    <h2 style="font-size: 20px; color: #f8fafc; margin-bottom: 6px;">
+      {isAdmin ? 'Agendar Cita Médica (Administración)' : 'Agendar Cita en Mesa de Recepción'}
+    </h2>
+    <p style="color: #94a3b8; font-size: 13px; margin: 0 0 18px; line-height: 1.5;">
+      Asignación directa presencial o telefónica sin salir de tu panel. El horario queda confirmado y protegido contra doble reserva.
+    </p>
+
+    <form id="booking-form">
+      <!-- Selector de Paciente -->
+      <div style={`margin-bottom: 18px; padding: 14px 16px; background: ${isAdmin ? 'rgba(139, 92, 246, 0.1)' : 'rgba(245, 158, 11, 0.1)'}; border: 1px solid ${isAdmin ? 'rgba(139, 92, 246, 0.35)' : 'rgba(245, 158, 11, 0.35)'}; border-radius: 12px;`}>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+          <span style={`font-weight: 700; color: ${isAdmin ? '#ddd6fe' : '#fde68a'}; font-size: 13px; display: flex; align-items: center; gap: 6px;`}>
+            👤 Paciente Solicitante
+          </span>
+          <span class={`badge ${isAdmin ? 'badge-admin' : 'amber'}`}>{isAdmin ? 'Gestión Admin' : 'Ventanilla / Llamadas'}</span>
+        </div>
+
+        <label style="margin: 0; display: block;">
+          <select name="paciente_id_select" id="patient-select" style="height: 44px; width: 100%;">
+            {data.pacientes.map(p => (
+              <option value={p.id}>
+                {p.nombres} {p.apellidos} (Doc: {p.documento_numero})
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <!-- Módulo Rápido de Cédula Panameña -->
+      <div id="booking-cedula-box" style="margin-bottom: 18px; padding: 14px 16px; background: #0d1420; border: 1px solid #263342; border-radius: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 16px;">🇵🇦</span>
+            <strong style="color: #cbd5e1; font-size: 13px;">Registrar / Vincular Paciente por Cédula Panameña</strong>
+          </div>
+          <button type="button" id="toggle-cedula-custom" style="background: none; border: none; color: #34d399; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: underline; padding: 0;">
+            Ingresar Cédula / Nombre ▾
+          </button>
+        </div>
+
+        <div id="cedula-fields-container" style="display: none; padding-top: 10px; margin-top: 8px; border-top: 1px solid #1f2937;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <label style="margin: 0; font-size: 12px;">
+              Nombre del Paciente *
+              <input type="text" id="quick-patient-nombre" placeholder="ej. Carlos Gómez" style="height: 40px; font-size: 13px; width: 100%;" />
+            </label>
+            <label style="margin: 0; font-size: 12px;">
+              Teléfono de Contacto
+              <input type="text" id="quick-patient-tel" placeholder="ej. 6598-2118" style="height: 40px; font-size: 13px; width: 100%;" />
+            </label>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <label style="margin: 0; font-size: 12px;">
+              Tipo de Identificación
+              <select id="booking-doc-tipo" style="height: 40px; font-size: 12px; width: 100%;">
+                <option value="CEDULA_NACIONAL" selected>Cédula Panameña (Nacional)</option>
+                <option value="CEDULA_E">Cédula E (Extranjero Residente)</option>
+                <option value="CEDULA_PE">Cédula PE (Nacido en Extranjero)</option>
+                <option value="CEDULA_N">Cédula N (Naturalizado)</option>
+                <option value="CEDULA_PI">Cédula PI (Población Indígena)</option>
+              </select>
+            </label>
+
+            <label style="margin: 0; font-size: 12px;">
+              Prefijo *
+              <select id="booking-select-prefijo" style="height: 40px; font-size: 12px; width: 100%;">
+                <option value="1">01 - Bocas del Toro</option>
+                <option value="2">02 - Coclé</option>
+                <option value="3">03 - Colón</option>
+                <option value="4">04 - Chiriquí</option>
+                <option value="5">05 - Darién</option>
+                <option value="6">06 - Herrera</option>
+                <option value="7">07 - Los Santos</option>
+                <option value="8" selected>08 - Panamá</option>
+                <option value="9">09 - Veraguas</option>
+                <option value="10">10 - Guna Yala</option>
+                <option value="13">13 - Panamá Oeste</option>
+              </select>
+            </label>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <label style="margin: 0; font-size: 12px;">
+              Tomo (4-5 números) *
+              <input type="text" id="booking-input-tomo" placeholder="ej. 1234" maxlength="5" inputmode="numeric" style="height: 40px; font-family: monospace; font-size: 13px; width: 100%;" />
+            </label>
+            <label style="margin: 0; font-size: 12px;">
+              Asiento (4-5 números) *
+              <input type="text" id="booking-input-asiento" placeholder="ej. 56789" maxlength="5" inputmode="numeric" style="height: 40px; font-family: monospace; font-size: 13px; width: 100%;" />
+            </label>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 8px 12px; flex-wrap: wrap; gap: 6px;">
+            <span style="font-size: 12px; color: #94a3b8;">Cédula: <strong id="booking-cedula-preview" style="color: #34d399; font-family: monospace; font-size: 14px;">8-____-_____</strong></span>
+            <button type="button" id="btn-aplicar-cedula-booking" style="padding: 5px 12px; background: #10b981; border: 0; border-radius: 6px; color: #0b0f19; font-weight: 700; font-size: 11px; cursor: pointer;">
+              ✓ Vincular Paciente
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <input type="hidden" name="paciente_id" id="patient-id-input" value={data.pacientes[0].id} />
+      <input type="hidden" name="reservado_por" id="reservado-por-input" value="ADMINISTRADOR" />
+
+      <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+        <label>
+          Especialidad médica
+          <select name="especialidad_id" id="specialty" required style="height: 44px;">
+            {data.especialidades
+              .filter(e => data.medicos_especialidades.some(m => m.especialidad_id === e.id))
+              .map(e => (
+                <option value={e.id}>{e.nombre}</option>
+              ))}
+          </select>
+        </label>
+
+        <label>
+          Médico especialista
+          <select name="medico_id" id="doctor" required style="height: 44px;"></select>
+        </label>
+
+        <label>
+          Fecha de atención médica
+          <input name="fecha" id="booking-date" type="date" required style="height: 44px;" />
+        </label>
+
+        <label>
+          Canal de atención
+          <select name="canal_origen" id="booking-channel" style="height: 44px;">
+            <option value="RECEPCION_PRESENCIAL" selected>🏥 Presencial en Clínica</option>
+            <option value="RECEPCION_TELEFONICA">📞 Llamada Telefónica</option>
+          </select>
+        </label>
+      </div>
+
+      <div style="margin-top: 12px;">
+        <label>
+          Consultorio programado
+          <input readonly id="room" style="background: #090e17; font-weight: 600; color: #06b6d4; height: 42px;" />
+        </label>
+      </div>
+
+      <!-- Asignación Inteligente de Horario -->
+      <div id="smart-slot-container" style="margin-top: 18px; padding: 16px; border-radius: 12px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.14) 0%, #131b26 100%); border: 1px solid rgba(139, 92, 246, 0.4); box-shadow: 0 4px 20px rgba(0,0,0,0.35); position: relative;">
+        <div style={`position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: ${isAdmin ? '#8b5cf6' : '#f59e0b'}; border-top-left-radius: 12px; border-bottom-left-radius: 12px;`}></div>
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span style="font-size: 18px;">⚡</span>
+              <strong style="color: #f8fafc; font-size: 15px;">Horario Asignado Sin Colisiones</strong>
+              <span class="badge purple" style="font-size: 10px; padding: 2px 8px;">Anti Double-Booking</span>
+            </div>
+            <p style="margin: 6px 0 0; color: #94a3b8; font-size: 12px; line-height: 1.45;">
+              Se selecciona automáticamente el primer cupo libre del especialista según su horario laboral.
+            </p>
+          </div>
+        </div>
+
+        <div style="margin-top: 12px; padding: 10px 14px; border-radius: 8px; background: #090e17; border: 1px solid #263342; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="color: #a78bfa; font-size: 18px;">⏱️</span>
+            <span style="font-size: 13px; color: #94a3b8;">Horario Asignado:</span>
+            <strong id="assigned-slot-display" style="font-size: 16px; color: #c4b5fd; letter-spacing: 0.5px;">Calculando turno...</strong>
+          </div>
+          <span class="badge blue" id="assigned-room-badge" style="font-size: 11px;">Consultorio</span>
+        </div>
+      </div>
+
+      <input type="hidden" name="hora" id="slot-assigned-value" value="" />
+
+      <!-- Motivo de consulta -->
+      <label style="margin-top: 16px; display: block;">
+        Motivo de la consulta / Observación de recepción
+        <textarea
+          name="motivo_consulta"
+          id="motivo"
+          rows="3"
+          placeholder="Motivo de la cita, derivación médica o solicitud presencial..."
+          required
+          style="background: #090e17; border: 1px solid #263342; border-radius: 8px; padding: 10px; width: 100%; color: #f8fafc; font-size: 14px; margin-top: 4px;"
+        ></textarea>
+      </label>
+
+      <p id="booking-info" style="font-size: 12px; color: #94a3b8; margin: 8px 0 0;"></p>
+
+      <!-- Botones de Acción -->
+      <div style="margin-top: 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <button type="submit" id="submit-booking-btn" class="button" style={`flex: 1; min-height: 48px; justify-content: center; font-size: 15px; font-weight: 700; background: ${accentGradient}; color: ${btnTextColor};`}>
+          {submitLabel}
+        </button>
+        <a href={citasHref} class="button secondary" style="min-height: 48px; padding: 0 16px;">
+          Volver a Citas
+        </a>
+      </div>
+    </form>
+
+    <!-- Éxito en Agendamiento -->
+    <div id="booking-success-box" style="display: none; margin-top: 22px; padding: 22px; background: rgba(16, 185, 129, 0.12); border: 1px solid #10b981; border-radius: 14px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+        <span style="font-size: 28px;">✅</span>
+        <div>
+          <h3 style="margin: 0; color: #34d399; font-size: 18px;">
+            {isAdmin ? '¡Cita Agendada y Confirmada por Administración!' : '¡Cita Agendada y Confirmada en Recepción!'}
+          </h3>
+          <p style="margin: 2px 0 0 0; color: #94a3b8; font-size: 13px;">
+            La cita ha sido registrada con estado CONFIRMADA directamente en la agenda clínica.
+          </p>
+        </div>
+      </div>
+
+      <div id="booking-summary-content" style="background: #090e17; border-radius: 10px; padding: 16px; font-size: 13px; border: 1px solid #263342; margin-bottom: 16px;">
+        <!-- Inyectado dinámicamente -->
+      </div>
+
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <a href={citasHref} class="button" style={`background: ${accentGradient}; color: ${btnTextColor}; font-weight: 700;`}>
+          📅 {isAdmin ? 'Ver en Agenda de Citas' : 'Ver en Gestión de Citas'}
+        </a>
+        <a href={homeHref} class="button secondary">
+          {isAdmin ? '📊 Volver al Dashboard' : '◈ Volver a Mesa de Recepción'}
+        </a>
+        <button type="button" id="btn-book-another" class="button secondary">
+          ＋ Agendar otra cita
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel Lateral -->
+  <section class="card">
+    <h2 style="font-size: 18px; color: #f8fafc; margin-bottom: 8px;">Guía de Atención y Turnos Médicos</h2>
+    <p style="color: #94a3b8; font-size: 13px; margin: 0 0 16px; line-height: 1.5;">
+      {isAdmin
+        ? 'Estás operando dentro del Portal de Administración. Las citas que registres quedan confirmadas automáticamente.'
+        : 'Estás operando dentro de la Mesa de Recepción / Secretaría. Las citas presenciales y telefónicas quedan confirmadas automáticamente.'}
+    </p>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px;">
+      <div style="padding: 14px; border-radius: 10px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.28);">
+        <strong style="color: #34d399; font-size: 13px; display: block; margin-bottom: 4px;">✓ Estado Inmediato: CONFIRMADA</strong>
+        <p style="margin: 0; font-size: 12px; color: #cbd5e1; line-height: 1.45;">
+          A diferencia de las solicitudes autogestionadas por WhatsApp (que entran en estado PENDIENTE para tu revisión), las citas creadas por personal clínico quedan confirmadas al instante.
+        </p>
+      </div>
+
+      <div style="padding: 14px; border-radius: 10px; background: #0d1420; border: 1px solid #263342;">
+        <strong style="color: #38bdf8; font-size: 13px; display: block; margin-bottom: 6px;">🩺 Médicos Disponibles</strong>
+        <ul style="margin: 0; padding-left: 18px; font-size: 12px; color: #94a3b8; line-height: 1.6;">
+          {data.medicos.map(m => (
+            <li><strong style="color: #f1f5f9;">Dr(a). {m.nombres} {m.apellidos}</strong> · {m.biografia.slice(0, 52)}…</li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+  import data from '../data/seeds.json';
+  import { apiUrl } from '../data/api';
+
+  const STORAGE_KEY = 'medpulse_citas_v2';
+
+  function getAllCitas() {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+    return [...data.citas];
+  }
+
+  function saveCita(nuevaCita: any) {
+    const list = getAllCitas();
+    list.unshift(nuevaCita);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    } catch (e) {
+      console.warn('Error al guardar localmente:', e);
+    }
+
+    fetch(apiUrl('/api/citas/reservar'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pacienteId: nuevaCita.paciente_id,
+        pacienteNombre: nuevaCita.paciente_nombre_directo,
+        pacienteDocumento: nuevaCita.paciente_documento_directo,
+        pacienteTelefono: nuevaCita.paciente_telefono_directo,
+        medicoId: nuevaCita.medico_id,
+        especialidadId: nuevaCita.especialidad_id,
+        consultorioId: nuevaCita.consultorio_id,
+        fecha: nuevaCita.fecha_hora_inicio.slice(0, 10),
+        horaInicio: nuevaCita.fecha_hora_inicio.slice(11, 16),
+        duracionMin: 30,
+        motivoConsulta: nuevaCita.motivo_consulta,
+        canalOrigen: nuevaCita.canal_origen,
+        reservadoPor: 'ADMINISTRADOR',
+        sincronizarGoogleCalendar: true
+      })
+    }).catch(() => {});
+
+    window.dispatchEvent(new CustomEvent('medpulse:cita-creada', {
+      detail: {
+        fecha: nuevaCita.fecha_hora_inicio.slice(0, 10),
+        cita: nuevaCita
+      }
+    }));
+  }
+
+  function getDefaultWeekdayIso(): string {
+    const d = new Date();
+    // Si es sábado (6) o domingo (0), avanzar al próximo lunes para mostrar turnos laborales válidos
+    if (d.getDay() === 6) d.setDate(d.getDate() + 2);
+    else if (d.getDay() === 0) d.setDate(d.getDate() + 1);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  function formatTime12h(timeStr: string) {
+    if (!timeStr) return '';
+    const parts = timeStr.trim().split(':');
+    if (parts.length < 2) return timeStr;
+    let h = parseInt(parts[0], 10);
+    const m = parts[1].slice(0, 2);
+    if (isNaN(h)) return timeStr;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    h = h ? h : 12;
+    return `${String(h).padStart(2, '0')}:${m} ${ampm}`;
+  }
+
+  function initStaffBooking() {
+    const form = document.getElementById('booking-form') as HTMLFormElement | null;
+    const patientSelect = document.getElementById('patient-select') as HTMLSelectElement | null;
+    const specialty = document.getElementById('specialty') as HTMLSelectElement | null;
+    const doctor = document.getElementById('doctor') as HTMLSelectElement | null;
+    const dateInput = document.getElementById('booking-date') as HTMLInputElement | null;
+    const channelSelect = document.getElementById('booking-channel') as HTMLSelectElement | null;
+    const assignedSlotDisplay = document.getElementById('assigned-slot-display') as HTMLElement | null;
+    const slotAssignedValue = document.getElementById('slot-assigned-value') as HTMLInputElement | null;
+    const assignedRoomBadge = document.getElementById('assigned-room-badge') as HTMLElement | null;
+    const roomInput = document.getElementById('room') as HTMLInputElement | null;
+    const infoText = document.getElementById('booking-info') as HTMLElement | null;
+    const patientIdInput = document.getElementById('patient-id-input') as HTMLInputElement | null;
+    const submitBtn = document.getElementById('submit-booking-btn') as HTMLButtonElement | null;
+    const successBox = document.getElementById('booking-success-box') as HTMLElement | null;
+    const summaryContent = document.getElementById('booking-summary-content') as HTMLElement | null;
+    const btnBookAnother = document.getElementById('btn-book-another') as HTMLButtonElement | null;
+
+    if (!form || !specialty || !doctor || !dateInput || !slotAssignedValue || !roomInput) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const fechaParam = urlParams.get('fecha');
+    const pacParam = urlParams.get('paciente_id_select') || urlParams.get('pacienteId');
+    const medicoParam = urlParams.get('medicoId') || urlParams.get('medico_id');
+
+    // Hidratar pacientes creados en localStorage
+    if (patientSelect) {
+      try {
+        const customPatients = JSON.parse(localStorage.getItem('medpulse_custom_patients') || '[]');
+        customPatients.forEach((cp: any) => {
+          const exists = Array.from(patientSelect.options).some(o => o.value === cp.id);
+          if (!exists) {
+            const opt = document.createElement('option');
+            opt.value = cp.id;
+            opt.textContent = `★ ${cp.nombres} ${cp.apellidos} (${cp.documento_numero || cp.email || 'Registrado'})`;
+            patientSelect.prepend(opt);
+          }
+        });
+      } catch {}
+
+      if (pacParam && Array.from(patientSelect.options).some(o => o.value === pacParam)) {
+        patientSelect.value = pacParam;
+      }
+      if (patientIdInput) patientIdInput.value = patientSelect.value;
+
+      patientSelect.addEventListener('change', () => {
+        if (patientIdInput) patientIdInput.value = patientSelect.value;
+      });
+    }
+
+    const hoyStr = new Date().toISOString().slice(0, 10);
+    dateInput.min = hoyStr;
+    dateInput.value = fechaParam && fechaParam >= hoyStr ? fechaParam : getDefaultWeekdayIso();
+
+    // Conexión del módulo rápido de cédula
+    const toggleCedulaBtn = document.getElementById('toggle-cedula-custom');
+    const cedulaContainer = document.getElementById('cedula-fields-container');
+    const bookingDocTipo = document.getElementById('booking-doc-tipo') as HTMLSelectElement | null;
+    const bookingSelectPrefijo = document.getElementById('booking-select-prefijo') as HTMLSelectElement | null;
+    const bookingInputTomo = document.getElementById('booking-input-tomo') as HTMLInputElement | null;
+    const bookingInputAsiento = document.getElementById('booking-input-asiento') as HTMLInputElement | null;
+    const bookingCedulaPreview = document.getElementById('booking-cedula-preview');
+    const btnAplicarCedula = document.getElementById('btn-aplicar-cedula-booking');
+    const quickNombre = document.getElementById('quick-patient-nombre') as HTMLInputElement | null;
+    const quickTel = document.getElementById('quick-patient-tel') as HTMLInputElement | null;
+
+    if (toggleCedulaBtn && cedulaContainer) {
+      toggleCedulaBtn.addEventListener('click', () => {
+        const isOpen = cedulaContainer.style.display === 'block';
+        cedulaContainer.style.display = isOpen ? 'none' : 'block';
+        toggleCedulaBtn.textContent = isOpen ? 'Ingresar Cédula / Nombre ▾' : 'Ocultar Cédula ▴';
+      });
+    }
+
+    function updateCedulaPreview() {
+      if (!bookingCedulaPreview) return;
+      const tipo = bookingDocTipo?.value || 'CEDULA_NACIONAL';
+      let prefijo = bookingSelectPrefijo?.value || '8';
+      if (tipo === 'CEDULA_E') prefijo = 'E';
+      else if (tipo === 'CEDULA_PE') prefijo = 'PE';
+      else if (tipo === 'CEDULA_N') prefijo = 'N';
+      else if (tipo === 'CEDULA_PI') prefijo = 'PI';
+      const tomo = bookingInputTomo?.value.trim() || '____';
+      const asiento = bookingInputAsiento?.value.trim() || '_____';
+      bookingCedulaPreview.textContent = `${prefijo}-${tomo}-${asiento}`;
+    }
+
+    bookingInputTomo?.addEventListener('input', (e) => {
+      (e.target as HTMLInputElement).value = (e.target as HTMLInputElement).value.replace(/\D/g, '');
+      updateCedulaPreview();
+    });
+    bookingInputAsiento?.addEventListener('input', (e) => {
+      (e.target as HTMLInputElement).value = (e.target as HTMLInputElement).value.replace(/\D/g, '');
+      updateCedulaPreview();
+    });
+    bookingSelectPrefijo?.addEventListener('change', updateCedulaPreview);
+    bookingDocTipo?.addEventListener('change', updateCedulaPreview);
+
+    btnAplicarCedula?.addEventListener('click', () => {
+      const cedulaStr = bookingCedulaPreview?.textContent || '';
+      if (cedulaStr.includes('_')) {
+        alert('Por favor ingresa Tomo y Asiento válidos para la cédula.');
+        return;
+      }
+      const nombreStr = quickNombre?.value.trim() || 'Paciente Recepción';
+      const telStr = quickTel?.value.trim() || '+507 6598-2118';
+
+      const customP = JSON.parse(localStorage.getItem('medpulse_custom_patients') || '[]');
+      const existente = customP.find((p: any) => p.documento_numero === cedulaStr);
+      let pacObj = existente;
+      if (!pacObj) {
+        const newPId = 'p-adm-' + Date.now().toString(16);
+        const partes = nombreStr.split(/\s+/);
+        pacObj = {
+          id: newPId,
+          nombres: partes[0] || 'Paciente',
+          apellidos: partes.slice(1).join(' ') || 'Recepción',
+          documento_tipo: 'CEDULA_PANAMA',
+          documento_numero: cedulaStr,
+          telefono: telStr,
+          email: 'paciente@medpulse.pa'
+        };
+        customP.push(pacObj);
+        localStorage.setItem('medpulse_custom_patients', JSON.stringify(customP));
+      }
+
+      if (patientSelect) {
+        if (!Array.from(patientSelect.options).some(o => o.value === pacObj.id)) {
+          const opt = document.createElement('option');
+          opt.value = pacObj.id;
+          opt.textContent = `★ ${pacObj.nombres} ${pacObj.apellidos} (Doc: ${pacObj.documento_numero})`;
+          patientSelect.prepend(opt);
+        }
+        patientSelect.value = pacObj.id;
+      }
+      if (patientIdInput) patientIdInput.value = pacObj.id;
+      alert(`✓ Paciente ${pacObj.nombres} ${pacObj.apellidos} (${pacObj.documento_numero}) vinculado a la cita.`);
+    });
+
+    const dayNames: Record<number, string> = { 1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 7: 'Domingo' };
+
+    const calculateAutomaticSlot = () => {
+      slotAssignedValue.value = '';
+      const medicoId = doctor.value;
+      const fechaStr = dateInput.value;
+      if (!medicoId || !fechaStr) {
+        if (submitBtn) submitBtn.disabled = true;
+        return;
+      }
+
+      const dateObj = new Date(fechaStr + 'T12:00:00');
+      const dayOfWeek = dateObj.getDay() || 7;
+
+      const docSchedule = data.horarios_medicos.find(h => h.medico_id === medicoId && h.dia_semana === dayOfWeek);
+      if (!docSchedule) {
+        const docShifts = data.horarios_medicos.filter(h => h.medico_id === medicoId);
+        const shiftDaysStr = docShifts.map(h => dayNames[h.dia_semana]).join(', ');
+        if (assignedSlotDisplay) {
+          assignedSlotDisplay.textContent = `Sin atención el ${dayNames[dayOfWeek]}`;
+          assignedSlotDisplay.style.color = '#ef4444';
+        }
+        roomInput.value = 'Sin consultorio';
+        if (assignedRoomBadge) assignedRoomBadge.textContent = 'No programado';
+        if (infoText) infoText.textContent = `⚠️ Este médico atiende los días: ${shiftDaysStr}. Selecciona una de esas fechas.`;
+        if (submitBtn) submitBtn.disabled = true;
+        return;
+      }
+
+      const assignedRoom = data.consultorios.find(c => c.id === docSchedule.consultorio_id);
+      roomInput.value = assignedRoom ? `${assignedRoom.nombre} (${assignedRoom.piso})` : 'Consultorio Central';
+      roomInput.dataset.id = String(docSchedule.consultorio_id);
+      if (assignedRoomBadge) assignedRoomBadge.textContent = assignedRoom ? assignedRoom.nombre : 'Consultorio';
+
+      const existingCitas = getAllCitas().filter(c =>
+        c.medico_id === medicoId &&
+        c.fecha_hora_inicio.slice(0, 10) === fechaStr &&
+        c.estado !== 'CANCELADA'
+      );
+
+      const toMinutes = (timeStr: string) => {
+        const [h, m] = timeStr.split(':').map(Number);
+        return h * 60 + m;
+      };
+
+      const toTimeString = (totalMinutes: number) => {
+        const h = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
+        const m = (totalMinutes % 60).toString().padStart(2, '0');
+        return `${h}:${m}`;
+      };
+
+      const startMinutes = toMinutes(docSchedule.hora_inicio.slice(0, 5));
+      const endMinutes = toMinutes(docSchedule.hora_fin.slice(0, 5));
+      const duration = docSchedule.duracion_cita_min || 30;
+
+      let foundStart: string | null = null;
+      let foundEnd: string | null = null;
+      let totalAvailable = 0;
+
+      for (let cur = startMinutes; cur + duration <= endMinutes; cur += duration) {
+        const slotStart = toTimeString(cur);
+        const slotEnd = toTimeString(cur + duration);
+
+        const isOccupied = existingCitas.some(c => {
+          const cStart = c.fecha_hora_inicio.slice(11, 16);
+          const cEnd = c.fecha_hora_fin ? c.fecha_hora_fin.slice(11, 16) : toTimeString(toMinutes(cStart) + duration);
+          return Math.max(toMinutes(cStart), cur) < Math.min(toMinutes(cEnd), cur + duration);
+        });
+
+        if (!isOccupied) {
+          totalAvailable++;
+          if (!foundStart) {
+            foundStart = slotStart;
+            foundEnd = slotEnd;
+            slotAssignedValue.value = slotStart;
+          }
+        }
+      }
+
+      if (foundStart && foundEnd) {
+        const time12 = `${formatTime12h(foundStart)} - ${formatTime12h(foundEnd)}`;
+        if (assignedSlotDisplay) {
+          assignedSlotDisplay.textContent = `✓ ${time12}`;
+          assignedSlotDisplay.style.color = '#34d399';
+        }
+        if (infoText) {
+          infoText.textContent = `✓ ${totalAvailable} cupos disponibles. Primer turno libre asignado: ${time12} (${duration} min).`;
+        }
+        if (submitBtn) submitBtn.disabled = false;
+      } else {
+        if (assignedSlotDisplay) {
+          assignedSlotDisplay.textContent = 'Turnos completos para esta fecha';
+          assignedSlotDisplay.style.color = '#f59e0b';
+        }
+        slotAssignedValue.value = '';
+        if (infoText) {
+          infoText.textContent = '❌ No hay cupos disponibles con este médico para la fecha seleccionada. Elige otra fecha.';
+        }
+        if (submitBtn) submitBtn.disabled = true;
+      }
+    };
+
+    const updateDoctors = () => {
+      doctor.replaceChildren();
+      const espId = Number(specialty.value);
+      const matchingDoctors = data.medicos.filter(m =>
+        data.medicos_especialidades.some(e => e.medico_id === m.id && e.especialidad_id === espId)
+      );
+
+      matchingDoctors.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = `Dr(a). ${m.nombres} ${m.apellidos} (CMP: ${m.numero_colegiatura})`;
+        doctor.append(opt);
+      });
+
+      calculateAutomaticSlot();
+    };
+
+    specialty.addEventListener('change', updateDoctors);
+    doctor.addEventListener('change', calculateAutomaticSlot);
+    dateInput.addEventListener('change', calculateAutomaticSlot);
+
+    // Preseleccionar médico si viene por query param ?medicoId=
+    if (medicoParam) {
+      const espRel = data.medicos_especialidades.find(e => e.medico_id === medicoParam && e.es_principal)
+        || data.medicos_especialidades.find(e => e.medico_id === medicoParam);
+      if (espRel) {
+        specialty.value = String(espRel.especialidad_id);
+      }
+      updateDoctors();
+      if (Array.from(doctor.options).some(o => o.value === medicoParam)) {
+        doctor.value = medicoParam;
+        calculateAutomaticSlot();
+      }
+    } else {
+      updateDoctors();
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!slotAssignedValue.value) {
+        alert('No hay un turno válido disponible para esta fecha. Por favor selecciona otra fecha.');
+        return;
+      }
+
+      const fecha = dateInput.value;
+      const hora = slotAssignedValue.value;
+      const [hh, mm] = hora.split(':').map(Number);
+      const endMins = hh * 60 + mm + 30;
+      const horaFin = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`;
+
+      const fechaHoraInicio = `${fecha} ${hora}:00-05`;
+      const fechaHoraFin = `${fecha} ${horaFin}:00-05`;
+
+      const numRandom = Math.floor(1000 + Math.random() * 9000);
+      const codigoCita = `CIT-ADM-${numRandom}`;
+
+      const pacienteId = patientIdInput?.value || data.pacientes[0].id;
+      const medicoId = doctor.value;
+      const especialidadId = Number(specialty.value);
+      const consultorioId = Number(roomInput.dataset.id || '1');
+      const motivoConsulta = (document.getElementById('motivo') as HTMLTextAreaElement)?.value || 'Consulta médica programada en clínica';
+      const canalOrigen = channelSelect?.value || 'RECEPCION_PRESENCIAL';
+
+      let pacNombre = 'Paciente';
+      let pacDoc = '—';
+      let pacTel = '+507 6598-2118';
+
+      const pSeed = data.pacientes.find(p => p.id === pacienteId);
+      if (pSeed) {
+        pacNombre = `${pSeed.nombres} ${pSeed.apellidos}`;
+        pacDoc = pSeed.documento_numero;
+        pacTel = pSeed.telefono;
+      } else {
+        try {
+          const customP = JSON.parse(localStorage.getItem('medpulse_custom_patients') || '[]');
+          const cp = customP.find((x: any) => x.id === pacienteId);
+          if (cp) {
+            pacNombre = `${cp.nombres} ${cp.apellidos}`;
+            pacDoc = cp.documento_numero || cp.documentoNumero || '—';
+            pacTel = cp.telefono || '+507 6598-2118';
+          }
+        } catch {}
+      }
+
+      const nuevaCita = {
+        id: 'f' + Date.now().toString(16),
+        codigo_cita: codigoCita,
+        paciente_id: pacienteId,
+        paciente_nombre_directo: pacNombre,
+        paciente_documento_directo: pacDoc,
+        paciente_telefono_directo: pacTel,
+        medico_id: medicoId,
+        especialidad_id: especialidadId,
+        consultorio_id: consultorioId,
+        fecha_hora_inicio: fechaHoraInicio,
+        fecha_hora_fin: fechaHoraFin,
+        estado: 'CONFIRMADA',
+        motivo_consulta: motivoConsulta,
+        canal_origen: canalOrigen,
+        reservado_por: 'ADMINISTRADOR'
+      };
+
+      saveCita(nuevaCita);
+
+      const m = data.medicos.find(x => x.id === medicoId);
+      const esp = data.especialidades.find(x => x.id === especialidadId);
+
+      if (summaryContent) {
+        summaryContent.innerHTML = `
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div><strong style="color: #94a3b8;">Código de Cita:</strong> <span style="font-family: monospace; font-size: 15px; color: #a78bfa; font-weight: 700;">${codigoCita}</span></div>
+            <div><strong style="color: #94a3b8;">Estado:</strong> <span class="badge green">CONFIRMADA</span></div>
+            <div><strong style="color: #94a3b8;">Paciente:</strong> <span style="color: #f8fafc; font-weight: 600;">${pacNombre}</span></div>
+            <div><strong style="color: #94a3b8;">Cédula:</strong> <span style="font-family: monospace; color: #34d399;">${pacDoc}</span></div>
+            <div><strong style="color: #94a3b8;">Médico:</strong> Dr(a). ${m?.nombres} ${m?.apellidos}</div>
+            <div><strong style="color: #94a3b8;">Especialidad:</strong> ${esp?.nombre}</div>
+            <div><strong style="color: #94a3b8;">Fecha y Horario:</strong> <span style="color: #38bdf8; font-weight: 700;">${fecha} · ${formatTime12h(hora)} - ${formatTime12h(horaFin)}</span></div>
+            <div><strong style="color: #94a3b8;">Consultorio:</strong> ${roomInput.value}</div>
+          </div>
+        `;
+      }
+
+      form.style.display = 'none';
+      if (successBox) successBox.style.display = 'block';
+    });
+
+    btnBookAnother?.addEventListener('click', () => {
+      form.style.display = 'block';
+      if (successBox) successBox.style.display = 'none';
+      calculateAutomaticSlot();
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initStaffBooking);
+  } else {
+    initStaffBooking();
+  }
+</script>

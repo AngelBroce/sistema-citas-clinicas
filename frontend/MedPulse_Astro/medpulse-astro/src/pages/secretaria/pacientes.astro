@@ -1,0 +1,358 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import data from '../../data/seeds.json';
+---
+
+<Layout title="Recepción y Registro de Pacientes" role="secretaria">
+  <div class="grid two">
+    <section class="card">
+      <h2>Registro Rápido de Paciente (Mesa de Entrada)</h2>
+      <p class="muted">
+        Ingresa los datos del paciente para habilitar la reserva de citas presenciales o telefónicas en el sistema.
+      </p>
+
+      <form id="new-patient-form" style="margin-top: 18px;">
+        <div class="form-grid">
+          <label>
+            Tipo de Documento
+            <select name="documento_tipo" id="sec-doc-tipo" required>
+              <option value="CEDULA_NACIONAL">Cédula panameña</option>
+              <option value="CEDULA_E">Cédula de extranjero residente (E)</option>
+              <option value="PASAPORTE">Pasaporte</option>
+            </select>
+          </label>
+          <label>
+            Número de Documento
+            <input type="text" name="documento_numero" id="sec-doc-numero" placeholder="Ej. 8-1234-56789" autocomplete="off" required />
+          </label>
+          <label>
+            Nombres
+            <input type="text" name="nombres" placeholder="Nombres del paciente" required />
+          </label>
+          <label>
+            Apellidos
+            <input type="text" name="apellidos" placeholder="Apellidos completos" required />
+          </label>
+          <label>
+            Teléfono Móvil
+            <input type="tel" name="telefono" placeholder="+507 6123-4567" autocomplete="tel" required />
+          </label>
+          <label>
+            Correo Electrónico
+            <input type="email" name="email" placeholder="paciente@correo.com" required />
+          </label>
+          <label>
+            Fecha de Nacimiento
+            <input type="date" name="fecha_nacimiento" required />
+          </label>
+          <label>
+            Género
+            <select name="genero" required>
+              <option value="MASCULINO">Masculino</option>
+              <option value="FEMENINO">Femenino</option>
+              <option value="OTRO">Otro</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="form-grid" style="margin-top: 14px;">
+          <label>
+            Grupo Sanguíneo
+            <select name="grupo_sanguineo">
+              <option value="O+">O+</option>
+              <option value="A+">A+</option>
+              <option value="B+">B+</option>
+              <option value="AB+">AB+</option>
+              <option value="O-">O-</option>
+              <option value="A-">A-</option>
+            </select>
+          </label>
+          <label>
+            Contacto de Emergencia
+            <input type="text" name="contacto_emergencia" placeholder="Familiar y teléfono" />
+          </label>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+          <button type="submit" class="button" id="btn-register-patient" style="background: #d97706;">
+            👤 Registrar paciente en sistema
+          </button>
+          <button type="reset" class="button secondary">
+            Limpiar formulario
+          </button>
+        </div>
+
+        <div id="patient-form-status" role="status" aria-live="polite" hidden style="margin-top: 16px; padding: 12px 14px; border-radius: 10px; font-size: 13px; line-height: 1.5;"></div>
+      </form>
+    </section>
+
+    <section class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <h2 style="margin: 0;">Directorio de Pacientes</h2>
+        <span class="badge" id="sec-patients-count">{data.pacientes.length} pacientes</span>
+      </div>
+      <div class="tools" style="margin-top: 12px;">
+        <input type="search" placeholder="Buscar por cédula, nombres, correo o teléfono..." id="search-patients-input" aria-label="Buscar paciente" />
+      </div>
+
+      <div id="sec-patients-list" style="display: grid; gap: 10px; max-height: 520px; overflow-y: auto;">
+        <!-- Renderizado dinámico: pacientes base + registrados en recepción/web -->
+      </div>
+
+      <p id="sec-patients-empty" hidden style="text-align: center; padding: 24px; color: #94a3b8; background: #090e17; border-radius: 8px; margin-top: 10px;">
+        No se encontraron pacientes que coincidan con la búsqueda.
+      </p>
+    </section>
+  </div>
+</Layout>
+
+<script>
+  import data from '../../data/seeds.json';
+  import { apiUrl } from '../../data/api';
+
+  const STORAGE_KEY = 'medpulse_custom_patients';
+  const CEDULA_REGEX = /^(\d{1,2}|E|N|PE|\d{1,2}AV|\d{1,2}PI)-\d{1,4}-\d{1,6}$/i;
+
+  type PacienteVista = {
+    id: string;
+    nombres: string;
+    apellidos: string;
+    documento_tipo: string;
+    documento_numero: string;
+    telefono: string;
+    email: string;
+    isNew?: boolean;
+  };
+
+  const escapeHtml = (value: unknown): string =>
+    String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+
+  function readCustom(): any[] {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveCustom(list: any[]) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    } catch {
+      console.warn('No se pudo guardar en localStorage');
+    }
+  }
+
+  function normalize(p: any, isNew = false): PacienteVista {
+    return {
+      id: String(p.id),
+      nombres: p.nombres || p.primer_nombre || 'Paciente',
+      apellidos: p.apellidos || p.primer_apellido || '',
+      documento_tipo: p.documento_tipo || p.documentoTipo || 'CEDULA',
+      documento_numero: p.documento_numero || p.documentoNumero || '—',
+      telefono: p.telefono || '—',
+      email: p.email || p.correo || '—',
+      isNew
+    };
+  }
+
+  function getAllPatients(): PacienteVista[] {
+    const base = (data.pacientes as any[]).map((p) => normalize(p));
+    const nuevos: PacienteVista[] = [];
+
+    readCustom().forEach((cp) => {
+      if (!cp?.id) return;
+      const n = normalize(cp, true);
+      const duplicated = [...base, ...nuevos].some((p) =>
+        p.id === n.id ||
+        (n.documento_numero !== '—' && p.documento_numero === n.documento_numero) ||
+        (n.email !== '—' && p.email.toLowerCase() === n.email.toLowerCase())
+      );
+      if (!duplicated) nuevos.push(n);
+    });
+
+    return [...nuevos.reverse(), ...base];
+  }
+
+  function docLabel(tipo: string): string {
+    if (tipo === 'PASAPORTE') return 'Pasaporte';
+    if (tipo === 'CEDULA_E') return 'Cédula E';
+    if (tipo === 'DNI') return 'DNI';
+    return 'Cédula';
+  }
+
+  function renderPatients() {
+    const list = document.getElementById('sec-patients-list');
+    const empty = document.getElementById('sec-patients-empty');
+    const count = document.getElementById('sec-patients-count');
+    const search = document.getElementById('search-patients-input') as HTMLInputElement | null;
+    if (!list) return;
+
+    const all = getAllPatients();
+    if (count) count.textContent = `${all.length} pacientes`;
+
+    const query = (search?.value || '').toLowerCase().trim();
+    const filtered = query
+      ? all.filter((p) => `${p.nombres} ${p.apellidos} ${p.documento_numero} ${p.email} ${p.telefono}`.toLowerCase().includes(query))
+      : all;
+
+    if (empty) empty.hidden = filtered.length > 0;
+
+    list.innerHTML = filtered.map((p) => `
+      <div class="patient-item-card" style="padding: 12px 14px; border-radius: 8px; background: #0c162c; border: 1px solid ${p.isNew ? 'rgba(16, 185, 129, 0.45)' : 'var(--border-color)'}; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+        <div style="min-width: 0;">
+          <strong style="color: #f1f5f9; display: flex; align-items: center; gap: 6px; font-size: 14px; flex-wrap: wrap;">
+            ${escapeHtml(p.nombres)} ${escapeHtml(p.apellidos)}
+            ${p.isNew ? '<span class="badge green" style="font-size: 10px; padding: 1px 6px;">Nuevo</span>' : ''}
+          </strong>
+          <small style="color: #38bdf8; display: block; overflow-wrap: anywhere;">
+            ${escapeHtml(docLabel(p.documento_tipo))}: ${escapeHtml(p.documento_numero)} · Tel: ${escapeHtml(p.telefono)}
+          </small>
+          <small style="color: #94a3b8; display: block; overflow-wrap: anywhere;">${escapeHtml(p.email)}</small>
+        </div>
+        <a href="/secretaria/reservar?paciente_id_select=${encodeURIComponent(p.id)}" class="cal-btn" style="font-size: 12px; padding: 5px 10px; white-space: nowrap; flex-shrink: 0;" title="Agendar cita para este paciente">
+          ＋ Cita
+        </a>
+      </div>
+    `).join('');
+  }
+
+  function showStatus(message: string, type: 'success' | 'error' | 'warning') {
+    const box = document.getElementById('patient-form-status');
+    if (!box) return;
+    const palette = {
+      success: { bg: 'rgba(16, 185, 129, 0.12)', border: 'rgba(16, 185, 129, 0.45)', color: '#6ee7b7' },
+      error: { bg: 'rgba(239, 68, 68, 0.12)', border: 'rgba(239, 68, 68, 0.45)', color: '#fca5a5' },
+      warning: { bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.45)', color: '#fcd34d' }
+    }[type];
+    box.style.background = palette.bg;
+    box.style.border = `1px solid ${palette.border}`;
+    box.style.color = palette.color;
+    box.innerHTML = message;
+    box.hidden = false;
+  }
+
+  function showToast(text: string) {
+    const toast = document.querySelector('#toast') as HTMLElement | null;
+    if (!toast) return;
+    toast.textContent = text;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 3500);
+  }
+
+  async function handleSubmit(e: SubmitEvent) {
+    e.preventDefault();
+    const form = e.currentTarget as HTMLFormElement;
+    const submitBtn = document.getElementById('btn-register-patient') as HTMLButtonElement | null;
+    if (!form.reportValidity()) return;
+
+    const fd = new FormData(form);
+    const get = (k: string) => String(fd.get(k) || '').trim();
+
+    const documento_tipo = get('documento_tipo');
+    const documento_numero = get('documento_numero').toUpperCase();
+    const email = get('email').toLowerCase();
+
+    if (documento_tipo !== 'PASAPORTE' && !CEDULA_REGEX.test(documento_numero)) {
+      showStatus('La cédula debe tener el formato <strong>provincia-tomo-asiento</strong> (ej. 8-1234-56789 o E-8-123456).', 'error');
+      document.getElementById('sec-doc-numero')?.focus();
+      return;
+    }
+
+    const duplicado = getAllPatients().find((p) =>
+      p.documento_numero.toUpperCase() === documento_numero || p.email.toLowerCase() === email
+    );
+    if (duplicado) {
+      showStatus(`Ya existe un paciente con ese documento o correo: <strong>${escapeHtml(duplicado.nombres)} ${escapeHtml(duplicado.apellidos)}</strong>.`, 'error');
+      return;
+    }
+
+    const payload = {
+      documento_tipo,
+      documento_numero,
+      nombres: get('nombres'),
+      apellidos: get('apellidos'),
+      telefono: get('telefono'),
+      email,
+      correo: email,
+      fecha_nacimiento: get('fecha_nacimiento'),
+      genero: get('genero'),
+      grupo_sanguineo: get('grupo_sanguineo') || 'O+',
+      contacto_emergencia: get('contacto_emergencia')
+    };
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Registrando paciente...';
+    }
+
+    let paciente: any = null;
+    let guardadoSoloLocal = false;
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch(apiUrl('/api/auth/register-paciente'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+      const body = await res.json().catch(() => ({}));
+
+      if (res.ok && (body.ok || body.success)) {
+        paciente = { ...payload, ...(body.paciente || {}) };
+      } else {
+        showStatus(escapeHtml(body.error || 'No se pudo registrar el paciente. Verifica los datos.'), 'error');
+        return;
+      }
+    } catch {
+      // Backend no disponible: se guarda localmente para no bloquear la recepción
+      guardadoSoloLocal = true;
+      paciente = { ...payload, id: 'p-local-' + Date.now().toString(16) };
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '👤 Registrar paciente en sistema';
+      }
+    }
+
+    if (!paciente) return;
+
+    const custom = readCustom();
+    custom.push({ ...paciente, registrado_por: 'RECEPCION', creado_en: new Date().toISOString() });
+    saveCustom(custom);
+
+    form.reset();
+    const search = document.getElementById('search-patients-input') as HTMLInputElement | null;
+    if (search) search.value = '';
+    renderPatients();
+
+    const nombre = `${escapeHtml(paciente.nombres)} ${escapeHtml(paciente.apellidos)}`;
+    const agendarHref = `/secretaria/reservar?paciente_id_select=${encodeURIComponent(paciente.id)}`;
+    showStatus(
+      `${guardadoSoloLocal ? 'Servidor no disponible: ' : ''}Paciente <strong>${nombre}</strong> registrado${guardadoSoloLocal ? ' localmente en este equipo' : ' correctamente'}. ` +
+      `<a href="${agendarHref}" style="color: inherit; font-weight: 700; text-decoration: underline;">Agendar cita ahora →</a>`,
+      guardadoSoloLocal ? 'warning' : 'success'
+    );
+    showToast(guardadoSoloLocal ? 'Paciente guardado localmente (servidor no disponible)' : '¡Paciente registrado exitosamente!');
+  }
+
+  function init() {
+    renderPatients();
+    document.getElementById('search-patients-input')?.addEventListener('input', renderPatients);
+    document.getElementById('new-patient-form')?.addEventListener('submit', handleSubmit as EventListener);
+    document.getElementById('new-patient-form')?.addEventListener('reset', () => {
+      const box = document.getElementById('patient-form-status');
+      if (box) box.hidden = true;
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+</script>

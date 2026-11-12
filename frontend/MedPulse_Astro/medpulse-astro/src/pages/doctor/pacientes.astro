@@ -1,0 +1,234 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import data from '../../data/seeds.json';
+
+const doctor = data.medicos[0];
+---
+
+<Layout title="Pacientes Asignados · Expedientes Clínicos" role="doctor">
+  <!-- Hero Banner de Expedientes Clínicos -->
+  <section class="card patient-hero animate-slide-up" style="margin-bottom: 24px;">
+    <div class="patient-hero-content">
+      <div class="patient-hero-badge">
+        <span class="live-pulse-dot"></span>
+        <span style="font-weight: 700; color: #38bdf8; letter-spacing: 0.5px;">EXPEDIENTES CLÍNICOS</span>
+        <span class="separator" style="color: #475569;">·</span>
+        <span class="verified-tag" style="color: #34d399; font-weight: 600;">Dr. Roberto Mendoza Valdivia</span>
+      </div>
+      
+      <h2 style="font-size: 24px; margin: 10px 0 8px 0; color: #ffffff;">Pacientes y Fichas de Atención Médica 👥</h2>
+      <p style="margin: 0 0 16px 0; color: #cbd5e1; max-width: 740px; font-size: 14px; line-height: 1.6;">
+        Historial clínico y antecedentes de los pacientes con atenciones programadas en tu servicio de <strong>Cardiología / Consultorio 201</strong>.
+      </p>
+
+      <div class="patient-quick-tags">
+        <span class="tag-chip" id="doc-patient-counter"><strong>Pacientes en Cartera:</strong> Cargando...</span>
+        <span class="tag-chip"><strong>Especialidad:</strong> Cardiología Clínica</span>
+        <span class="tag-chip"><strong>Consultorio:</strong> Consultorio 201 (Piso 2)</span>
+      </div>
+    </div>
+
+    <div class="patient-hero-actions">
+      <a class="button primary-glow" href="/doctor/agenda">
+        <span>📅</span> Mi agenda y citas
+      </a>
+      <a class="button secondary-glow" href="/doctor">
+        <span>◈</span> Panel principal
+      </a>
+    </div>
+  </section>
+
+  <!-- Rejilla Reactiva de Expedientes de Pacientes -->
+  <div id="doctor-patients-grid" class="grid" style="grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px;">
+    <!-- Renderizado reactivo en cliente con pacientes asignados -->
+  </div>
+</Layout>
+
+<script>
+  import data from '../../data/seeds.json';
+
+  const STORAGE_KEY_CITAS = 'medpulse_citas_v2';
+  const STORAGE_KEY_PATIENTS = 'medpulse_custom_patients';
+  const targetDoctorId = data.medicos[0]?.id || 'MED-01';
+
+  function getCitas() {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_CITAS);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [...data.citas];
+  }
+
+  function getCustomPatients() {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_PATIENTS);
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return [];
+  }
+
+  function renderDoctorPatients() {
+    const grid = document.getElementById('doctor-patients-grid');
+    const counterBadge = document.getElementById('doc-patient-counter');
+    if (!grid) return;
+
+    const allCitas = getCitas();
+    const docCitas = allCitas.filter((c: any) => c.medico_id === targetDoctorId);
+    const customPatients = getCustomPatients();
+
+    // Pacientes asignados al doctor
+    const patientMap = new Map();
+
+    // 1. Pacientes de seeds que tienen cita con el doctor
+    data.pacientes.forEach(p => {
+      const hasCita = docCitas.some((c: any) => c.paciente_id === p.id);
+      if (hasCita || p.id === data.pacientes[0].id) {
+        patientMap.set(p.id, {
+          ...p,
+          lastCita: docCitas.find((c: any) => c.paciente_id === p.id)
+        });
+      }
+    });
+
+    // 2. Pacientes personalizados que tienen cita con el doctor o registrados recientemente
+    customPatients.forEach((cp: any) => {
+      const cita = docCitas.find((c: any) => c.paciente_id === cp.id);
+      if (cita || docCitas.length > 0) {
+        patientMap.set(cp.id, {
+          id: cp.id,
+          nombres: cp.nombres,
+          apellidos: cp.apellidos,
+          documento_tipo: cp.documento_tipo || 'DNI',
+          documento_numero: cp.documento_numero || cp.documentoNumero || '—',
+          telefono: cp.telefono || '—',
+          email: cp.email || cp.correo || '—',
+          grupo_sanguineo: cp.grupo_sanguineo || 'O+',
+          alergias: cp.alergias || 'Ninguna conocida',
+          fecha_nacimiento: cp.fecha_nacimiento || '1995-01-01',
+          genero: cp.genero || 'REGISTRADO',
+          isCustom: true,
+          lastCita: cita
+        });
+      }
+    });
+
+    // 3. Paciente de sesión activa
+    try {
+      const session = JSON.parse(localStorage.getItem('medpulse_session') || '{}');
+      if (session?.paciente) {
+        const sp = session.paciente;
+        const cita = docCitas.find((c: any) => c.paciente_id === sp.id);
+        if (!patientMap.has(sp.id)) {
+          patientMap.set(sp.id, {
+            id: sp.id,
+            nombres: sp.nombres,
+            apellidos: sp.apellidos,
+            documento_tipo: sp.documento_tipo || 'DNI',
+            documento_numero: sp.documento_numero || '—',
+            telefono: sp.telefono || '—',
+            email: sp.email || sp.correo || '—',
+            grupo_sanguineo: sp.grupo_sanguineo || 'O+',
+            alergias: sp.alergias || 'Ninguna conocida',
+            fecha_nacimiento: '1995-01-01',
+            genero: 'REGISTRADO',
+            isCustom: true,
+            lastCita: cita
+          });
+        }
+      }
+    } catch {}
+
+    const patientsList = Array.from(patientMap.values());
+    if (counterBadge) counterBadge.innerHTML = `<strong>Pacientes en Cartera:</strong> ${patientsList.length}`;
+
+    grid.innerHTML = patientsList.map(p => {
+      const cita = p.lastCita;
+      const isNew = p.isCustom;
+      return `
+        <section class="card animate-slide-up" style="display: flex; flex-direction: column; justify-content: space-between; background: #0f172a; border: 1px solid ${isNew ? 'rgba(16, 185, 129, 0.35)' : 'rgba(56, 189, 248, 0.2)'}; border-radius: 14px; padding: 20px;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+              <div>
+                <h3 style="margin: 0 0 4px 0; color: #f8fafc; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+                  ${p.nombres} ${p.apellidos}
+                  ${isNew ? '<span class="badge green" style="font-size: 10px; padding: 1px 6px;">Nuevo Paciente</span>' : ''}
+                </h3>
+                <span style="font-size: 12px; color: #38bdf8; font-weight: 500;">
+                  ${p.documento_tipo}: ${p.documento_numero} · Tel: ${p.telefono}
+                </span>
+                <small style="display: block; color: #94a3b8; font-size: 11px; margin-top: 2px;">Correo: ${p.email}</small>
+              </div>
+              <span class="badge blue">Expediente Activo</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; padding: 12px; background: #0c162c; border-radius: 8px; border: 1px solid #1e293b;">
+              <div>
+                <span class="muted" style="display:block; font-size: 11px;">GRUPO SANGUÍNEO</span>
+                <strong style="color: #f1f5f9; font-size: 14px;">${p.grupo_sanguineo || 'O+'}</strong>
+              </div>
+              <div>
+                <span class="muted" style="display:block; font-size: 11px;">ALERGIAS</span>
+                <strong style="color: #ef4444; font-size: 13px;">${p.alergias || 'Ninguna conocida'}</strong>
+              </div>
+              <div>
+                <span class="muted" style="display:block; font-size: 11px;">TELÉFONO</span>
+                <span style="color: #cbd5e1; font-size: 13px;">${p.telefono}</span>
+              </div>
+              <div>
+                <span class="muted" style="display:block; font-size: 11px;">DOCUMENTO</span>
+                <span style="color: #cbd5e1; font-size: 13px;">${p.documento_tipo} ${p.documento_numero}</span>
+              </div>
+            </div>
+
+            ${cita ? `
+              <div style="padding: 10px 14px; border-radius: 8px; background: rgba(56, 189, 248, 0.06); border: 1px solid rgba(56, 189, 248, 0.25); margin-bottom: 14px;">
+                <span style="font-size: 11px; color: #38bdf8; font-weight: 700; display: block;">ÚLTIMO MOTIVO REGISTRADO (${cita.codigo_cita || 'CITA'}):</span>
+                <p style="margin: 3px 0 0 0; font-size: 13px; color: #e2e8f0;">
+                  "${cita.motivo_consulta || 'Consulta de control'}"
+                </p>
+                <small style="color: #94a3b8; font-size: 11px; display: block; margin-top: 4px;">📅 Fecha: ${(() => {
+                  const raw = cita.fecha_hora_inicio.slice(0, 16).replace('T', ' ');
+                  const [d, t] = raw.split(' ');
+                  if (!t) return raw;
+                  let [h, m] = t.split(':');
+                  let hh = parseInt(h, 10);
+                  const ampm = hh >= 12 ? 'PM' : 'AM';
+                  hh = hh % 12 || 12;
+                  return `${d} ${String(hh).padStart(2, '0')}:${m} ${ampm}`;
+                })()} · Estado: <strong style="color:#34d399;">${cita.estado}</strong></small>
+              </div>
+            ` : ''}
+          </div>
+
+          <div style="border-top: 1px solid #1e293b; padding-top: 14px; margin-top: 10px;">
+            <label style="margin-bottom: 8px; display: block;">
+              Notas clínicas / Evolución médica
+              <textarea rows="2" placeholder="Escribe aquí las observaciones clínicas durante la consulta..." style="width: 100%; background: #090e17; border: 1px solid #263342; border-radius: 8px; padding: 8px; color: #f8fafc; font-size: 13px; margin-top: 4px;"></textarea>
+            </label>
+            <button type="button" class="button primary-glow btn-save-notes" style="width: 100%; justify-content: center; font-size: 13px;" onclick="window.guardarNotaClinica('${p.id}')">
+              💾 Guardar evolución clínica
+            </button>
+          </div>
+        </section>
+      `;
+    }).join('');
+  }
+
+  (window as any).guardarNotaClinica = function(patientId: string) {
+    const toast = document.getElementById('toast');
+    if (toast) {
+      toast.textContent = '✓ Evolución médica guardada exitosamente en el expediente.';
+      toast.style.display = 'block';
+      setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3000);
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderDoctorPatients);
+  } else {
+    renderDoctorPatients();
+  }
+</script>

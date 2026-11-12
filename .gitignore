@@ -26,6 +26,12 @@ dist/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*
+!.env.example
+
+# Sesiones locales de WhatsApp (Baileys QR Auth)
+.wa_auth_session/
+**/.wa_auth_session/
 
 # IDE files
 .vscode/*

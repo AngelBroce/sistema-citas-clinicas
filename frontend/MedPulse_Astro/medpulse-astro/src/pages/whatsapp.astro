@@ -1,0 +1,658 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="WhatsApp IA, Triaje y Conexión QR" role="admin">
+  <!-- Bento Grid de Telemetría de WhatsApp -->
+  <div class="grid" style="margin-bottom: 20px;">
+    <section class="card metric" style="border-top: 3px solid #10b981;">
+      <span style="display: flex; align-items: center; gap: 6px;">
+        <span class="badge-dot green"></span> Línea Empresarial Activa
+      </span>
+      <strong id="wa-metric-phone" style="color: #10b981; font-size: 20px;">+507 6598-2118</strong>
+      <small>Panamá · Bot Clínico 24/7</small>
+    </section>
+
+    <section class="card metric" style="border-top: 3px solid #06b6d4;">
+      <span>Estado de Vínculo QR</span>
+      <strong id="wa-metric-status" style="color: #38bdf8; font-size: 18px;">Listo para Escanear</strong>
+      <small id="wa-metric-substatus">Puente WhatsApp Directo & Simulador</small>
+    </section>
+
+    <section class="card metric" style="border-top: 3px solid #8b5cf6;">
+      <span>Motor NLU / Prompt IA</span>
+      <strong style="color: #c084fc; font-size: 18px;">Triaje + Anti-Colisión</strong>
+      <small>Detecta Nombre, Cédula, Fecha y Hora</small>
+    </section>
+
+    <section class="card metric" style="border-top: 3px solid #f59e0b;">
+      <span>Citas Guardadas por WhatsApp</span>
+      <strong id="wa-metric-citas" style="color: #fbbf24; font-size: 22px;">1</strong>
+      <small><a href="/citas" style="color: #38bdf8; text-decoration: underline;">Ver en Calendario Clínico →</a></small>
+    </section>
+  </div>
+
+  <!-- Layout Principal 2 Columnas: Izquierda (QR + Prompt IA + Entidades) | Derecha (Simulador / Chat en Vivo con Opciones Elegibles) -->
+  <div class="grid two" style="align-items: start;">
+    
+    <!-- COLUMNA IZQUIERDA: CÓDIGO QR PARA PRUEBA Y REGLAS DEL PROMPT IA -->
+    <div style="display: flex; flex-direction: column; gap: 18px;">
+      
+      <!-- Tarjeta 1: Código QR de Conexión para +507 6598-2118 -->
+      <section class="card" style="background: linear-gradient(145deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.92) 100%); border: 1px solid rgba(16, 185, 129, 0.35);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+          <div>
+            <span class="badge green" style="margin-bottom: 6px;">📱 Conexión Directa sin Meta</span>
+            <h2 style="margin: 0; font-size: 18px; color: #f8fafc;">Código QR para tu WhatsApp (6598-2118)</h2>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" id="btn-mode-qr-live" class="cal-btn" style="background: rgba(16, 185, 129, 0.2); border-color: #10b981; color: #34d399; font-size: 12px; padding: 6px 10px;">
+              🔗 QR Vincular Dispositivo
+            </button>
+            <button type="button" id="btn-mode-qr-wame" class="cal-btn" style="font-size: 12px; padding: 6px 10px;">
+              📲 QR Abrir Chat (wa.me)
+            </button>
+          </div>
+        </div>
+
+        <p id="qr-instructions-text" style="color: #94a3b8; font-size: 13px; margin: 0 0 14px; line-height: 1.5;">
+          Escanea este código QR desde tu celular (<strong>WhatsApp → Dispositivos vinculados → Vincular un dispositivo</strong>) para que tu número <strong>+507 6598-2118</strong> responda automáticamente con el bot clínico, o usa el simulador interactivo a la derecha.
+        </p>
+
+        <!-- Caja visual del QR -->
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px; background: #090d16; border: 1px solid #1e293b; border-radius: 14px; position: relative;">
+          <div id="qr-box-wrapper" style="background: #ffffff; padding: 12px; border-radius: 12px; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.25); display: flex; align-items: center; justify-content: center; min-width: 230px; min-height: 230px;">
+            <img id="wa-qr-image" src="" alt="Código QR de WhatsApp MedPulse" style="width: 210px; height: 210px; display: none; border-radius: 6px;" />
+            <div id="wa-qr-placeholder" style="text-align: center; color: #0f172a; padding: 16px; max-width: 200px;">
+              <div style="font-size: 36px; margin-bottom: 8px;">🔄</div>
+              <strong style="font-size: 13px; display: block;">Generando Código QR...</strong>
+              <small style="color: #475569; font-size: 11px;">Conectando con servidor WhatsApp</small>
+            </div>
+          </div>
+
+          <div style="margin-top: 12px; text-align: center;">
+            <span id="qr-status-badge" class="badge amber" style="font-size: 12px;">Esperando escaneo QR</span>
+            <p id="qr-status-detail" style="margin: 6px 0 0; font-size: 12px; color: #94a3b8;">
+              Número configurado: <strong style="color: #34d399;">+507 6598-2118</strong>
+            </p>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; justify-content: center;">
+            <button type="button" id="btn-refresh-qr" class="button" style="padding: 8px 14px; font-size: 12px;">
+              🔄 Generar / Actualizar QR
+            </button>
+            <a
+              id="btn-open-whatsapp-direct"
+              href="https://wa.me/50765982118?text=Hola%20MedPulse%2C%20soy%20Juan%20P%C3%A9rez%2C%20c%C3%A9dula%208-1234-56789%2C%20quiero%20una%20cita%20para%20ma%C3%B1ana%20a%20las%205"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="button secondary"
+              style="padding: 8px 14px; font-size: 12px;"
+            >
+              💬 Abrir en mi WhatsApp (+507 6598-2118)
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tarjeta 2: Inspector en Tiempo Real de Entidades Detectadas por la IA -->
+      <section class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <h3 style="margin: 0; font-size: 15px; color: #f8fafc;">🧠 Extractor Inteligente en Tiempo Real (NLU)</h3>
+          <span class="badge blue" style="font-size: 11px;">Detección Eficaz</span>
+        </div>
+        <p style="color: #94a3b8; font-size: 12px; margin: 0 0 12px;">
+          Cada vez que envías un mensaje, el motor identifica automáticamente estos datos sin importar el orden en que los escribas:
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div style="padding: 10px 12px; background: #090e17; border: 1px solid #1e293b; border-radius: 8px;">
+            <small style="color: #64748b; font-size: 10px; text-transform: uppercase; display: block;">👤 Nombre Detectado</small>
+            <strong id="nlu-nombre" style="color: #f8fafc; font-size: 13px;">—</strong>
+          </div>
+          <div style="padding: 10px 12px; background: #090e17; border: 1px solid #1e293b; border-radius: 8px;">
+            <small style="color: #64748b; font-size: 10px; text-transform: uppercase; display: block;">🪪 Cédula Panameña</small>
+            <strong id="nlu-cedula" style="color: #34d399; font-family: monospace; font-size: 13px;">—</strong>
+          </div>
+          <div style="padding: 10px 12px; background: #090e17; border: 1px solid #1e293b; border-radius: 8px;">
+            <small style="color: #64748b; font-size: 10px; text-transform: uppercase; display: block;">📅 Fecha Calculada</small>
+            <strong id="nlu-fecha" style="color: #38bdf8; font-size: 13px;">—</strong>
+          </div>
+          <div style="padding: 10px 12px; background: #090e17; border: 1px solid #1e293b; border-radius: 8px;">
+            <small style="color: #64748b; font-size: 10px; text-transform: uppercase; display: block;">⏰ Hora Solicitada</small>
+            <strong id="nlu-hora" style="color: #fbbf24; font-size: 13px;">—</strong>
+          </div>
+        </div>
+
+        <div style="margin-top: 10px; padding: 10px 12px; background: #090e17; border: 1px solid #1e293b; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+          <small style="color: #94a3b8; font-size: 12px;">🩺 Triaje / Especialidad:</small>
+          <strong id="nlu-triaje" style="color: #c084fc; font-size: 12px;">Esperando síntomas o solicitud...</strong>
+        </div>
+      </section>
+
+      <!-- Tarjeta 3: Prompt Maestro de IA (Cómo responder vs Cómo NO responder) -->
+      <section class="card">
+        <h3 style="margin: 0 0 8px; font-size: 15px; color: #f8fafc;">🛡️ Reglas del Prompt de IA Clínica (Guardrails)</h3>
+        <div style="display: grid; grid-template-columns: 1fr; gap: 10px; font-size: 12px;">
+          <div style="padding: 10px 12px; background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10b981; border-radius: 6px;">
+            <strong style="color: #34d399; display: block; margin-bottom: 4px;">✅ CÓMO SÍ RESPONDE EL BOT:</strong>
+            <ul style="margin: 0; padding-left: 16px; color: #cbd5e1; line-height: 1.5;">
+              <li>Ofrece <strong>opciones numeradas (1, 2, 3, 4)</strong> para elegir respuesta rápida o acepta frases libres.</li>
+              <li>Calcula fechas relativas (<em>"hoy"</em>, <em>"mañana"</em>) y horas (<em>"a las 5"</em> → 17:00, <em>"a las 7"</em> → 07:00).</li>
+              <li>Si la hora está <strong>llena o fuera de turno</strong>, responde que esa hora no está disponible y sugiere horarios libres para probar otra hora.</li>
+            </ul>
+          </div>
+
+          <div style="padding: 10px 12px; background: rgba(244, 63, 94, 0.08); border-left: 3px solid #f43f5e; border-radius: 6px;">
+            <strong style="color: #fb7185; display: block; margin-bottom: 4px;">🚫 CÓMO NO RESPONDE (PROHIBICIONES):</strong>
+            <ul style="margin: 0; padding-left: 16px; color: #cbd5e1; line-height: 1.5;">
+              <li><strong>Prohibido recetar pastillas o antibióticos:</strong> Si el paciente pide receta, activa el bloqueo de seguridad médica.</li>
+              <li><strong>Prohibido agendar emergencias rojas:</strong> Si detecta dolor de pecho o falta de aire, bloquea la cita normal y deriva a Urgencias.</li>
+              <li><strong>Cero doble reserva en la misma hora:</strong> Nunca sobrepone un turno ya tomado.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- COLUMNA DERECHA: CONSOLA DE CHAT DE WHATSAPP CON RESPUESTAS ELEGIBLES Y PRUEBA DE HORAS LLENAS -->
+    <section class="card" style="display: flex; flex-direction: column; padding: 0; overflow: hidden; border: 1px solid rgba(16, 185, 129, 0.35);">
+      <!-- Cabecera estilo WhatsApp Business -->
+      <div style="background: #075e54; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 42px; height: 42px; border-radius: 50%; background: #10b981; color: #052e16; font-weight: 800; font-size: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 12px rgba(16,185,129,0.5);">
+            ✚
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <strong style="color: #ffffff; font-size: 15px;">MedPulse Clínica IA</strong>
+              <span style="background: #25d366; color: #052e16; font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 10px;">EMPRESA VERIFICADA</span>
+            </div>
+            <small style="color: #d1fae5; font-size: 12px;">Línea: +507 6598-2118 · En línea (Triaje & Agenda Activos)</small>
+          </div>
+        </div>
+
+        <button type="button" id="btn-reset-chat" class="cal-btn" style="background: rgba(0,0,0,0.28); color: #ffffff; border: 1px solid rgba(255,255,255,0.25); font-size: 12px; padding: 6px 10px;">
+          🔄 Reiniciar Chat
+        </button>
+      </div>
+
+      <!-- Barra de Escenarios de Prueba en 1 Clic (Incluye el ejemplo exacto del usuario) -->
+      <div style="background: #0d1522; padding: 12px 16px; border-bottom: 1px solid #1e293b;">
+        <small style="color: #94a3b8; font-size: 11px; font-weight: 700; display: block; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+          ⚡ Escenarios de Prueba en 1 Clic (Haz clic para enviar al bot):
+        </small>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button
+            type="button"
+            class="chip-test"
+            data-msg="Soy Juan Pérez con cédula 8-1234-56789, quiero una cita para mañana a las 5"
+            style="padding: 6px 10px; font-size: 11px; border-radius: 8px; background: rgba(16, 185, 129, 0.16); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); cursor: pointer; font-weight: 600;"
+          >
+            1️⃣ "Quiero cita para mañana a las 5 (Soy Juan Pérez, 8-1234-56789)"
+          </button>
+
+          <button
+            type="button"
+            class="chip-test"
+            data-msg="Soy María Gómez, cédula 8-999-1111, quiero una cita para mañana a las 5"
+            style="padding: 6px 10px; font-size: 11px; border-radius: 8px; background: rgba(245, 158, 11, 0.16); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); cursor: pointer; font-weight: 600;"
+          >
+            2️⃣ Probar Hora Llena: Pedir la misma hora ("mañana a las 5")
+          </button>
+
+          <button
+            type="button"
+            class="chip-test"
+            data-msg="Quiero una cita para hoy a las 7"
+            style="padding: 6px 10px; font-size: 11px; border-radius: 8px; background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); cursor: pointer; font-weight: 600;"
+          >
+            3️⃣ "Quiero cita hoy a las 7" (Fuera de turno → Sugiere otras horas)
+          </button>
+
+          <button
+            type="button"
+            class="chip-test"
+            data-msg="Hola, tengo fiebre alta de 39 y dolor de cabeza desde hace 5 días"
+            style="padding: 6px 10px; font-size: 11px; border-radius: 8px; background: rgba(168, 85, 247, 0.16); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); cursor: pointer; font-weight: 600;"
+          >
+            🩺 Triaje Moderado (Fiebre + Dolor)
+          </button>
+
+          <button
+            type="button"
+            class="chip-test"
+            data-msg="Tengo dolor fuerte en el pecho y me falta el aire"
+            style="padding: 6px 10px; font-size: 11px; border-radius: 8px; background: rgba(244, 63, 94, 0.16); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.4); cursor: pointer; font-weight: 600;"
+          >
+            🚨 Triaje Urgente (Bloquea cita)
+          </button>
+
+          <button
+            type="button"
+            class="chip-test"
+            data-msg="¿Qué pastilla o antibiótico me recetas para la infección?"
+            style="padding: 6px 10px; font-size: 11px; border-radius: 8px; background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.35); cursor: pointer;"
+          >
+            🚫 Probar qué NO responde (Pedir receta)
+          </button>
+        </div>
+      </div>
+
+      <!-- Ventana de Mensajes de WhatsApp -->
+      <div
+        id="wa-chat-messages"
+        style="height: 430px; overflow-y: auto; padding: 16px; background: #0b141a; display: flex; flex-direction: column; gap: 12px;"
+      >
+        <!-- Mensajes renderizados dinámicamente -->
+      </div>
+
+      <!-- Botonera de Respuestas Elegibles Rápidas (Opciones 1, 2, 3, 4, 0) -->
+      <div style="background: #111b21; padding: 10px 14px; border-top: 1px solid #1e293b; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+        <small style="color: #94a3b8; font-size: 11px; margin-right: 4px;">Elegir respuesta:</small>
+        <button type="button" class="chip-option" data-opt="1" style="padding: 5px 10px; border-radius: 16px; background: #1f2c34; color: #00a884; border: 1px solid #00a884; font-size: 12px; font-weight: 700; cursor: pointer;">
+          1️⃣ Opción 1 (Triaje)
+        </button>
+        <button type="button" class="chip-option" data-opt="2" style="padding: 5px 10px; border-radius: 16px; background: #1f2c34; color: #00a884; border: 1px solid #00a884; font-size: 12px; font-weight: 700; cursor: pointer;">
+          2️⃣ Opción 2 (Agendar)
+        </button>
+        <button type="button" class="chip-option" data-opt="3" style="padding: 5px 10px; border-radius: 16px; background: #1f2c34; color: #00a884; border: 1px solid #00a884; font-size: 12px; font-weight: 700; cursor: pointer;">
+          3️⃣ Opción 3 (Horarios)
+        </button>
+        <button type="button" class="chip-option" data-opt="4" style="padding: 5px 10px; border-radius: 16px; background: #1f2c34; color: #00a884; border: 1px solid #00a884; font-size: 12px; font-weight: 700; cursor: pointer;">
+          4️⃣ Opción 4 (Urgencias)
+        </button>
+        <button type="button" class="chip-option" data-opt="0" style="padding: 5px 10px; border-radius: 16px; background: #1f2c34; color: #94a3b8; border: 1px solid #334155; font-size: 12px; cursor: pointer;">
+          0️⃣ Menú Principal
+        </button>
+      </div>
+
+      <!-- Barra de Escritura de Mensaje -->
+      <form id="wa-chat-form" style="background: #202c33; padding: 12px 14px; display: flex; gap: 10px; align-items: center;">
+        <input
+          type="text"
+          id="wa-chat-input"
+          placeholder="Escribe aquí (ej. Quiero una cita para mañana a las 5, soy Juan Pérez 8-1234-56789)..."
+          required
+          style="flex: 1; height: 42px; border-radius: 20px; background: #2a3942; border: 1px solid #3b4a54; color: #f8fafc; padding: 0 16px; font-size: 13px;"
+        />
+        <button
+          type="submit"
+          id="wa-send-btn"
+          style="height: 42px; padding: 0 18px; border-radius: 20px; background: #00a884; color: #052e16; font-weight: 800; border: none; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;"
+        >
+          <span>Enviar</span> ➤
+        </button>
+      </form>
+    </section>
+
+  </div>
+</Layout>
+
+<script>
+  import { apiUrl } from '../data/api';
+  import seedsData from '../data/seeds.json';
+
+  const STORAGE_KEY = 'medpulse_citas_v2';
+  const MY_PHONE = '+507 6598-2118';
+
+  function getStoredCitas(): any[] {
+    try {
+      if (!localStorage.getItem('medpulse_reset_zero_v2')) {
+        localStorage.setItem(STORAGE_KEY, '[]');
+        localStorage.setItem('medpulse_reset_zero_v2', '1');
+      }
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+    return [...seedsData.citas];
+  }
+
+  function syncNewWhatsAppCitaToLocalStorage(citaBackend: any, convData: any) {
+    if (!citaBackend) return;
+    const list = getStoredCitas();
+    const alreadyExists = list.some((c: any) => c.id === citaBackend.id || c.codigo_cita === citaBackend.codigoCita);
+    if (!alreadyExists) {
+      const fechaIso = (citaBackend.fechaHoraInicio || '').replace('T', ' ').slice(0, 19);
+      const fechaFinIso = (citaBackend.fechaHoraFin || '').replace('T', ' ').slice(0, 19);
+
+      // Si el paciente tenía nombre personalizado en WhatsApp, registrarlo también en custom_patients
+      let pacienteIdUsar = citaBackend.pacienteId || 'e0000000-0000-0000-0000-000000000001';
+      if (convData?.nombrePaciente || convData?.cedulaPaciente) {
+        try {
+          const customList = JSON.parse(localStorage.getItem('medpulse_custom_patients') || '[]');
+          const ced = convData.cedulaPaciente || '8-1234-56789';
+          let existingP = customList.find((p: any) => p.documento_numero === ced);
+          if (!existingP) {
+            const partes = (convData.nombrePaciente || 'Paciente WhatsApp').split(' ');
+            existingP = {
+              id: 'p-wa-' + Date.now().toString(16),
+              nombres: partes[0] || 'Paciente',
+              apellidos: partes.slice(1).join(' ') || 'WhatsApp',
+              documento_tipo: 'CEDULA_PANAMA',
+              documento_numero: ced,
+              telefono: MY_PHONE,
+              email: 'whatsapp@medpulse.clinic'
+            };
+            customList.push(existingP);
+            localStorage.setItem('medpulse_custom_patients', JSON.stringify(customList));
+          }
+          pacienteIdUsar = existingP.id;
+        } catch {}
+      }
+
+      const nuevaCitaLocal = {
+        id: citaBackend.id,
+        codigo_cita: citaBackend.codigoCita,
+        paciente_id: pacienteIdUsar,
+        paciente_nombre_directo: citaBackend.pacienteNombre || convData?.nombrePaciente || null,
+        paciente_documento_directo: citaBackend.pacienteDocumento || convData?.cedulaPaciente || null,
+        paciente_telefono_directo: citaBackend.pacienteTelefono || MY_PHONE,
+        medico_id: citaBackend.medicoId || 'c0000000-0000-0000-0000-000000000001',
+        especialidad_id: citaBackend.especialidadId || 1,
+        consultorio_id: citaBackend.consultorioId || 2,
+        fecha_hora_inicio: `${fechaIso}-05`,
+        fecha_hora_fin: `${fechaFinIso}-05`,
+        estado: citaBackend.estado || 'PENDIENTE',
+        motivo_consulta: citaBackend.motivoConsulta || 'Cita agendada por WhatsApp IA (+507 6598-2118)',
+        canal_origen: 'CHATBOT_WHATSAPP',
+        reservado_por: 'PACIENTE'
+      };
+
+      list.unshift(nuevaCitaLocal);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+      window.dispatchEvent(new CustomEvent('medpulse:cita-creada', { detail: { cita: nuevaCitaLocal } }));
+    }
+    updateWhatsAppMetrics();
+  }
+
+  function updateWhatsAppMetrics() {
+    const citas = getStoredCitas();
+    const waCitas = citas.filter((c: any) => c.canal_origen === 'CHATBOT_WHATSAPP');
+    const metricEl = document.getElementById('wa-metric-citas');
+    if (metricEl) metricEl.textContent = String(waCitas.length);
+  }
+
+  function formatWhatsAppText(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\*([^*]+)\*/g, '<strong>$1</strong>')
+      .replace(/_([^_]+)_/g, '<em>$1</em>')
+      .replace(/\n/g, '<br/>');
+  }
+
+  function appendBubble(remitente: 'USUARIO' | 'BOT', texto: string, badge?: string, citaCreada?: any) {
+    const container = document.getElementById('wa-chat-messages');
+    if (!container) return;
+
+    const isUser = remitente === 'USUARIO';
+    const wrap = document.createElement('div');
+    wrap.style.display = 'flex';
+    wrap.style.flexDirection = 'column';
+    wrap.style.alignItems = isUser ? 'flex-end' : 'flex-start';
+
+    const bubble = document.createElement('div');
+    bubble.style.maxWidth = '85%';
+    bubble.style.padding = '10px 14px';
+    bubble.style.borderRadius = isUser ? '14px 14px 2px 14px' : '14px 14px 14px 2px';
+    bubble.style.background = isUser ? '#005c4b' : '#202c33';
+    bubble.style.color = '#e9edef';
+    bubble.style.fontSize = '13px';
+    bubble.style.lineHeight = '1.5';
+    bubble.style.boxShadow = '0 2px 6px rgba(0,0,0,0.25)';
+    bubble.style.border = isUser ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid #2f3b43';
+
+    const timeNow = new Date().toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit' });
+
+    let extraHtml = '';
+    if (citaCreada) {
+      extraHtml = `
+        <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.15); display: flex; gap: 6px; flex-wrap: wrap;">
+          <a href="/citas" class="button" style="padding: 5px 10px; font-size: 11px; background: #10b981; color: #052e16; font-weight: 800; text-decoration: none; border-radius: 6px;">
+            🛡️ Ver en Admin (${citaCreada.codigoCita})
+          </a>
+          <a href="/doctor/agenda" class="button" style="padding: 5px 10px; font-size: 11px; background: #06b6d4; color: #083344; font-weight: 800; text-decoration: none; border-radius: 6px;">
+            🩺 Ver en Médico
+          </a>
+          <a href="/secretaria/citas" class="button" style="padding: 5px 10px; font-size: 11px; background: #8b5cf6; color: #ffffff; font-weight: 800; text-decoration: none; border-radius: 6px;">
+            🗂️ Ver en Secretaria
+          </a>
+          <a href="/paciente/citas" class="button" style="padding: 5px 10px; font-size: 11px; background: #334155; color: #f8fafc; font-weight: 700; text-decoration: none; border-radius: 6px;">
+            👤 Ver en Paciente
+          </a>
+        </div>
+      `;
+    }
+
+    bubble.innerHTML = `
+      ${badge ? `<div style="font-size: 10px; font-weight: 700; color: ${isUser ? '#6ee7b7' : '#38bdf8'}; margin-bottom: 4px; text-transform: uppercase;">${badge}</div>` : ''}
+      <div>${formatWhatsAppText(texto)}</div>
+      ${extraHtml}
+      <div style="text-align: right; font-size: 10px; color: #8696a0; margin-top: 4px;">
+        ${timeNow} ${isUser ? '✓✓' : ''}
+      </div>
+    `;
+
+    wrap.appendChild(bubble);
+    container.appendChild(wrap);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function updateNLUInspector(entidades: any, conv: any) {
+    const elNombre = document.getElementById('nlu-nombre');
+    const elCedula = document.getElementById('nlu-cedula');
+    const elFecha = document.getElementById('nlu-fecha');
+    const elHora = document.getElementById('nlu-hora');
+    const elTriaje = document.getElementById('nlu-triaje');
+
+    if (elNombre) elNombre.textContent = conv?.nombrePaciente || entidades?.nombreExtraido || '—';
+    if (elCedula) elCedula.textContent = conv?.cedulaPaciente || entidades?.cedulaExtraida || '—';
+    if (elFecha) elFecha.textContent = entidades?.etiquetaFecha || conv?.fechaDeseada || '—';
+    if (elHora) elHora.textContent = entidades?.etiquetaHora || conv?.horaDeseada || '—';
+    if (elTriaje) {
+      if (conv?.nivelTriaje) {
+        elTriaje.textContent = `${conv.nivelTriaje} → ${conv.especialidadSugeridaNombre || 'Medicina General'} (${conv.medicoSugeridoNombre || ''})`;
+      } else if (entidades?.intencion) {
+        elTriaje.textContent = `Intención: ${entidades.intencion}`;
+      }
+    }
+  }
+
+  async function enviarMensajeAlBot(mensajeTexto: string) {
+    if (!mensajeTexto.trim()) return;
+    appendBubble('USUARIO', mensajeTexto, `📱 Tu WhatsApp (${MY_PHONE})`);
+
+    try {
+      const resp = await fetch(apiUrl('/api/whatsapp/simular'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          telefono: MY_PHONE,
+          mensaje: mensajeTexto
+        })
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        updateNLUInspector(data.entidadesDetectadas, data.conversacion);
+        if (data.citaCreada) {
+          syncNewWhatsAppCitaToLocalStorage(data.citaCreada, data.conversacion);
+        }
+        appendBubble(
+          'BOT',
+          data.respuestaBot,
+          `🤖 MedPulse IA · ${data.estadoConversacion}`,
+          data.citaCreada
+        );
+      } else {
+        appendBubble('BOT', `⚠️ Error: ${data.error || 'No se pudo procesar el mensaje.'}`, 'Sistema');
+      }
+    } catch (err) {
+      appendBubble('BOT', '⚠️ El servidor backend en el puerto 4000 no respondió. Asegúrate de tener activo el backend.', 'Error de Conexión');
+    }
+  }
+
+  let currentQRMode: 'LIVE_BAILEYS' | 'WAME_DIRECT' = 'LIVE_BAILEYS';
+
+  async function cargarCodigoQR(forzarRegen = false) {
+    const imgEl = document.getElementById('wa-qr-image') as HTMLImageElement | null;
+    const placeholderEl = document.getElementById('wa-qr-placeholder');
+    const badgeEl = document.getElementById('qr-status-badge');
+    const detailEl = document.getElementById('qr-status-detail');
+    const topStatusEl = document.getElementById('wa-metric-status');
+
+    if (currentQRMode === 'WAME_DIRECT') {
+      // Generar QR instantáneo para abrir la app de WhatsApp en el celular con el número +507 6598-2118
+      const wameUrl = 'https://wa.me/50765982118?text=' + encodeURIComponent('Hola MedPulse, soy Juan Pérez con cédula 8-1234-56789, quiero una cita para mañana a las 5');
+      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(wameUrl)}`;
+      if (imgEl) {
+        imgEl.src = qrApiUrl;
+        imgEl.style.display = 'block';
+      }
+      if (placeholderEl) placeholderEl.style.display = 'none';
+      if (badgeEl) {
+        badgeEl.textContent = '📲 QR Directo a tu Chat (+507 6598-2118)';
+        badgeEl.className = 'badge green';
+      }
+      if (detailEl) detailEl.innerHTML = 'Escanéalo con la cámara de tu celular para abrir tu chat con el mensaje listo.';
+      return;
+    }
+
+    try {
+      if (placeholderEl) placeholderEl.style.display = 'block';
+      if (imgEl) imgEl.style.display = 'none';
+
+      const endpoint = forzarRegen ? '/api/whatsapp/qr?regen=true' : '/api/whatsapp/qr';
+      const resp = await fetch(apiUrl(endpoint));
+      const json = await resp.json();
+
+      if (json.ok && json.data) {
+        const st = json.data;
+        if (st.qrDataUrl && imgEl) {
+          imgEl.src = st.qrDataUrl;
+          imgEl.style.display = 'block';
+          if (placeholderEl) placeholderEl.style.display = 'none';
+        }
+        if (badgeEl) {
+          badgeEl.textContent = st.estado === 'CONECTADO' ? '✅ WhatsApp Conectado en Vivo' : '📱 Listo para Escanear en WhatsApp';
+          badgeEl.className = `badge ${st.estado === 'CONECTADO' ? 'green' : 'amber'}`;
+        }
+        if (topStatusEl) {
+          topStatusEl.textContent = st.estado === 'CONECTADO' ? 'Conectado en Vivo' : 'QR Activo';
+        }
+        if (detailEl) {
+          detailEl.textContent = st.mensajeEstado || 'Escanea el código QR desde Dispositivos Vinculados en tu WhatsApp.';
+        }
+      }
+    } catch {
+      // Fallback visual garantizado si el backend se está reiniciando
+      const wameUrl = 'https://wa.me/50765982118?text=' + encodeURIComponent('Hola MedPulse, quiero una cita para mañana a las 5');
+      if (imgEl) {
+        imgEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(wameUrl)}`;
+        imgEl.style.display = 'block';
+      }
+      if (placeholderEl) placeholderEl.style.display = 'none';
+    }
+  }
+
+  function initWhatsAppPage() {
+    updateWhatsAppMetrics();
+    cargarCodigoQR(false);
+
+    // Mensaje inicial del bot con menú de opciones elegibles
+    appendBubble(
+      'BOT',
+      `👋 ¡Hola! Bienvenido a *MedPulse Clínica Inteligente* (+507 6598-2118).\n\n` +
+      `Soy tu asistente clínico con IA. Puedes **elegir una respuesta rápida** o escribirme directamente:\n\n` +
+      `*1️⃣* Evaluar mis síntomas (Triaje Clínico IA)\n` +
+      `*2️⃣* Agendar cita médica (Detecto Nombre, Cédula, Fecha y Hora)\n` +
+      `*3️⃣* Ver horarios disponibles para hoy y mañana\n` +
+      `*4️⃣* Información de Urgencias Médicas\n\n` +
+      `💡 *Prueba escribir o hacer clic arriba en:*\n` +
+      `_"Quiero una cita para mañana a las 5"_ o _"Quiero una cita para hoy a las 7"_`,
+      '🤖 MedPulse IA · Menú Interactivo'
+    );
+
+    const form = document.getElementById('wa-chat-form') as HTMLFormElement | null;
+    const input = document.getElementById('wa-chat-input') as HTMLInputElement | null;
+
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!input || !input.value.trim()) return;
+      const val = input.value;
+      input.value = '';
+      enviarMensajeAlBot(val);
+    });
+
+    document.querySelectorAll('.chip-test').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const msg = (btn as HTMLElement).dataset.msg || '';
+        if (msg) enviarMensajeAlBot(msg);
+      });
+    });
+
+    document.querySelectorAll('.chip-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const opt = (btn as HTMLElement).dataset.opt || '';
+        if (opt) enviarMensajeAlBot(opt);
+      });
+    });
+
+    document.getElementById('btn-reset-chat')?.addEventListener('click', async () => {
+      const container = document.getElementById('wa-chat-messages');
+      if (container) container.innerHTML = '';
+      try {
+        await fetch(apiUrl('/api/whatsapp/reiniciar'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ telefono: MY_PHONE })
+        });
+      } catch {}
+      enviarMensajeAlBot('0');
+    });
+
+    document.getElementById('btn-refresh-qr')?.addEventListener('click', () => {
+      cargarCodigoQR(true);
+    });
+
+    const btnLive = document.getElementById('btn-mode-qr-live');
+    const btnWame = document.getElementById('btn-mode-qr-wame');
+
+    btnLive?.addEventListener('click', () => {
+      currentQRMode = 'LIVE_BAILEYS';
+      btnLive.style.background = 'rgba(16, 185, 129, 0.2)';
+      btnLive.style.borderColor = '#10b981';
+      btnLive.style.color = '#34d399';
+      if (btnWame) {
+        btnWame.style.background = '';
+        btnWame.style.borderColor = '';
+        btnWame.style.color = '';
+      }
+      cargarCodigoQR(false);
+    });
+
+    btnWame?.addEventListener('click', () => {
+      currentQRMode = 'WAME_DIRECT';
+      btnWame.style.background = 'rgba(16, 185, 129, 0.2)';
+      btnWame.style.borderColor = '#10b981';
+      btnWame.style.color = '#34d399';
+      if (btnLive) {
+        btnLive.style.background = '';
+        btnLive.style.borderColor = '';
+        btnLive.style.color = '';
+      }
+      cargarCodigoQR(false);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initWhatsAppPage);
+  } else {
+    initWhatsAppPage();
+  }
+</script>
+

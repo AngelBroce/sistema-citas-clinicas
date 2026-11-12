@@ -1,0 +1,184 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import data from '../../data/seeds.json';
+import Calendar from '../../components/Calendar.astro';
+import Appointments from '../../components/Appointments.astro';
+
+const doctor = data.medicos[0]; // Dr. Roberto Mendoza
+const especialidad = data.especialidades.find(e => e.id === 2); // Cardiología
+const consultorio = data.consultorios.find(c => c.id === 3); // Consultorio 201
+---
+
+<Layout title="Panel Médico · Dr. Roberto Mendoza" role="doctor">
+  <!-- Hero Banner del Médico Facultativo -->
+  <section class="card patient-hero animate-slide-up">
+    <div class="patient-hero-content">
+      <div class="patient-hero-badge">
+        <span class="live-pulse-dot"></span>
+        <span style="font-weight: 700; color: #38bdf8; letter-spacing: 0.5px;">CONSULTORIO CLÍNICO ACTIVO</span>
+        <span class="separator" style="color: #475569;">·</span>
+        <span class="verified-tag" style="color: #34d399; font-weight: 600;">✓ Dr. Roberto Mendoza Valdivia</span>
+      </div>
+      
+      <h2 style="font-size: 26px; margin: 10px 0 8px 0; color: #ffffff;">Panel Médico y Control de Atenciones 🩺</h2>
+      <p style="margin: 0 0 16px 0; color: #cbd5e1; max-width: 720px; font-size: 14px; line-height: 1.6;">
+        Bienvenido a tu consola clínica, Dr. Mendoza. Consulta el calendario de turnos asignados a mes completo, revisa los motivos clínicos declarados por tus pacientes y gestiona el flujo de consultas en tiempo real.
+      </p>
+
+      <div class="patient-quick-tags">
+        <span class="tag-chip"><strong>Consultorio:</strong> {consultorio?.nombre} ({consultorio?.piso})</span>
+        <span class="tag-chip"><strong>Especialidad:</strong> {especialidad?.nombre}</span>
+        <span class="tag-chip"><strong>Colegiatura:</strong> {doctor.numero_colegiatura}</span>
+        <span class="tag-chip"><strong>Turno habitual:</strong> 08:00 AM – 01:00 PM</span>
+        <span class="tag-chip"><strong>Sincronización:</strong> Google Calendar Activa</span>
+      </div>
+    </div>
+
+    <div class="patient-hero-actions">
+      <a class="button primary-glow" href="/doctor/agenda">
+        <span>📅</span> Ver agenda del día
+      </a>
+      <a class="button secondary-glow" href="/doctor/pacientes">
+        <span>👥</span> Expedientes de pacientes
+      </a>
+    </div>
+  </section>
+
+  <!-- Métricas Bento de Atención Médica -->
+  <div class="patient-bento-grid animate-slide-up delay-1" style="margin-bottom: 24px;">
+    <!-- Metric 1: Consultorio -->
+    <div class="card bento-card card-accent-cyan">
+      <div class="bento-header">
+        <span class="bento-icon">🏥</span>
+        <span class="badge blue">En Servicio</span>
+      </div>
+      <div class="bento-body">
+        <span class="bento-label">CONSULTORIO ASIGNADO</span>
+        <strong class="bento-value">{consultorio?.nombre}</strong>
+        <p class="bento-subtext">{consultorio?.piso} · {consultorio?.sede}<br><span style="color: #38bdf8;">Equipamiento cardiológico</span></p>
+      </div>
+      <div class="bento-footer">
+        <span class="bento-link" style="color: #38bdf8; font-size: 12px;">Electrocardiograma activo</span>
+      </div>
+    </div>
+
+    <!-- Metric 2: Especialidad -->
+    <div class="card bento-card card-accent-green">
+      <div class="bento-header">
+        <span class="bento-icon">🩺</span>
+        <span class="badge green">Principal</span>
+      </div>
+      <div class="bento-body">
+        <span class="bento-label">ESPECIALIDAD MÉDICA</span>
+        <strong class="bento-value">{especialidad?.nombre}</strong>
+        <p class="bento-subtext">Duración base por cita: 30 min.<br><span style="color: #34d399; font-weight: 600;">Turno: 08:00 AM – 01:00 PM</span></p>
+      </div>
+      <div class="bento-footer">
+        <span class="bento-link" style="color: #34d399; font-size: 12px;">Cupos anti double-booking</span>
+      </div>
+    </div>
+
+    <!-- Metric 3: Colegiatura -->
+    <div class="card bento-card card-accent-purple">
+      <div class="bento-header">
+        <span class="bento-icon">📋</span>
+        <span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.45);">CMP Verificado</span>
+      </div>
+      <div class="bento-body">
+        <span class="bento-label">COLEGIATURA OFICIAL</span>
+        <strong class="bento-value">{doctor.numero_colegiatura}</strong>
+        <p class="bento-subtext">Colegio Médico del Perú · RNE-Cardiología activo.</p>
+      </div>
+      <div class="bento-footer">
+        <span class="bento-link" style="color: #c084fc; font-size: 12px;">Firma y sello digital</span>
+      </div>
+    </div>
+
+    <!-- Metric 4: Tarifa y Duración -->
+    <div class="card bento-card card-accent-amber">
+      <div class="bento-header">
+        <span class="bento-icon">⚡</span>
+        <span class="badge amber">Tarifa S/ {doctor.tarifa_consulta}</span>
+      </div>
+      <div class="bento-body">
+        <span class="bento-label">DISPONIBILIDAD SEMANAL</span>
+        <strong class="bento-value">Lunes a Viernes</strong>
+        <p class="bento-subtext">Horarios recurrentes con descansos programados.</p>
+      </div>
+      <div class="bento-footer">
+        <a href="/doctor/horarios" class="bento-link" style="color: #fbbf24; font-size: 12px;">Gestionar descansos →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pestañas de Vista Rápida -->
+  <div class="patient-section-nav animate-slide-up delay-2">
+    <a href="#doctor-calendar-section" class="tab-pill active">
+      <span>🗓️</span> Calendario de Consultas
+    </a>
+    <a href="#doctor-appointments-section" class="tab-pill">
+      <span>📋</span> Pacientes Citados y Atención
+    </a>
+  </div>
+
+  <!-- Sección 1: Calendario del Doctor a Ancho Completo -->
+  <div id="doctor-calendar-section" class="patient-section-wrap animate-slide-up delay-2" style="margin-top: 16px;">
+    <div class="section-title-bar">
+      <div>
+        <h2 style="margin: 0; display: flex; align-items: center; gap: 10px; font-size: 20px;">
+          <span>🗓️</span> Calendario Mensual de Atenciones
+        </h2>
+        <p class="muted" style="margin: 4px 0 0 0;">
+          Vista global de los días del mes. Selecciona cualquier día para ver la lista de pacientes citados y su horario asignado.
+        </p>
+      </div>
+      <a href="/doctor/agenda" class="button primary-glow" style="font-size: 13px; padding: 7px 16px;">
+        📅 Ver agenda completa
+      </a>
+    </div>
+
+    <Calendar role="doctor" doctorId={doctor.id} />
+  </div>
+
+  <!-- Sección 2: Tabla de Consultas Asignadas al Doctor -->
+  <div id="doctor-appointments-section" class="patient-section-wrap animate-slide-up delay-3" style="margin-top: 28px;">
+    <Appointments role="doctor" doctorId={doctor.id} />
+  </div>
+</Layout>
+
+<style>
+  .patient-section-nav {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+
+  .tab-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(51, 65, 85, 0.4);
+    border-radius: 9999px;
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .tab-pill:hover {
+    background: rgba(30, 41, 59, 0.8);
+    color: #f1f5f9;
+    border-color: rgba(56, 189, 248, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .tab-pill.active {
+    background: rgba(56, 189, 248, 0.16);
+    color: #38bdf8;
+    border-color: #0284c7;
+  }
+</style>

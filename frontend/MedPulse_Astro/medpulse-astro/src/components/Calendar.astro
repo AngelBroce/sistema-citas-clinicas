@@ -1,1 +1,622 @@
-<section class="card"><h2>Octubre 2026 <span class="badge">Agenda de ejemplo</span></h2><div class="calendar">{['L','M','M','J','V','S','D'].map(d=><b>{d}</b>)}{Array.from({length:3},()=> <div/>)}{Array.from({length:31},(_,i)=><div class:list={['day',{'event':i===4}]}>{i+1}{i===4&&<small style="display:block">2 citas</small>}</div>)}</div></section>
+---
+interface Props {
+  role?: 'paciente' | 'doctor' | 'secretaria' | 'admin';
+  patient?: boolean;
+  doctorId?: string;
+}
+
+const { role = 'admin', patient = false, doctorId } = Astro.props;
+const isPatient = role === 'paciente' || patient;
+---
+
+<section class="card" id="calendar-card" data-role={role} data-doctor-id={doctorId || ''}>
+  <div class="cal-container">
+    <div class="cal-top-bar">
+      <div class="cal-nav">
+        <button type="button" class="cal-btn" id="cal-prev" title="Mes anterior">◀</button>
+        <h2 id="cal-month-title" style="margin: 0; text-align: center; color: #ffffff; font-size: 18px; flex: 1;">Octubre 2026</h2>
+        <button type="button" class="cal-btn" id="cal-next" title="Mes siguiente">▶</button>
+        <button type="button" class="cal-btn" id="cal-today">Hoy</button>
+      </div>
+
+      <!-- Filtros de citas según el rol con scroll táctil -->
+      {!isPatient && (
+        <div class="filter-tabs-wrap no-scrollbar">
+          <div class="filter-tabs" style="margin-bottom: 0;">
+            <button type="button" class="filter-tab-btn active" data-cal-filter="ALL">Todas las citas</button>
+            <button type="button" class="filter-tab-btn tab-patient" data-cal-filter="PACIENTE">👤 Paciente</button>
+            <button type="button" class="filter-tab-btn tab-admin" data-cal-filter="ADMINISTRADOR">🛡️ Administrador</button>
+          </div>
+        </div>
+      )}
+    </div>
+
+    <div class="cal-legend">
+      <span class="cal-legend-item">
+        <span class="badge-dot green"></span>
+        <span class="badge badge-patient">👤 Paciente</span>
+      </span>
+      <span class="cal-legend-item">
+        <span class="badge-dot purple"></span>
+        <span class="badge badge-admin">🛡️ Recepción</span>
+      </span>
+      <span class="cal-legend-item cal-badge-counter">
+        <span class="badge" id="cal-total-citas-badge">Citas en agenda: 0</span>
+      </span>
+      {isPatient ? (
+        <a href="/paciente/reservar" class="button" style="padding: 6px 14px; font-size: 13px;">
+          ＋ Reservar cita
+        </a>
+      ) : role === 'doctor' ? (
+        <a href="#appointments-section" class="button" style="padding: 6px 14px; font-size: 13px; background: #0284c7;">
+          📋 Ver consultas asignadas
+        </a>
+      ) : role === 'secretaria' ? (
+        <a href="/secretaria/reservar" class="button" style="padding: 6px 14px; font-size: 13px;">
+          ＋ Agendar cita
+        </a>
+      ) : (
+        <a href="/reservar" class="button" style="padding: 6px 14px; font-size: 13px;">
+          ＋ Agendar cita
+        </a>
+      )}
+    </div>
+
+    <!-- Contenedor scrollable horizontal para evitar que se corten los días en pantallas estrechas -->
+    <div class="cal-scroll-wrap no-scrollbar">
+      <div class="cal-scroll-inner">
+        <div class="cal-grid" id="cal-weekdays">
+          <div class="cal-header-day">Lun</div>
+          <div class="cal-header-day">Mar</div>
+          <div class="cal-header-day">Mié</div>
+          <div class="cal-header-day">Jue</div>
+          <div class="cal-header-day">Vie</div>
+          <div class="cal-header-day">Sáb</div>
+          <div class="cal-header-day">Dom</div>
+        </div>
+
+        <div class="cal-grid" id="cal-days-grid" role="region" aria-label="Días del calendario">
+          <!-- Los días se renderizan dinámicamente con interacción completa -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel de Detalles del Día Seleccionado -->
+    <div class="day-details-card" id="cal-day-details">
+      <div class="day-details-header">
+        <div>
+          <h3 id="cal-selected-date-text" style="color: #ffffff; margin: 0 0 4px 0;">📅 Citas del día</h3>
+          <span id="cal-selected-summary" class="appt-subtext">Selecciona un día para ver sus citas</span>
+        </div>
+        {role === 'doctor' ? (
+          <a href="#doctor-appointments-section" class="button secondary" style="font-size: 12px; padding: 7px 14px;">
+            📋 Ver pacientes citados
+          </a>
+        ) : (
+          <a href={isPatient ? '/paciente/reservar' : role === 'secretaria' ? '/secretaria/reservar' : '/reservar'} id="cal-book-for-date-link" class="button secondary" style="font-size: 12px; padding: 7px 14px;">
+            ＋ Reservar en esta fecha
+          </a>
+        )}
+      </div>
+      <div id="cal-selected-list" class="day-appointments-list">
+        <!-- Renderizado dinámico de las citas del día -->
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import data from '../data/seeds.json';
+  import { apiUrl } from '../data/api';
+  const STORAGE_KEY = 'medpulse_citas_v2';
+  const card = document.getElementById('calendar-card');
+  const role = card?.dataset.role || (window.location.pathname.startsWith('/paciente') ? 'paciente' : window.location.pathname.startsWith('/doctor') ? 'doctor' : window.location.pathname.startsWith('/secretaria') ? 'secretaria' : 'admin');
+  const defaultDoctorId = data.medicos[0]?.id || 'MED-01';
+  const targetDoctorId = card?.dataset.doctorId || defaultDoctorId;
+  const currentPatientId = data.pacientes[0].id;
+  let userManuallySelectedDate = false;
+
+  // Función para obtener todas las citas activas
+  function getAllCitas() {
+    try {
+      if (!localStorage.getItem('medpulse_reset_zero_v2')) {
+        localStorage.setItem(STORAGE_KEY, '[]');
+        localStorage.setItem('medpulse_reset_zero_v2', '1');
+      }
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Error al leer citas de localStorage:', e);
+    }
+    const defaultCitas = [...data.citas];
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultCitas));
+    } catch {}
+    return defaultCitas;
+  }
+
+  // Sincronización en tiempo real desde Backend (WhatsApp / API REST)
+  async function syncCalendarFromBackend() {
+    try {
+      const res = await fetch(apiUrl('/api/citas'));
+      if (!res.ok) return;
+      const json = await res.json();
+      const rawList = json.data || json.datos;
+      const backendCitas = Array.isArray(rawList) ? rawList : [];
+      if (backendCitas.length === 0) return;
+
+      const localCitas = getAllCitas();
+      let changed = false;
+
+      const customPatients = JSON.parse(localStorage.getItem('medpulse_custom_patients') || '[]');
+      let customChanged = false;
+
+      for (const bc of backendCitas) {
+        const codigo = bc.codigoCita || bc.codigo_cita;
+        const id = bc.id;
+
+        if (bc.pacienteNombre && bc.pacienteId) {
+          const existsPat = customPatients.some((p: any) => p.id === bc.pacienteId);
+          if (!existsPat) {
+            const parts = String(bc.pacienteNombre).trim().split(/\s+/);
+            customPatients.push({
+              id: bc.pacienteId,
+              nombres: parts[0] || 'Paciente',
+              apellidos: parts.slice(1).join(' ') || 'WhatsApp',
+              documento_numero: bc.pacienteDocumento || '8-000-0000',
+              telefono: bc.pacienteTelefono || '+507 6598-2118',
+              email: 'whatsapp@medpulse.pa'
+            });
+            customChanged = true;
+          }
+        }
+
+        const existingIdx = localCitas.findIndex((lc: any) => lc.codigo_cita === codigo || lc.id === id);
+        if (existingIdx !== -1) {
+          const ex = localCitas[existingIdx];
+          if (bc.pacienteNombre && !ex.paciente_nombre_directo) {
+            ex.paciente_nombre_directo = bc.pacienteNombre;
+            ex.paciente_documento_directo = bc.pacienteDocumento;
+            changed = true;
+          }
+          if (bc.medicoId && ex.canal_origen === 'CHATBOT_WHATSAPP' && ex.medico_id !== bc.medicoId) {
+            ex.medico_id = bc.medicoId;
+            changed = true;
+          }
+          if (bc.estado && ex.estado !== bc.estado) {
+            ex.estado = bc.estado;
+            changed = true;
+          }
+        } else {
+          const inicioClean = String(bc.fechaHoraInicio || '').replace('T', ' ').replace('Z', '').slice(0, 19);
+          const finClean = String(bc.fechaHoraFin || '').replace('T', ' ').replace('Z', '').slice(0, 19);
+
+          localCitas.unshift({
+            id: bc.id,
+            codigo_cita: codigo,
+            paciente_id: bc.pacienteId || 'd0000000-0000-0000-0000-000000000001',
+            paciente_nombre_directo: bc.pacienteNombre || null,
+            paciente_documento_directo: bc.pacienteDocumento || null,
+            paciente_telefono_directo: bc.pacienteTelefono || null,
+            medico_id: bc.medicoId || 'c0000000-0000-0000-0000-000000000001',
+            especialidad_id: bc.especialidadId || 1,
+            consultorio_id: bc.consultorioId || 1,
+            fecha_hora_inicio: `${inicioClean}-05`,
+            fecha_hora_fin: `${finClean}-05`,
+            estado: bc.estado || 'PENDIENTE',
+            canal_origen: bc.canalOrigen || 'CHATBOT_WHATSAPP',
+            motivo_consulta: bc.motivoConsulta || 'Cita agendada vía WhatsApp IA',
+            reservado_por: 'PACIENTE'
+          });
+          changed = true;
+        }
+      }
+
+      if (customChanged) {
+        localStorage.setItem('medpulse_custom_patients', JSON.stringify(customPatients));
+      }
+
+      if (changed) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(localCitas));
+        renderCalendar();
+        window.dispatchEvent(new CustomEvent('medpulse:cita-synced'));
+      }
+    } catch {
+      // Silencioso si el backend no responde momentáneamente
+    }
+  }
+
+  // Filtrar citas según el rol activo
+  function getCitasForCurrentRole() {
+    let citas = getAllCitas();
+
+    if (role === 'paciente') {
+      citas = citas.filter((c: any) => c.paciente_id === currentPatientId || c.canal_origen === 'CHATBOT_WHATSAPP');
+    } else if (role === 'doctor') {
+      citas = citas.filter((c: any) => c.medico_id === targetDoctorId);
+    }
+    // Para 'secretaria' o 'admin' se visualizan todas
+    return citas;
+  }
+
+  let currentYear = 2026;
+  let currentMonth = 9; // 9 = Octubre (0-indexed)
+  let currentFilter = 'ALL';
+  let selectedDateStr = '2026-10-05';
+
+  const monthNames = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+
+  function getDoctor(id: string) {
+    return data.medicos.find(m => m.id === id) || { nombres: 'Médico', apellidos: 'Especialista' };
+  }
+
+  function getPatient(id: string, citaObj?: any) {
+    if (citaObj?.paciente_nombre_directo) {
+      const parts = String(citaObj.paciente_nombre_directo).trim().split(/\s+/);
+      return {
+        nombres: parts[0] || 'Paciente',
+        apellidos: parts.slice(1).join(' ') || '',
+        documento_numero: citaObj.paciente_documento_directo || '—',
+        telefono: citaObj.paciente_telefono_directo || '+507 6598-2118',
+        email: 'whatsapp@medpulse.pa'
+      };
+    }
+
+    const found = data.pacientes.find(p => p.id === id);
+    if (found) return found;
+
+    try {
+      const custom = JSON.parse(localStorage.getItem('medpulse_custom_patients') || '[]');
+      const cp = custom.find((p: any) => p.id === id);
+      if (cp) {
+        return {
+          nombres: cp.nombres || 'Paciente',
+          apellidos: cp.apellidos || '',
+          documento_numero: cp.documento_numero || cp.documentoNumero || '—',
+          telefono: cp.telefono || '—',
+          email: cp.email || cp.correo || '—'
+        };
+      }
+    } catch {}
+
+    try {
+      const session = JSON.parse(localStorage.getItem('medpulse_session') || '{}');
+      if (session?.paciente && (session.paciente.id === id || session.usuario?.id === id)) {
+        return {
+          nombres: session.paciente.nombres || session.usuario.nombreCompleto?.split(' ')[0] || 'Paciente',
+          apellidos: session.paciente.apellidos || session.usuario.nombreCompleto?.split(' ').slice(1).join(' ') || '',
+          documento_numero: session.paciente.documento_numero || '—',
+          telefono: session.paciente.telefono || '—',
+          email: session.paciente.email || session.paciente.correo || session.usuario.email || '—'
+        };
+      }
+    } catch {}
+
+    return { nombres: 'Paciente', apellidos: 'Registrado' };
+  }
+
+  function getSpecialty(id: number) {
+    return data.especialidades.find(e => e.id === id) || { nombre: 'Consulta Médica' };
+  }
+
+  function getRoom(id: number | null | undefined) {
+    return data.consultorios.find(r => r.id === id) || { nombre: 'Consultorio Central' };
+  }
+
+  function pad(n: number) {
+    return String(n).padStart(2, '0');
+  }
+
+  function formatTime12h(timeStr: string) {
+    if (!timeStr) return '';
+    const parts = timeStr.trim().split(':');
+    if (parts.length < 2) return timeStr;
+    let h = parseInt(parts[0], 10);
+    const m = parts[1].slice(0, 2);
+    if (isNaN(h)) return timeStr;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    h = h ? h : 12;
+    return `${String(h).padStart(2, '0')}:${m} ${ampm}`;
+  }
+
+  function formatDisplayDate(dateStr: string) {
+    const [y, m, d] = dateStr.split('-');
+    const mName = monthNames[parseInt(m, 10) - 1];
+    return `${parseInt(d, 10)} de ${mName}, ${y}`;
+  }
+
+  function renderCalendar() {
+    const grid = document.getElementById('cal-days-grid');
+    const monthTitle = document.getElementById('cal-month-title');
+    const totalBadge = document.getElementById('cal-total-citas-badge');
+    if (!grid || !monthTitle) return;
+
+    const citas = getCitasForCurrentRole();
+    if (!userManuallySelectedDate) {
+      const latestWa = citas.find((c: any) => c.canal_origen === 'CHATBOT_WHATSAPP' && c.fecha_hora_inicio);
+      if (latestWa) {
+        selectedDateStr = latestWa.fecha_hora_inicio.slice(0, 10);
+        const [y, m] = selectedDateStr.split('-').map(Number);
+        if (!isNaN(y) && !isNaN(m)) {
+          currentYear = y;
+          currentMonth = m - 1;
+        }
+      }
+    }
+
+    monthTitle.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+
+    if (totalBadge) {
+      totalBadge.textContent = `Citas en agenda: ${citas.length}`;
+    }
+
+    grid.innerHTML = '';
+
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+    const startDayIndex = (firstDayOfMonth + 6) % 7;
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
+
+    // Días del mes previo
+    for (let i = startDayIndex - 1; i >= 0; i--) {
+      const dayNum = daysInPrevMonth - i;
+      const cell = document.createElement('div');
+      cell.className = 'cal-day-cell other-month';
+      cell.innerHTML = `<span class="cal-day-number" style="opacity:0.35">${dayNum}</span>`;
+      grid.appendChild(cell);
+    }
+
+    // Días del mes actual
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${currentYear}-${pad(currentMonth + 1)}-${pad(d)}`;
+      const cell = document.createElement('div');
+      cell.className = 'cal-day-cell';
+      cell.dataset.date = dateStr;
+
+      if (dateStr === selectedDateStr) {
+        cell.classList.add('is-selected');
+      }
+
+      const dayCitas = citas.filter((c: any) => c.fecha_hora_inicio.slice(0, 10) === dateStr);
+
+      const filteredDayCitas = dayCitas.filter((c: any) => {
+        const creator = (c.reservado_por || (c.canal_origen === 'WEB_PACIENTE' || c.canal_origen === 'CHATBOT_WHATSAPP' ? 'PACIENTE' : 'ADMINISTRADOR')).toUpperCase();
+        if (currentFilter === 'ALL') return true;
+        return creator === currentFilter;
+      });
+
+      let pillsHtml = '';
+      if (filteredDayCitas.length > 0) {
+        cell.classList.add('has-events');
+        pillsHtml = '<div class="cal-event-pills">';
+        filteredDayCitas.forEach((c: any) => {
+          const creator = (c.reservado_por || (c.canal_origen === 'WEB_PACIENTE' || c.canal_origen === 'CHATBOT_WHATSAPP' ? 'PACIENTE' : 'ADMINISTRADOR')).toUpperCase();
+          const isPatientCreator = creator === 'PACIENTE';
+          const time = c.fecha_hora_inicio.slice(11, 16) || '09:00';
+          const time12 = formatTime12h(time);
+          const doc = getDoctor(c.medico_id);
+          const pat = getPatient(c.paciente_id, c);
+          const specialty = getSpecialty(c.especialidad_id);
+          const icon = c.canal_origen === 'CHATBOT_WHATSAPP' ? '📱' : (isPatientCreator ? '👤' : '🛡️');
+          const pillClass = isPatientCreator ? 'patient' : 'admin';
+          
+          // En la vista de doctor, mostrar el nombre del paciente; en otras, el del médico
+          const textLabel = role === 'doctor' 
+            ? `${icon} ${time12} · ${pat.nombres.split(' ')[0]}`
+            : `${icon} ${time12} · ${c.canal_origen === 'CHATBOT_WHATSAPP' ? pat.nombres.split(' ')[0] : 'Dr. ' + doc.apellidos.split(' ')[0]}`;
+
+          pillsHtml += `<div class="cal-pill ${pillClass}" title="Cita médica a las ${time12} — Paciente: ${pat.nombres} ${pat.apellidos} · Dr. ${doc.apellidos} (${specialty.nombre})"><span>${textLabel}</span></div>`;
+        });
+        pillsHtml += '</div>';
+      }
+
+      cell.innerHTML = `
+        <div class="cal-day-number">
+          <span>${d}</span>
+          ${filteredDayCitas.length > 0 ? `<small style="font-size:10px; font-weight:700; color:#38bdf8; background: rgba(56, 189, 248, 0.15); padding: 1px 5px; border-radius: 10px;">${filteredDayCitas.length}</small>` : ''}
+        </div>
+        ${pillsHtml}
+      `;
+
+      cell.addEventListener('click', () => {
+        userManuallySelectedDate = true;
+        selectedDateStr = dateStr;
+        document.querySelectorAll('.cal-day-cell').forEach(el => el.classList.remove('is-selected'));
+        cell.classList.add('is-selected');
+        renderDayDetails(dateStr, dayCitas);
+
+        const detailsEl = document.getElementById('cal-day-details');
+        if (detailsEl) {
+          detailsEl.classList.remove('animate-pop');
+          void detailsEl.offsetWidth;
+          detailsEl.classList.add('animate-pop');
+        }
+      });
+
+      grid.appendChild(cell);
+    }
+
+    // Días del mes siguiente
+    const totalCells = startDayIndex + daysInMonth;
+    const remaining = (7 - (totalCells % 7)) % 7;
+    for (let i = 1; i <= remaining; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cal-day-cell other-month';
+      cell.innerHTML = `<span class="cal-day-number" style="opacity:0.35">${i}</span>`;
+      grid.appendChild(cell);
+    }
+
+    const currentSelectedCitas = citas.filter(c => c.fecha_hora_inicio.slice(0, 10) === selectedDateStr);
+    renderDayDetails(selectedDateStr, currentSelectedCitas);
+  }
+
+  function renderDayDetails(dateStr: string, dayCitas: any[]) {
+    const titleEl = document.getElementById('cal-selected-date-text');
+    const summaryEl = document.getElementById('cal-selected-summary');
+    const listEl = document.getElementById('cal-selected-list');
+    const bookLink = document.getElementById('cal-book-for-date-link') as HTMLAnchorElement | null;
+
+    if (!titleEl || !summaryEl || !listEl) return;
+
+    titleEl.textContent = `📅 Citas del ${formatDisplayDate(dateStr)}`;
+    if (bookLink && role !== 'doctor') {
+      const targetBase = role === 'paciente' ? '/paciente/reservar' : role === 'secretaria' ? '/secretaria/reservar' : '/reservar';
+      bookLink.href = `${targetBase}?fecha=${dateStr}`;
+    }
+
+    const filtered = dayCitas.filter((c: any) => {
+      const creator = (c.reservado_por || (c.canal_origen === 'WEB_PACIENTE' || c.canal_origen === 'CHATBOT_WHATSAPP' ? 'PACIENTE' : 'ADMINISTRADOR')).toUpperCase();
+      if (currentFilter === 'ALL') return true;
+      return creator === currentFilter;
+    });
+
+    if (filtered.length === 0) {
+      summaryEl.textContent = dayCitas.length > 0
+        ? `No hay citas con el filtro seleccionado en este día (${dayCitas.length} en total)`
+        : (role === 'doctor' ? 'Sin consultas asignadas en esta fecha' : 'No hay citas registradas en esta fecha');
+      listEl.innerHTML = `
+        <div style="padding: 24px; text-align: center; background: rgba(15, 23, 42, 0.6); border-radius: 10px; border: 1px dashed rgba(51, 65, 85, 0.5);">
+          <p style="margin: 0; color: #94a3b8; font-size: 13px;">
+            ${role === 'doctor' 
+              ? '🩺 No tienes pacientes programados para esta fecha. Tu consultorio se encuentra libre.' 
+              : 'No hay consultas médicas agendadas para esta fecha.'}
+          </p>
+          ${role !== 'doctor' ? `
+            <a class="button" href="${role === 'paciente' ? '/paciente/reservar' : role === 'secretaria' ? '/secretaria/reservar' : '/reservar'}?fecha=${dateStr}" style="font-size: 13px; padding: 8px 16px; margin-top: 12px; display: inline-block;">
+              ＋ Agendar cita para esta fecha
+            </a>
+          ` : ''}
+        </div>
+      `;
+      return;
+    }
+
+    summaryEl.textContent = `${filtered.length} ${filtered.length === 1 ? 'cita programada' : 'citas programadas'}`;
+
+    listEl.innerHTML = filtered.map((c: any) => {
+      const creator = (c.reservado_por || (c.canal_origen === 'WEB_PACIENTE' || c.canal_origen === 'CHATBOT_WHATSAPP' ? 'PACIENTE' : 'ADMINISTRADOR')).toUpperCase();
+      const isPatientCreator = creator === 'PACIENTE';
+      const patient = getPatient(c.paciente_id, c);
+      const doctor = getDoctor(c.medico_id);
+      const specialty = getSpecialty(c.especialidad_id);
+      const room = getRoom(c.consultorio_id);
+      const timeStart = formatTime12h(c.fecha_hora_inicio.slice(11, 16) || '09:00');
+      const timeEnd = formatTime12h(c.fecha_hora_fin ? c.fecha_hora_fin.slice(11, 16) : '09:30');
+      const borderClass = isPatientCreator ? 'patient-border' : 'admin-border';
+
+      return `
+        <div class="day-appointment-item ${borderClass}">
+          <div class="appt-info-main">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span class="appt-time-badge" style="color: #ffffff;">🕒 ${timeStart} - ${timeEnd}</span>
+              ${c.canal_origen === 'CHATBOT_WHATSAPP'
+                ? '<span class="badge badge-patient"><span class="badge-dot green"></span>📱 Agendada por WhatsApp IA</span>'
+                : (isPatientCreator 
+                  ? '<span class="badge badge-patient"><span class="badge-dot green"></span>👤 Creada por Paciente</span>' 
+                  : '<span class="badge badge-admin"><span class="badge-dot purple"></span>🛡️ Creada por Recepción / Admin</span>')}
+              <span class="badge ${c.estado === 'CONFIRMADA' ? 'green' : 'amber'}">${c.estado}</span>
+              <span class="appt-subtext" style="font-size: 11px;">Código: <strong style="color:#38bdf8;">${c.codigo_cita}</strong></span>
+            </div>
+
+            <div style="font-size: 14px; font-weight: 600; color: #f1f5f9; margin-top: 4px;">
+              👤 Paciente: ${patient.nombres} ${patient.apellidos} 
+              ${patient.documento_numero ? `<span style="font-weight: 400; color: #94a3b8; font-size: 12px;">(Doc: ${patient.documento_numero})</span>` : ''}
+              ${role !== 'doctor' ? `<span style="font-weight: 400; color: #94a3b8;">· Dr(a). ${doctor.nombres} ${doctor.apellidos} (${specialty.nombre})</span>` : ''}
+            </div>
+
+            <div class="appt-subtext" style="color: #94a3b8;">
+              📍 ${room.nombre} · Motivo: <em style="color:#cbd5e1;">${c.motivo_consulta || 'Consulta general médica'}</em>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; flex-shrink: 0; align-items: center;">
+            <span class="badge" style="background:#091224; color:#94a3b8; border-color:#20304c;">${c.canal_origen}</span>
+            ${(role === 'secretaria' || role === 'admin') && c.estado === 'PENDIENTE' ? `
+              <button type="button" class="cal-btn" onclick="window.cambiarEstadoCita?.('${c.id}', 'CONFIRMADA')" style="font-size:11px; padding:5px 10px; background:#10b981; color:#052e16; font-weight:800; border-color:#059669; cursor:pointer;">
+                ✓ Confirmar Cita
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function initCalendarEvents() {
+    function animateGrid() {
+      const grid = document.getElementById('cal-days-grid');
+      if (grid) {
+        grid.classList.remove('animate-fade-grid');
+        void grid.offsetWidth;
+        grid.classList.add('animate-fade-grid');
+      }
+    }
+
+    document.getElementById('cal-prev')?.addEventListener('click', () => {
+      currentMonth--;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+      }
+      renderCalendar();
+      animateGrid();
+    });
+
+    document.getElementById('cal-next')?.addEventListener('click', () => {
+      currentMonth++;
+      if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      }
+      renderCalendar();
+      animateGrid();
+    });
+
+    document.getElementById('cal-today')?.addEventListener('click', () => {
+      currentYear = 2026;
+      currentMonth = 9;
+      selectedDateStr = '2026-10-05';
+      renderCalendar();
+      animateGrid();
+    });
+
+    document.querySelectorAll('[data-cal-filter]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-cal-filter]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = (btn as HTMLElement).dataset.calFilter || 'ALL';
+        renderCalendar();
+      });
+    });
+
+    window.addEventListener('medpulse:cita-creada', (e: any) => {
+      if (e.detail && e.detail.fecha) {
+        userManuallySelectedDate = true;
+        selectedDateStr = e.detail.fecha;
+        const [y, m] = e.detail.fecha.split('-').map(Number);
+        currentYear = y;
+        currentMonth = m - 1;
+      }
+      renderCalendar();
+    });
+
+    renderCalendar();
+    syncCalendarFromBackend();
+    setInterval(syncCalendarFromBackend, 4000);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCalendarEvents);
+  } else {
+    initCalendarEvents();
+  }
+</script>

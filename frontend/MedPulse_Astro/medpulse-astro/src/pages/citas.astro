@@ -4,6 +4,94 @@ import data from '../data/seeds.json';
 import Appointments from '../components/Appointments.astro';
 import Calendar from '../components/Calendar.astro';
 ---
-<Layout title="Citas y calendario" patient={false}>
-<Appointments/><Calendar/>
+
+<Layout title="Agenda clínica y calendario de citas" role="admin">
+  <!-- Métricas y resumen de agendamiento -->
+  <div class="grid" style="margin-bottom: 22px;">
+    <section class="card metric">
+      <span>Citas en agenda</span>
+      <strong id="stat-total-citas">4</strong>
+      <small>Octubre 2026</small>
+    </section>
+
+    <section class="card metric" style="border-top: 3px solid #10b981;">
+      <span style="display:flex; align-items:center; gap:6px;">
+        <span class="badge-dot green"></span> Reservas de Pacientes
+      </span>
+      <strong id="stat-patient-citas" style="color: #059669;">2</strong>
+      <small style="color: #059669;">Autogestión Web / Bot</small>
+    </section>
+
+    <section class="card metric" style="border-top: 3px solid #8b5cf6;">
+      <span style="display:flex; align-items:center; gap:6px;">
+        <span class="badge-dot purple"></span> Reservas de Administración
+      </span>
+      <strong id="stat-admin-citas" style="color: #7c3aed;">2</strong>
+      <small style="color: #7c3aed;">Recepción y Coordinación</small>
+    </section>
+
+    <section class="card metric">
+      <span>Médicos con turnos</span>
+      <strong>{data.medicos.length}</strong>
+      <small style="color: #0056b3;">Disponibilidad activa</small>
+    </section>
+  </div>
+
+  <!-- Calendario interactivo en primer plano -->
+  <Calendar patient={false} />
+
+  <!-- Tabla de Citas con filtros detallados -->
+  <Appointments patient={false} />
 </Layout>
+
+<script>
+  import data from '../data/seeds.json';
+
+  const STORAGE_KEY = 'medpulse_citas_v2';
+
+  function updateMetrics() {
+    let citas = [...data.citas];
+    try {
+      if (!localStorage.getItem('medpulse_reset_zero_v2')) {
+        localStorage.setItem(STORAGE_KEY, '[]');
+        localStorage.setItem('medpulse_reset_zero_v2', '1');
+      }
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          citas = parsed;
+        }
+      }
+    } catch {}
+
+    const totalEl = document.getElementById('stat-total-citas');
+    const patientEl = document.getElementById('stat-patient-citas');
+    const adminEl = document.getElementById('stat-admin-citas');
+
+    if (!totalEl || !patientEl || !adminEl) return;
+
+    let patientCount = 0;
+    let adminCount = 0;
+
+    citas.forEach(c => {
+      const creator = (c.reservado_por || (c.canal_origen === 'WEB_PACIENTE' || c.canal_origen === 'CHATBOT_WHATSAPP' ? 'PACIENTE' : 'ADMINISTRADOR')).toUpperCase();
+      if (creator === 'PACIENTE') patientCount++;
+      else adminCount++;
+    });
+
+    totalEl.textContent = String(citas.length);
+    patientEl.textContent = String(patientCount);
+    adminEl.textContent = String(adminCount);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updateMetrics);
+  } else {
+    updateMetrics();
+  }
+
+  window.addEventListener('medpulse:cita-creada', updateMetrics);
+  window.addEventListener('medpulse:cita-synced', updateMetrics);
+  setInterval(updateMetrics, 4000);
+</script>

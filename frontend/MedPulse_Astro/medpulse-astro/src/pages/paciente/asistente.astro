@@ -3,6 +3,30 @@ import Layout from '../../layouts/Layout.astro';
 import data from '../../data/seeds.json';
 
 ---
-<Layout title="Asistente virtual" patient={true}>
-<div class="grid two"><section class="card"><h2>✧ Asistente virtual <span class="badge">Demo</span></h2><div id="messages" aria-live="polite"><div class="message">¡Hola! Puedo mostrarte las especialidades y los horarios de esta demostración. ¿Qué información necesitas?</div></div><div class="tools"><button class="button secondary" data-chat="Especialidades">Especialidades</button><button class="button secondary" data-chat="Horarios">Horarios</button><a class="button secondary" href="/paciente/reservar">Reservar cita</a></div><form id="chat" class="chat-input"><input name="message" aria-label="Mensaje" placeholder="Escribe un mensaje…" required/><button type="submit">Enviar</button></form><p class="muted">Respuestas predeterminadas. No ofrece diagnóstico ni triaje médico.</p></section><section class="card"><h2>Conversación de ejemplo</h2>{data.mensajes_chatbot.map(m=><div class:list={['message',{'user':m.remitente==='USUARIO'}]}>{m.contenido}</div>)}</section></div>
+<Layout title="Asistente Virtual WhatsApp · MedPulse" role="paciente">
+  <div style="max-width: 720px; margin: 40px auto; text-align: center;">
+    <section class="card" style="padding: 36px 28px; border: 1px solid rgba(16, 185, 129, 0.35); background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.95) 100%);">
+      <div style="font-size: 48px; margin-bottom: 16px;">💬</div>
+      <span class="badge green" style="font-size: 13px; padding: 4px 12px; margin-bottom: 12px; display: inline-block;">Atención Directa 24/7</span>
+      <h2 style="font-size: 24px; color: #ffffff; margin: 10px 0;">Tu Asistente Clínico está en WhatsApp</h2>
+      <p style="color: #cbd5e1; font-size: 15px; line-height: 1.6; margin: 0 auto 24px auto; max-width: 580px;">
+        Para una experiencia más ágil e integrada con recordatorios, el triaje conversacional y la reserva de turnos se realizan a través de WhatsApp oficial.
+      </p>
+
+      <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;">
+        <a 
+          href="https://wa.me/50760000000?text=Hola%20MedPulse,%20deseo%20consultar%20por%20una%20cita%20m%C3%A9dica" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          class="button primary-glow"
+          style="background: #10b981; color: #ffffff; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; text-decoration: none;"
+        >
+          <span>📱</span> Chatear en WhatsApp (+507 6000-0000)
+        </a>
+        <a href="/paciente/reservar" class="button secondary" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">
+          Reservar Cita en la Web
+        </a>
+      </div>
+    </section>
+  </div>
 </Layout>

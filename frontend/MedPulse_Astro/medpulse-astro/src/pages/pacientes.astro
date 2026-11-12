@@ -1,8 +1,246 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import data from '../data/seeds.json';
-import EntityForm from '../components/EntityForm.astro';
+
+const pacientesIniciales = data.pacientes;
 ---
-<Layout title="Historial y perfil médico" patient={false}>
-<section class="card"><h2>Pacientes registrados</h2><div class="tools"><input data-search aria-label="Buscar paciente" placeholder="Buscar por nombre, documento o teléfono…"/></div><div class="table-wrap"><table data-table><thead><tr><th>Paciente</th><th>Documento</th><th>Teléfono</th><th>Grupo sanguíneo</th><th>Alergias</th></tr></thead><tbody>{data.pacientes.map(p=><tr><td>{p.nombres} {p.apellidos}<small>{p.email}</small></td><td>{p.documento_tipo} {p.documento_numero}</td><td>{p.telefono}</td><td>{p.grupo_sanguineo}</td><td>{p.alergias}</td></tr>)}</tbody></table><p data-empty hidden>No hay coincidencias.</p></div></section>{data.pacientes.map(p=><EntityForm table="pacientes" values={p} title={p.nombres+' '+p.apellidos}/>)}<section class="card"><h2>Historial de citas</h2><p>El SQL incluye motivos de consulta; no incluye diagnósticos, recetas ni resultados clínicos.</p></section>
+
+<Layout title="Directorio de Pacientes y Expedientes" role="admin">
+  <!-- Hero Banner Administrativo de Pacientes -->
+  <section class="card patient-hero animate-slide-up" style="margin-bottom: 24px;">
+    <div class="patient-hero-content">
+      <div class="patient-hero-badge">
+        <span class="live-pulse-dot"></span>
+        <span style="font-weight: 700; color: #38bdf8; letter-spacing: 0.5px;">PADRÓN DE PACIENTES</span>
+        <span class="separator" style="color: #475569;">·</span>
+        <span class="verified-tag" style="color: #34d399; font-weight: 600;">✓ Registros Clínicos Activos</span>
+      </div>
+      
+      <h2 style="font-size: 24px; margin: 10px 0 8px 0; color: #ffffff;">Directorio General de Pacientes 👥</h2>
+      <p style="margin: 0 0 16px 0; color: #cbd5e1; max-width: 740px; font-size: 14px; line-height: 1.6;">
+        Consulta y administra la base de pacientes registrados en MedPulse, incluyendo registros importados y nuevos pacientes registrados desde la web y recepción.
+      </p>
+
+      <div class="patient-quick-tags">
+        <span class="tag-chip" id="kpi-total-badge"><strong>Total Pacientes:</strong> {pacientesIniciales.length}</span>
+        <span class="tag-chip"><strong>Identificación:</strong> Cédula / Pasaporte</span>
+        <span class="tag-chip"><strong>Sede:</strong> Sede Central</span>
+        <span class="tag-chip"><strong>Sincronización:</strong> Activa en tiempo real</span>
+      </div>
+    </div>
+
+    <div class="patient-hero-actions">
+      <a class="button primary-glow" href="/reservar">
+        <span>＋</span> Agendar Cita en Recepción
+      </a>
+      <a class="button secondary-glow" href="/login">
+        <span>👤</span> Registrar Nuevo Paciente
+      </a>
+    </div>
+  </section>
+
+  <!-- Tabla de Pacientes con Buscador Reactivo -->
+  <section class="card animate-slide-up delay-1" style="background: #0f172a; border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 16px; padding: 22px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <h2 style="font-size: 18px; margin: 0; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+          <span>📋</span> Lista Completa de Pacientes
+        </h2>
+        <p class="muted" style="margin: 4px 0 0 0; font-size: 13px;">
+          Filtra por nombre, apellidos, documento de identidad o correo electrónico.
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 10px; align-items: center; width: 100%; max-width: 380px;">
+        <input 
+          id="patient-search-input" 
+          type="text" 
+          placeholder="🔍 Buscar paciente por nombre, cédula o correo..." 
+          style="height: 42px; width: 100%; background: #090e17; border: 1px solid #263342; border-radius: 8px; padding: 0 14px; color: #f8fafc; font-size: 13px;"
+        />
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table data-table style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr>
+            <th>Paciente Titular</th>
+            <th>Documento</th>
+            <th>Teléfono</th>
+            <th>Correo Electrónico</th>
+            <th>Grupo Sanguíneo</th>
+            <th style="text-align: right;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="patients-tbody">
+          <!-- Renderizado reactivo dinámico con pacientes base y recién creados -->
+        </tbody>
+      </table>
+
+      <p id="no-patients-found" hidden style="text-align: center; padding: 32px; color: #94a3b8; background: #090e17; border-radius: 8px; margin-top: 12px;">
+        No se encontraron pacientes que coincidan con la búsqueda.
+      </p>
+    </div>
+  </section>
 </Layout>
+
+<script>
+  import data from '../data/seeds.json';
+
+  function docLabel(tipo: string): string {
+    if (tipo === 'PASAPORTE') return 'Pasaporte';
+    if (tipo === 'CEDULA_E') return 'Cédula E';
+    if (tipo === 'CEDULA_NACIONAL' || tipo === 'CEDULA_PANAMA') return 'Cédula';
+    if (tipo === 'DNI') return 'Cédula';
+    return tipo || 'Cédula';
+  }
+
+  interface PacienteDisplay {
+    id: string;
+    nombres: string;
+    apellidos: string;
+    documento_tipo?: string;
+    documento_numero?: string;
+    email?: string;
+    telefono?: string;
+    grupo_sanguineo?: string;
+    alergias?: string;
+    isCustom?: boolean;
+    [key: string]: any;
+  }
+
+  function getAllPatients(): PacienteDisplay[] {
+    const list: PacienteDisplay[] = [...data.pacientes];
+
+    // Cargar pacientes nuevos de localStorage
+    try {
+      const custom = JSON.parse(localStorage.getItem('medpulse_custom_patients') || '[]');
+      custom.forEach((cp: any) => {
+        const exists = list.some(p => p.id === cp.id || p.documento_numero === cp.documento_numero || (p.email && p.email === (cp.email || cp.correo)));
+        if (!exists) {
+          list.unshift({
+            id: cp.id,
+            nombres: cp.nombres,
+            apellidos: cp.apellidos,
+            documento_tipo: cp.documento_tipo || 'DNI',
+            documento_numero: cp.documento_numero || cp.documentoNumero || '—',
+            email: cp.email || cp.correo || '—',
+            telefono: cp.telefono || '—',
+            grupo_sanguineo: cp.grupo_sanguineo || 'O+',
+            alergias: cp.alergias || 'Ninguna conocida',
+            isCustom: true
+          });
+        }
+      });
+    } catch {}
+
+    // Cargar también paciente de sesión si no estuviera
+    try {
+      const session = JSON.parse(localStorage.getItem('medpulse_session') || '{}');
+      if (session?.paciente) {
+        const sp = session.paciente;
+        const exists = list.some(p => p.id === sp.id || (p.email && p.email === (sp.email || sp.correo)));
+        if (!exists) {
+          list.unshift({
+            id: sp.id,
+            nombres: sp.nombres,
+            apellidos: sp.apellidos,
+            documento_tipo: sp.documento_tipo || 'DNI',
+            documento_numero: sp.documento_numero || '—',
+            email: sp.email || sp.correo || '—',
+            telefono: sp.telefono || '—',
+            grupo_sanguineo: sp.grupo_sanguineo || 'O+',
+            alergias: sp.alergias || 'Ninguna conocida',
+            isCustom: true
+          });
+        }
+      }
+    } catch {}
+
+    return list;
+  }
+
+  function renderPatients() {
+    const tbody = document.getElementById('patients-tbody');
+    const noFound = document.getElementById('no-patients-found');
+    const searchInput = document.getElementById('patient-search-input') as HTMLInputElement | null;
+    const kpiBadge = document.getElementById('kpi-total-badge');
+
+    if (!tbody) return;
+
+    const all = getAllPatients();
+    if (kpiBadge) kpiBadge.innerHTML = `<strong>Total Pacientes:</strong> ${all.length}`;
+
+    const query = (searchInput?.value || '').toLowerCase().trim();
+
+    const filtered = all.filter(p => {
+      if (!query) return true;
+      const matchStr = `${p.nombres} ${p.apellidos} ${p.documento_numero} ${p.email} ${p.telefono}`.toLowerCase();
+      return matchStr.includes(query);
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '';
+      if (noFound) noFound.hidden = false;
+      return;
+    }
+
+    if (noFound) noFound.hidden = true;
+
+    tbody.innerHTML = filtered.map(p => {
+      const isNew = Boolean(p.isCustom);
+      return `
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="avatar" style="width: 34px; height: 34px; font-size: 13px; background: ${isNew ? 'linear-gradient(135deg, #059669, #10b981)' : '#1e293b'}; color: #fff;">
+                ${(p.nombres[0] || 'P') + (p.apellidos[0] || 'T')}
+              </div>
+              <div>
+                <strong style="color: #f8fafc; font-size: 14px; display: flex; align-items: center; gap: 6px;">
+                  ${p.nombres} ${p.apellidos}
+                  ${isNew ? '<span class="badge green" style="font-size: 10px; padding: 1px 6px;">Nuevo</span>' : ''}
+                </strong>
+                <small style="color: #64748b; font-size: 11px;">ID: ${p.id.slice(0, 12)}...</small>
+              </div>
+            </div>
+          </td>
+          <td>
+            <strong style="color: #38bdf8; font-size: 13px;">${docLabel(p.documento_tipo || '')}</strong>
+            <span style="color: #cbd5e1; font-size: 13px; margin-left: 4px;">${p.documento_numero}</span>
+          </td>
+          <td>
+            <span style="color: #cbd5e1; font-size: 13px;">${p.telefono || '—'}</span>
+          </td>
+          <td>
+            <span style="color: #38bdf8; font-size: 13px;">${p.email || '—'}</span>
+          </td>
+          <td>
+            <span class="badge blue" style="font-size: 11px;">${p.grupo_sanguineo || 'O+'}</span>
+          </td>
+          <td style="text-align: right;">
+            <a 
+              href="/reservar?paciente_id_select=${p.id}" 
+              class="button" 
+              style="font-size: 12px; padding: 6px 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;"
+            >
+              ＋ Agendar Cita
+            </a>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function init() {
+    renderPatients();
+    document.getElementById('patient-search-input')?.addEventListener('input', renderPatients);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+</script>

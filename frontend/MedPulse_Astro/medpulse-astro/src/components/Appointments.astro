@@ -1,6 +1,1093 @@
 ---
-import data from '../data/seeds.json';
-const {patient=false}=Astro.props;
-const citas=patient?data.citas.filter(c=>c.paciente_id===data.pacientes[0].id):data.citas;
+interface Props {
+  role?: 'paciente' | 'doctor' | 'secretaria' | 'admin';
+  patient?: boolean;
+  doctorId?: string;
+  patientId?: string;
+}
+
+const { role: propRole, patient = false, doctorId, patientId } = Astro.props;
+
+let role: 'paciente' | 'doctor' | 'secretaria' | 'admin' = 'admin';
+if (propRole) {
+  role = propRole;
+} else if (patient) {
+  role = 'paciente';
+}
 ---
-<section class="card"><h2>{patient?'Mis citas':'Agenda de citas'}</h2><div class="tools"><input aria-label="Buscar cita" placeholder="Buscar paciente, médico o código…" data-search/><select aria-label="Filtrar estado" data-status><option value="">Todos los estados</option><option>CONFIRMADA</option><option>PENDIENTE</option></select><a class="button secondary" href="/paciente/reservar">Reservar cita</a></div><div class="table-wrap"><table data-table><thead><tr><th>Código / fecha</th><th>Paciente</th><th>Médico / especialidad</th><th>Consultorio</th><th>Estado</th><th>Origen</th></tr></thead><tbody>{citas.map(c=>{const m=data.medicos.find(m=>m.id===c.medico_id);const p=data.pacientes.find(p=>p.id===c.paciente_id);return <tr data-state={c.estado}><td>{c.codigo_cita}<small>{c.fecha_hora_inicio.slice(0,16).replace('T',' ')}</small></td><td>{p.nombres} {p.apellidos}<small>{c.motivo_consulta}</small></td><td>{m.nombres} {m.apellidos}<small>{data.especialidades.find(e=>e.id===c.especialidad_id).nombre}</small></td><td>{data.consultorios.find(r=>r.id===c.consultorio_id).nombre}</td><td><span class:list={['badge',c.estado==='CONFIRMADA'?'green':'amber']}>{c.estado}</span></td><td>{c.canal_origen}</td></tr>})}</tbody></table><p data-empty hidden>No hay citas que coincidan.</p></div></section>
+
+<section class="card" id="appointments-section" data-role={role} data-doctor-id={doctorId || ''} data-patient-id={patientId || ''}>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <h2 style="margin: 0; color: #ffffff;">
+        {role === 'paciente' ? 'Mis citas programadas' : role === 'doctor' ? 'Agenda de consultas asignadas' : role === 'secretaria' ? 'Control de citas y sala de espera' : 'Agenda global de citas clínicas'}
+      </h2>
+      <p class="muted" style="margin: 4px 0 0 0;">
+        {role === 'paciente'
+          ? 'Consulta el estado de tus citas médicas y detalles de atención.'
+          : role === 'doctor'
+          ? 'Pacientes citados para tu atención médica en consultorio.'
+          : role === 'secretaria'
+          ? 'Mesa de recepción: control de asistencia, llegadas y confirmaciones.'
+          : 'Visualización integral de reservas gestionadas por pacientes y administradores.'}
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      {role === 'paciente' ? (
+        <a class="button" href="/paciente/reservar">
+          ＋ Reservar nueva cita
+        </a>
+      ) : role === 'doctor' ? (
+        <a class="button secondary" href="/doctor/agenda">
+          📅 Ver agenda del día
+        </a>
+      ) : (
+        <>
+          <a class="button" href={role === 'secretaria' ? '/secretaria/reservar' : '/reservar'} style="background: #7c3aed;">
+            ＋ Agendar cita en recepción
+          </a>
+          <button type="button" class="button secondary" onclick="window.limpiarTodasLasCitas?.()" style="border-color: rgba(239, 68, 68, 0.5); color: #f87171;">
+            🗑️ Eliminar todas las citas
+          </button>
+        </>
+      )}
+    </div>
+  </div>
+
+  <div class="tools">
+    <input
+      type="search"
+      aria-label="Buscar cita"
+      placeholder="Buscar por paciente, médico, especialidad o código…"
+      data-search
+    />
+
+    {role !== 'paciente' && role !== 'doctor' && (
+      <select aria-label="Filtrar por quién reservó" data-creator-filter id="filter-creator">
+        <option value="">Todos los orígenes (Paciente y Recepción)</option>
+        <option value="PACIENTE">👤 Solo reservadas por Paciente</option>
+        <option value="ADMINISTRADOR">🛡️ Solo reservadas por Recepción / Admin</option>
+      </select>
+    )}
+
+    <select aria-label="Filtrar estado" data-status id="filter-status">
+      <option value="">Todos los estados</option>
+      <option value="CONFIRMADA">CONFIRMADA</option>
+      <option value="PENDIENTE">PENDIENTE</option>
+      <option value="EN_CONSULTA">EN CONSULTA</option>
+      <option value="COMPLETADA">COMPLETADA</option>
+      <option value="CANCELADA">CANCELADA</option>
+    </select>
+  </div>
+
+  <div class="table-wrap">
+    <table data-table>
+      <thead>
+        {role === 'paciente' ? (
+          <tr>
+            <th>Código / Fecha</th>
+            <th>Especialidad & Médico</th>
+            <th>Consultorio / Sede</th>
+            <th>Motivo de Consulta</th>
+            <th>Estado</th>
+            <th style="text-align: right;">Pase & Opciones</th>
+          </tr>
+        ) : role === 'doctor' ? (
+          <tr>
+            <th>Código / Horario</th>
+            <th>Paciente Titular</th>
+            <th>Motivo Clínico & Síntomas</th>
+            <th>Consultorio</th>
+            <th>Estado</th>
+            <th style="text-align: right;">Acción Médica</th>
+          </tr>
+        ) : (
+          <tr>
+            <th>Código / Fecha</th>
+            <th>Paciente</th>
+            <th>Médico / Especialidad</th>
+            <th>Consultorio</th>
+            <th>Estado</th>
+            <th>{role === 'secretaria' ? 'Acción Recepción' : 'Origen y Confirmación'}</th>
+          </tr>
+        )}
+      </thead>
+      <tbody id="appointments-tbody">
+        <!-- Renderizado reactivo dinámico -->
+      </tbody>
+    </table>
+    <p data-empty hidden style="text-align:center; padding: 24px; color:#94a3b8; background: #0f1a30; border-radius: 8px; margin-top: 10px;">
+      No hay citas que coincidan con los filtros aplicados.
+    </p>
+  </div>
+
+  <!-- Modal de Pase Clínico Digital / Ticket Médico -->
+  <div id="ticket-modal-overlay" class="ticket-modal-overlay" style="display: none;">
+    <div class="ticket-modal-card">
+      <div class="ticket-modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">✚</span>
+          <div>
+            <strong style="color: #ffffff; font-size: 15px; letter-spacing: 0.5px;">PASE CLÍNICO DIGITAL</strong>
+            <small style="display: block; color: #10b981; font-weight: 600;">MedPulse Health Clarity</small>
+          </div>
+        </div>
+        <button type="button" id="btn-close-ticket" class="ticket-close-btn" title="Cerrar y volver">&times;</button>
+      </div>
+
+      <div class="ticket-modal-body">
+        <!-- Ticket Badge y Código -->
+        <div class="ticket-badge-box">
+          <div>
+            <span style="font-size: 11px; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px;">CÓDIGO DE RESERVA</span>
+            <strong id="ticket-codigo" style="display: block; font-size: 20px; font-family: monospace; color: #38bdf8;">CIT-2026-0001</strong>
+          </div>
+          <span id="ticket-badge-estado" class="badge green">CONFIRMADA</span>
+        </div>
+
+        <!-- Matriz de Datos del Pase -->
+        <div class="ticket-grid">
+          <div class="ticket-item">
+            <span class="ticket-label">PACIENTE TITULAR</span>
+            <strong id="ticket-paciente" class="ticket-val">Juan Carlos Pérez Salazar</strong>
+            <small style="color: #94a3b8;">DNI: 72849102 · HCL-10492</small>
+          </div>
+
+          <div class="ticket-item">
+            <span class="ticket-label">FECHA Y HORA</span>
+            <strong id="ticket-fecha" class="ticket-val" style="color: #34d399;">Lunes, 05 Oct 2026 · 09:00 AM</strong>
+            <small style="color: #6ee7b7;">Duración estimada: 30 minutos</small>
+          </div>
+
+          <div class="ticket-item">
+            <span class="ticket-label">ESPECIALIDAD Y MÉDICO</span>
+            <strong id="ticket-especialidad" class="ticket-val">Cardiología</strong>
+            <span id="ticket-medico" style="color: #cbd5e1; font-size: 13px;">Dr. Roberto Mendoza Valdivia</span>
+          </div>
+
+          <div class="ticket-item">
+            <span class="ticket-label">CONSULTORIO Y UBICACIÓN</span>
+            <strong id="ticket-consultorio" class="ticket-val">Consultorio 201</strong>
+            <small style="color: #94a3b8;">Piso 2 · Pabellón Central</small>
+          </div>
+        </div>
+
+        <!-- Motivo y Preparación -->
+        <div style="background: rgba(15, 23, 42, 0.6); padding: 12px 14px; border-radius: 8px; border: 1px solid rgba(51, 65, 85, 0.5); margin-top: 14px;">
+          <span style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Motivo declarado:</span>
+          <p id="ticket-motivo" style="margin: 0; color: #e2e8f0; font-size: 13px;"></p>
+        </div>
+
+        <div style="margin-top: 12px; padding: 10px 12px; background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10b981; border-radius: 4px;">
+          <small style="color: #cbd5e1; font-size: 12px; display: block; line-height: 1.4;">
+            💡 <strong>Instrucciones:</strong> Llegar 10 minutos antes con tu documento de identidad físico (DNI). En caso de no poder asistir, recuerda cancelar con antelación desde tu panel.
+          </small>
+        </div>
+
+        <!-- Simulación de Código QR y Barra de Seguridad -->
+        <div class="ticket-qr-section">
+          <div class="ticket-barcode">
+            <div class="barcode-lines"></div>
+            <span style="font-family: monospace; font-size: 10px; color: #64748b; letter-spacing: 2px;">SEC-AUTH-PASS-83921</span>
+          </div>
+          <div class="ticket-qr-box">
+            <svg viewBox="0 0 100 100" width="68" height="68" fill="#10b981">
+              <rect x="5" y="5" width="28" height="28" rx="2" fill="none" stroke="#10b981" stroke-width="4"/>
+              <rect x="12" y="12" width="14" height="14" fill="#10b981"/>
+              <rect x="67" y="5" width="28" height="28" rx="2" fill="none" stroke="#10b981" stroke-width="4"/>
+              <rect x="74" y="12" width="14" height="14" fill="#10b981"/>
+              <rect x="5" y="67" width="28" height="28" rx="2" fill="none" stroke="#10b981" stroke-width="4"/>
+              <rect x="12" y="74" width="14" height="14" fill="#10b981"/>
+              <rect x="42" y="12" width="16" height="16" fill="#38bdf8"/>
+              <rect x="42" y="42" width="16" height="16" fill="#10b981"/>
+              <rect x="70" y="42" width="18" height="18" fill="#a855f7"/>
+              <rect x="12" y="42" width="18" height="18" fill="#06b6d4"/>
+              <rect x="42" y="70" width="16" height="16" fill="#38bdf8"/>
+              <rect x="70" y="70" width="18" height="18" fill="#10b981"/>
+            </svg>
+            <span style="font-size: 9px; color: #94a3b8; display: block; text-align: center; margin-top: 2px;">Escanear en Sede</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ticket-modal-footer">
+        <a id="ticket-btn-gcalendar" href="#" target="_blank" class="button" style="background: rgba(56, 189, 248, 0.18); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-size: 13px; text-decoration: none;">
+          📅 Google Calendar
+        </a>
+        <button type="button" id="ticket-btn-print" class="button secondary" style="font-size: 13px;">
+          🖨️ Imprimir
+        </button>
+        <button type="button" id="ticket-btn-done" class="button primary-glow" style="font-size: 13px;">
+          Aceptar
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .ticket-modal-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(2, 6, 23, 0.88) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    z-index: 99999999 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-sizing: border-box !important;
+  }
+
+  .ticket-modal-card {
+    background: #0f172a;
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 540px;
+    max-height: 92vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65), 0 0 35px rgba(16, 185, 129, 0.15);
+    animation: modalPop 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes modalPop {
+    from {
+      opacity: 0;
+      transform: scale(0.94) translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .ticket-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 22px;
+    background: rgba(15, 23, 42, 0.95);
+    border-bottom: 1px solid rgba(51, 65, 85, 0.4);
+  }
+
+  .ticket-close-btn {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    color: #94a3b8;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+    transition: color 0.15s ease;
+  }
+  .ticket-close-btn:hover {
+    color: #ffffff;
+  }
+
+  .ticket-modal-body {
+    padding: 20px 22px;
+  }
+
+  .ticket-badge-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(2, 6, 23, 0.5);
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(51, 65, 85, 0.4);
+    margin-bottom: 16px;
+  }
+
+  .ticket-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  @media (max-width: 500px) {
+    .ticket-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .ticket-item {
+    background: rgba(15, 23, 42, 0.5);
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(30, 41, 59, 0.8);
+  }
+
+  .ticket-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+  }
+
+  .ticket-val {
+    display: block;
+    color: #f8fafc;
+    font-size: 14px;
+  }
+
+  .ticket-qr-section {
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(2, 6, 23, 0.7);
+    padding: 12px 18px;
+    border-radius: 10px;
+    border: 1px dashed rgba(51, 65, 85, 0.6);
+  }
+
+  .ticket-barcode {
+    flex: 1;
+  }
+
+  .barcode-lines {
+    height: 38px;
+    background: repeating-linear-gradient(
+      90deg,
+      #94a3b8,
+      #94a3b8 2px,
+      transparent 2px,
+      transparent 5px,
+      #cbd5e1 5px,
+      #cbd5e1 8px,
+      transparent 8px,
+      transparent 10px
+    );
+    border-radius: 2px;
+    margin-bottom: 4px;
+    max-width: 260px;
+  }
+
+  .ticket-qr-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-left: 14px;
+    border-left: 1px solid rgba(51, 65, 85, 0.4);
+  }
+
+  .ticket-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 22px;
+    background: rgba(15, 23, 42, 0.95);
+    border-top: 1px solid rgba(51, 65, 85, 0.4);
+  }
+</style>
+
+<script>
+  import data from '../data/seeds.json';
+  import { apiUrl } from '../data/api';
+
+  const STORAGE_KEY = 'medpulse_citas_v2';
+  const section = document.getElementById('appointments-section');
+  const role = section?.dataset.role || (window.location.pathname.startsWith('/paciente') ? 'paciente' : window.location.pathname.startsWith('/doctor') ? 'doctor' : window.location.pathname.startsWith('/secretaria') ? 'secretaria' : 'admin');
+  function getCurrentPatientId() {
+    if (section?.dataset.patientId) return section.dataset.patientId;
+    try {
+      const session = JSON.parse(localStorage.getItem('medpulse_session') || '{}');
+      if (session?.paciente?.id) return session.paciente.id;
+      if (session?.usuario?.id && session?.usuario?.rol === 'PACIENTE') return session.usuario.id;
+    } catch {}
+    return data.pacientes[0].id;
+  }
+  const defaultDoctorId = data.medicos[0]?.id || 'MED-01';
+  const targetDoctorId = section?.dataset.doctorId || defaultDoctorId;
+  const targetPatientId = getCurrentPatientId();
+
+  function getAllCitas() {
+    try {
+      if (!localStorage.getItem('medpulse_reset_zero_v2')) {
+        localStorage.setItem(STORAGE_KEY, '[]');
+        localStorage.setItem('medpulse_reset_zero_v2', '1');
+      }
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+    const defaults = [...data.citas];
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaults));
+    } catch {}
+    return defaults;
+  }
+
+  /**
+   * Sincroniza automáticamente todas las citas del Backend (incluyendo las creadas por WhatsApp desde el celular o simulador)
+   * hacia localStorage para que Admin, Médico, Secretaria y Paciente las vean en tiempo real.
+   */
+  async function syncCitasFromBackend() {
+    try {
+      const resp = await fetch(apiUrl('/api/citas'));
+      const json = await resp.json();
+      if (!json.ok || !Array.isArray(json.data)) return;
+
+      const localCitas = getAllCitas();
+      const customPatients = JSON.parse(localStorage.getItem('medpulse_custom_patients') || '[]');
+      let huboCambios = false;
+      let ultimaFechaNueva = '';
+
+      for (const bc of json.data) {
+        const codigo = bc.codigoCita || bc.codigo_cita;
+        const existingIdx = localCitas.findIndex((lc: any) => lc.id === bc.id || lc.codigo_cita === codigo);
+        if (existingIdx !== -1) {
+          const ex = localCitas[existingIdx];
+          if (bc.pacienteNombre && !ex.paciente_nombre_directo) {
+            ex.paciente_nombre_directo = bc.pacienteNombre;
+            ex.paciente_documento_directo = bc.pacienteDocumento;
+            huboCambios = true;
+          }
+          if (bc.medicoId && ex.canal_origen === 'CHATBOT_WHATSAPP' && ex.medico_id !== bc.medicoId) {
+            ex.medico_id = bc.medicoId;
+            huboCambios = true;
+          }
+          if (bc.estado && ex.estado !== bc.estado) {
+            ex.estado = bc.estado;
+            huboCambios = true;
+          }
+        } else {
+          let pacId = bc.pacienteId || bc.paciente_id || 'e0000000-0000-0000-0000-000000000001';
+
+          // Si viene con nombre o cédula desde WhatsApp, crear o localizar la ficha en custom_patients
+          if (bc.pacienteNombre || bc.pacienteDocumento) {
+            const docNum = bc.pacienteDocumento || '8-1234-56789';
+            let pFound = customPatients.find((p: any) => p.documento_numero === docNum && p.nombreCompleto === bc.pacienteNombre);
+            if (!pFound) {
+              const partes = (bc.pacienteNombre || 'Paciente WhatsApp').trim().split(/\s+/);
+              const nuevoPid = 'p-wa-' + bc.id.slice(0, 8);
+              pFound = {
+                id: nuevoPid,
+                nombres: partes[0] || 'Paciente',
+                apellidos: partes.slice(1).join(' ') || 'WhatsApp',
+                nombreCompleto: bc.pacienteNombre || 'Paciente WhatsApp',
+                documento_tipo: 'CEDULA_PANAMA',
+                documento_numero: docNum,
+                telefono: bc.pacienteTelefono || '+507 6598-2118',
+                email: 'whatsapp@medpulse.clinic'
+              };
+              customPatients.push(pFound);
+            }
+            pacId = pFound.id;
+          }
+
+          const inicioClean = (bc.fechaHoraInicio || '').replace('T', ' ').replace('Z', '').slice(0, 19);
+          const finClean = (bc.fechaHoraFin || '').replace('T', ' ').replace('Z', '').slice(0, 19);
+
+          localCitas.unshift({
+            id: bc.id,
+            codigo_cita: codigo,
+            paciente_id: pacId,
+            paciente_nombre_directo: bc.pacienteNombre,
+            paciente_documento_directo: bc.pacienteDocumento,
+            paciente_telefono_directo: bc.pacienteTelefono,
+            medico_id: bc.medicoId || bc.medico_id || 'c0000000-0000-0000-0000-000000000001',
+            especialidad_id: Number(bc.especialidadId || bc.especialidad_id || 1),
+            consultorio_id: Number(bc.consultorioId || bc.consultorio_id || 3),
+            fecha_hora_inicio: `${inicioClean}-05`,
+            fecha_hora_fin: `${finClean}-05`,
+            estado: bc.estado || 'PENDIENTE',
+            motivo_consulta: bc.motivoConsulta || bc.motivo_consulta || 'Cita agendada por WhatsApp',
+            canal_origen: bc.canalOrigen || bc.canal_origen || 'CHATBOT_WHATSAPP',
+            reservado_por: bc.reservadoPor || bc.reservado_por || 'PACIENTE'
+          });
+          ultimaFechaNueva = inicioClean.slice(0, 10);
+          huboCambios = true;
+        }
+      }
+
+      if (huboCambios) {
+        localStorage.setItem('medpulse_custom_patients', JSON.stringify(customPatients));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(localCitas));
+        renderAppointments();
+        window.dispatchEvent(new CustomEvent('medpulse:cita-creada', {
+          detail: { fecha: ultimaFechaNueva }
+        }));
+      }
+    } catch {}
+  }
+
+  function saveAllCitas(citas: any[]) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(citas));
+    } catch {}
+    window.dispatchEvent(new CustomEvent('medpulse:cita-creada', { detail: {} }));
+  }
+
+  // Hacer accesible globalmente para cambiar estados (Admin / Secretaria -> CONFIRMADA)
+  (window as any).cambiarEstadoCita = function(citaId: string, nuevoEstado: string) {
+    const citas = getAllCitas();
+    const idx = citas.findIndex((c: any) => c.id === citaId || c.codigo_cita === citaId);
+    if (idx !== -1) {
+      const targetCita = citas[idx];
+      targetCita.estado = nuevoEstado;
+      saveAllCitas(citas);
+      renderAppointments();
+
+      // Sincronizar también el estado en el servidor backend (:4000)
+      fetch(apiUrl(`/api/citas/${encodeURIComponent(targetCita.id || citaId)}/estado`), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: nuevoEstado })
+      }).catch(() => {});
+
+      const toast = document.querySelector('#toast') as HTMLElement | null;
+      if (toast) {
+        toast.textContent = `✓ Cita ${targetCita.codigo_cita} actualizada a: ${nuevoEstado}`;
+        toast.style.display = 'block';
+        setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3000);
+      }
+    }
+  };
+
+  // Vaciar todas las citas en localStorage y en el Backend
+  (window as any).limpiarTodasLasCitas = async function() {
+    try {
+      localStorage.setItem(STORAGE_KEY, '[]');
+      await fetch(apiUrl('/api/citas'), { method: 'DELETE' }).catch(() => {});
+      renderAppointments();
+      window.dispatchEvent(new CustomEvent('medpulse:cita-creada', { detail: {} }));
+      window.dispatchEvent(new CustomEvent('medpulse:cita-synced'));
+    } catch {}
+  };
+
+  // Cancelar cita por el paciente
+  (window as any).cancelarCitaPaciente = function(citaId: string, codigoCita: string) {
+    if (confirm(`¿Estás seguro de cancelar tu cita médica ${codigoCita}? Podrás reservar un nuevo turno cuando lo desees.`)) {
+      (window as any).cambiarEstadoCita(citaId, 'CANCELADA');
+    }
+  };
+
+  function getDoctor(id: string) {
+    return data.medicos.find(m => m.id === id) || { nombres: 'Médico', apellidos: 'Especialista' };
+  }
+
+  function getPatient(id: string) {
+    const found = data.pacientes.find(p => p.id === id);
+    if (found) return found;
+
+    try {
+      const custom = JSON.parse(localStorage.getItem('medpulse_custom_patients') || '[]');
+      const cp = custom.find((p: any) => p.id === id);
+      if (cp) {
+        return {
+          nombres: cp.nombres || 'Paciente',
+          apellidos: cp.apellidos || '',
+          documento_numero: cp.documento_numero || cp.documentoNumero || '—',
+          telefono: cp.telefono || '—',
+          email: cp.email || cp.correo || '—'
+        };
+      }
+    } catch {}
+
+    try {
+      const session = JSON.parse(localStorage.getItem('medpulse_session') || '{}');
+      if (session?.paciente && (session.paciente.id === id || session.usuario?.id === id)) {
+        return {
+          nombres: session.paciente.nombres || session.usuario.nombreCompleto?.split(' ')[0] || 'Paciente',
+          apellidos: session.paciente.apellidos || session.usuario.nombreCompleto?.split(' ').slice(1).join(' ') || '',
+          documento_numero: session.paciente.documento_numero || '—',
+          telefono: session.paciente.telefono || '—',
+          email: session.paciente.email || session.paciente.correo || session.usuario.email || '—'
+        };
+      }
+    } catch {}
+
+    return { nombres: 'Paciente', apellidos: 'Registrado' };
+  }
+
+  function getSpecialty(id: number) {
+    return data.especialidades.find(e => e.id === id) || { nombre: 'Consulta Médica' };
+  }
+
+  function getRoom(id: number | null | undefined) {
+    return data.consultorios.find(r => r.id === id) || { nombre: 'Consultorio Central' };
+  }
+
+  function formatTime12h(timeStr: string) {
+    if (!timeStr) return '';
+    const parts = timeStr.trim().split(':');
+    if (parts.length < 2) return timeStr;
+    let h = parseInt(parts[0], 10);
+    const m = parts[1].slice(0, 2);
+    if (isNaN(h)) return timeStr;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    h = h ? h : 12;
+    return `${String(h).padStart(2, '0')}:${m} ${ampm}`;
+  }
+
+  function formatDateTime12h(dateStr: string) {
+    if (!dateStr) return '';
+    const clean = dateStr.replace('T', ' ').trim();
+    const [datePart, timePart] = clean.split(' ');
+    if (!datePart) return dateStr;
+    const timeFormatted = timePart ? formatTime12h(timePart) : '';
+    
+    const parts = datePart.split('-');
+    if (parts.length === 3) {
+      const [y, m, d] = parts;
+      const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      const mIdx = parseInt(m, 10) - 1;
+      const mesNombre = (mIdx >= 0 && mIdx < 12) ? meses[mIdx] : m;
+      return `${d} ${mesNombre} ${y}${timeFormatted ? ' · ' + timeFormatted : ''}`;
+    }
+    return timeFormatted ? `${datePart} · ${timeFormatted}` : datePart;
+  }
+
+  let lastSavedScrollY = 0;
+
+  function closeTicketModal() {
+    const modal = document.getElementById('ticket-modal-overlay');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+    document.body.style.overflow = '';
+    if (typeof lastSavedScrollY === 'number') {
+      window.scrollTo({ top: lastSavedScrollY, behavior: 'instant' });
+    }
+  }
+
+  (window as any).closeTicketModal = closeTicketModal;
+
+  // Abrir Modal de Pase Clínico
+  function openTicketModal(citaData: any) {
+    const modal = document.getElementById('ticket-modal-overlay');
+    if (!modal) return;
+
+    // Guardar posición de scroll actual antes de bloquear el body
+    lastSavedScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+
+    // Asegurar que el modal esté directamente bajo <body> para que no se herede transform o scroll
+    if (modal.parentElement !== document.body) {
+      document.body.appendChild(modal);
+    }
+    document.body.style.overflow = 'hidden';
+
+    const elCodigo = document.getElementById('ticket-codigo');
+    const elEstado = document.getElementById('ticket-badge-estado');
+    const elPaciente = document.getElementById('ticket-paciente');
+    const elFecha = document.getElementById('ticket-fecha');
+    const elEsp = document.getElementById('ticket-especialidad');
+    const elMedico = document.getElementById('ticket-medico');
+    const elRoom = document.getElementById('ticket-consultorio');
+    const elMotivo = document.getElementById('ticket-motivo');
+    const elGCal = document.getElementById('ticket-btn-gcalendar') as HTMLAnchorElement | null;
+
+    if (elCodigo) elCodigo.textContent = citaData.codigo || 'CIT-2026';
+    if (elEstado) {
+      elEstado.textContent = citaData.estado || 'CONFIRMADA';
+      elEstado.className = `badge ${citaData.estado === 'CONFIRMADA' ? 'green' : citaData.estado === 'CANCELADA' ? 'red' : 'amber'}`;
+    }
+    if (elPaciente) elPaciente.textContent = citaData.paciente || 'Paciente Titular';
+    if (elFecha) elFecha.textContent = formatDateTime12h(citaData.fecha) || '05 Oct 2026 · 09:00 AM';
+    if (elEsp) elEsp.textContent = citaData.especialidad || 'Cardiología';
+    if (elMedico) elMedico.textContent = citaData.medico || 'Médico Asignado';
+    if (elRoom) elRoom.textContent = citaData.consultorio || 'Consultorio Central';
+    if (elMotivo) elMotivo.textContent = citaData.motivo || 'Control preventivo de rutina';
+
+    // Generar URL para Google Calendar
+    if (elGCal) {
+      let datesParam = '';
+      try {
+        const dStr = (citaData.fecha || '').replace(/[^0-9]/g, '');
+        if (dStr.length >= 12) {
+          const y = dStr.slice(0, 4);
+          const m = dStr.slice(4, 6);
+          const d = dStr.slice(6, 8);
+          const h = dStr.slice(8, 10);
+          const min = dStr.slice(10, 12);
+          const start = `${y}${m}${d}T${h}${min}00`;
+          const totalMins = parseInt(h) * 60 + parseInt(min) + 30;
+          const endH = String(Math.floor(totalMins / 60)).padStart(2, '0');
+          const endM = String(totalMins % 60).padStart(2, '0');
+          const end = `${y}${m}${d}T${endH}${endM}00`;
+          datesParam = `&dates=${start}/${end}`;
+        }
+      } catch {}
+      const gcalTitle = encodeURIComponent(`🩺 Cita Médica MedPulse: ${citaData.especialidad} (${citaData.codigo})`);
+      const gcalDetails = encodeURIComponent(`Consulta médica con ${citaData.medico} en ${citaData.consultorio}.\nPaciente: ${citaData.paciente || ''}\nCódigo de reserva: ${citaData.codigo}\nMotivo: ${citaData.motivo}`);
+      const gcalLocation = encodeURIComponent(`MedPulse Salud - ${citaData.consultorio}`);
+      elGCal.href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${gcalTitle}${datesParam}&details=${gcalDetails}&location=${gcalLocation}`;
+    }
+
+    modal.style.display = 'flex';
+  }
+
+  (window as any).openTicketModal = openTicketModal;
+
+  (window as any).abrirTicketDesdeBoton = function(btn: HTMLElement) {
+    if (!btn) return;
+    openTicketModal({
+      id: btn.dataset.citaId,
+      codigo: btn.dataset.codigo,
+      fecha: btn.dataset.fecha,
+      paciente: btn.dataset.paciente,
+      medico: btn.dataset.medico,
+      especialidad: btn.dataset.especialidad,
+      consultorio: btn.dataset.consultorio,
+      motivo: btn.dataset.motivo,
+      estado: btn.dataset.estado
+    });
+  };
+
+  (window as any).abrirPaseProximaCita = function() {
+    const curPatientId = getCurrentPatientId();
+    const citas = getAllCitas().filter((c: any) => c.paciente_id === curPatientId && c.estado !== 'CANCELADA');
+    if (citas.length > 0) {
+      const c = citas[0];
+      const m = getDoctor(c.medico_id);
+      const p = getPatient(c.paciente_id);
+      const esp = getSpecialty(c.especialidad_id);
+      const room = getRoom(c.consultorio_id);
+      openTicketModal({
+        id: c.id,
+        codigo: c.codigo_cita,
+        fecha: c.fecha_hora_inicio,
+        paciente: `${p.nombres} ${p.apellidos}`,
+        medico: `Dr(a). ${m.nombres} ${m.apellidos}`,
+        especialidad: esp.nombre,
+        consultorio: room.nombre,
+        motivo: c.motivo_consulta || 'Control general de salud',
+        estado: c.estado
+      });
+    }
+  };
+
+  function renderAppointments() {
+    const tbody = document.getElementById('appointments-tbody');
+    const emptyNotice = document.querySelector('[data-empty]') as HTMLElement | null;
+    const searchInput = document.querySelector('[data-search]') as HTMLInputElement | null;
+    const creatorFilter = document.getElementById('filter-creator') as HTMLSelectElement | null;
+    const statusFilter = document.getElementById('filter-status') as HTMLSelectElement | null;
+
+    if (!tbody) return;
+
+    let citas = getAllCitas();
+
+    // Filtros por rol
+    if (role === 'paciente') {
+      citas = citas.filter((c: any) => c.paciente_id === targetPatientId || c.canal_origen === 'CHATBOT_WHATSAPP');
+    } else if (role === 'doctor') {
+      citas = citas.filter((c: any) => c.medico_id === targetDoctorId);
+    }
+
+    const searchTerm = (searchInput?.value || '').toLowerCase().trim();
+    const selectedCreator = creatorFilter?.value || '';
+    const selectedStatus = statusFilter?.value || '';
+
+    const filtered = citas.filter((c: any) => {
+      const creator = (c.reservado_por || (c.canal_origen === 'WEB_PACIENTE' || c.canal_origen === 'CHATBOT_WHATSAPP' ? 'PACIENTE' : 'ADMINISTRADOR')).toUpperCase();
+      
+      if (selectedCreator && creator !== selectedCreator) return false;
+      if (selectedStatus && c.estado !== selectedStatus) return false;
+
+      if (searchTerm) {
+        const p = getPatient(c.paciente_id);
+        const m = getDoctor(c.medico_id);
+        const esp = getSpecialty(c.especialidad_id);
+        const room = getRoom(c.consultorio_id);
+        const combined = `${c.codigo_cita} ${p.nombres} ${p.apellidos} ${m.nombres} ${m.apellidos} ${esp.nombre} ${room.nombre} ${c.motivo_consulta || ''}`.toLowerCase();
+        if (!combined.includes(searchTerm)) return false;
+      }
+
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '';
+      if (emptyNotice) emptyNotice.hidden = false;
+      return;
+    }
+
+    if (emptyNotice) emptyNotice.hidden = true;
+
+    tbody.innerHTML = filtered.map(c => {
+      const m = getDoctor(c.medico_id);
+      let p = getPatient(c.paciente_id);
+      if (c.paciente_nombre_directo) {
+        const parts = String(c.paciente_nombre_directo).trim().split(/\s+/);
+        p = {
+          nombres: parts[0] || p.nombres,
+          apellidos: parts.slice(1).join(' ') || p.apellidos,
+          documento_numero: c.paciente_documento_directo || (p as any).documento_numero || '—',
+          telefono: c.paciente_telefono_directo || (p as any).telefono || '—'
+        } as any;
+      }
+      const esp = getSpecialty(c.especialidad_id);
+      const room = getRoom(c.consultorio_id);
+      const creator = (c.reservado_por || (c.canal_origen === 'WEB_PACIENTE' || c.canal_origen === 'CHATBOT_WHATSAPP' ? 'PACIENTE' : 'ADMINISTRADOR')).toUpperCase();
+      const isPatientCreator = creator === 'PACIENTE';
+      const rawDate = c.fecha_hora_inicio.slice(0, 16).replace('T', ' ');
+      const formattedDate = formatDateTime12h(c.fecha_hora_inicio);
+
+      const statusBadgeClass = c.estado === 'CONFIRMADA' ? 'green' : c.estado === 'EN_CONSULTA' ? 'blue' : c.estado === 'COMPLETADA' ? 'purple' : c.estado === 'CANCELADA' ? 'red' : 'amber';
+
+      // Vista especializada si el usuario es Paciente
+      if (role === 'paciente') {
+        return `
+          <tr data-state="${c.estado}" data-creator="${creator}" class="patient-appointment-row">
+            <td>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">🩺</span>
+                <div>
+                  <strong style="color: #38bdf8; font-family: monospace; font-size: 13px;">${c.codigo_cita}</strong>
+                  <small style="display: block; color: #94a3b8; font-size: 12px;">🕒 ${formattedDate}</small>
+                </div>
+              </div>
+            </td>
+            <td>
+              <strong style="color: #f1f5f9; display: block; font-size: 14px;">${esp.nombre}</strong>
+              <small style="color: #34d399; font-weight: 500;">Dr(a). ${m.nombres} ${m.apellidos}</small>
+            </td>
+            <td>
+              <strong style="color: #cbd5e1; font-size: 13px;">${room.nombre}</strong>
+              <small style="display: block; color: #64748b;">Pabellón Central</small>
+            </td>
+            <td>
+              <span style="color: #cbd5e1; font-size: 13px;">${c.motivo_consulta || 'Control general de salud'}</span>
+            </td>
+            <td>
+              <span class="badge ${statusBadgeClass}">${c.estado}</span>
+            </td>
+            <td style="text-align: right;">
+              <div style="display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;">
+                <button 
+                  type="button" 
+                  class="cal-btn btn-ticket-pass" 
+                  onclick="window.abrirTicketDesdeBoton(this)"
+                  data-cita-id="${c.id}"
+                  data-codigo="${c.codigo_cita}"
+                  data-fecha="${c.fecha_hora_inicio}"
+                  data-paciente="${p.nombres} ${p.apellidos}"
+                  data-medico="Dr(a). ${m.nombres} ${m.apellidos}"
+                  data-especialidad="${esp.nombre}"
+                  data-consultorio="${room.nombre}"
+                  data-motivo="${c.motivo_consulta || 'Control de rutina'}"
+                  data-estado="${c.estado}"
+                  style="font-size: 12px; padding: 5px 10px; background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"
+                  title="Ver pase digital y ticket"
+                >
+                  🎫 Pase
+                </button>
+                ${c.estado !== 'CANCELADA' && c.estado !== 'COMPLETADA' ? `
+                  <button 
+                    type="button" 
+                    class="cal-btn btn-cancel-cita" 
+                    onclick="window.cancelarCitaPaciente('${c.id}', '${c.codigo_cita}')"
+                    style="font-size: 12px; padding: 5px 9px; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px; cursor: pointer;"
+                    title="Cancelar cita médica"
+                  >
+                    ✕ Cancelar
+                  </button>
+                ` : ''}
+              </div>
+            </td>
+          </tr>
+        `;
+      }
+
+      // Vista especializada si el usuario es Médico Facultativo
+      if (role === 'doctor') {
+        return `
+          <tr data-state="${c.estado}" data-creator="${creator}" class="doctor-appointment-row">
+            <td>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 16px;">⏱️</span>
+                <div>
+                  <strong style="color: #38bdf8; font-family: monospace; font-size: 13px;">${c.codigo_cita}</strong>
+                  <small style="display: block; color: #94a3b8; font-size: 11px;">🕒 ${formattedDate}</small>
+                </div>
+              </div>
+            </td>
+            <td>
+              <strong style="color: #f1f5f9; display: block; font-size: 14px;">${p.nombres} ${p.apellidos}</strong>
+              <small style="color: #64748b; font-size: 11px;">Doc: ${p.documento_numero || '—'} · Tel: ${p.telefono || '—'}</small>
+            </td>
+            <td>
+              <span style="color: #cbd5e1; font-size: 13px; line-height: 1.4; display: block;">${c.motivo_consulta || 'Chequeo médico programado'}</span>
+              <small style="color: #64748b; font-size: 10px;">Vía: ${c.canal_origen || 'WEB_PACIENTE'}</small>
+            </td>
+            <td>
+              <strong style="color: #38bdf8; font-size: 13px;">${room.nombre}</strong>
+            </td>
+            <td>
+              <span class="badge ${statusBadgeClass}">${c.estado}</span>
+            </td>
+            <td style="text-align: right;">
+              ${c.estado === 'CONFIRMADA' || c.estado === 'PENDIENTE' ? `
+                <button 
+                  type="button" 
+                  class="button primary-glow" 
+                  onclick="window.cambiarEstadoCita('${c.id}', 'EN_CONSULTA')"
+                  style="font-size: 12px; padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px;"
+                  title="Pasar al paciente a consulta clínica"
+                >
+                  ▶ Iniciar Atención
+                </button>
+              ` : c.estado === 'EN_CONSULTA' ? `
+                <button 
+                  type="button" 
+                  class="button" 
+                  onclick="window.cambiarEstadoCita('${c.id}', 'COMPLETADA')"
+                  style="font-size: 12px; padding: 6px 12px; background: rgba(16, 185, 129, 0.25); color: #34d399; border: 1px solid #10b981; display: inline-flex; align-items: center; gap: 6px;"
+                  title="Finalizar consulta médica"
+                >
+                  ✓ Concluir Cita
+                </button>
+              ` : c.estado === 'COMPLETADA' ? `
+                <span class="badge green" style="font-size: 11px;">✓ Atendido</span>
+              ` : `
+                <span class="badge red" style="font-size: 11px;">✕ Cita Cancelada</span>
+              `}
+            </td>
+          </tr>
+        `;
+      }
+
+      // Vista administrativa general (admin / secretaria)
+      return `
+        <tr data-state="${c.estado}" data-creator="${creator}">
+          <td>
+            <strong style="color: #38bdf8; font-family: monospace;">${c.codigo_cita}</strong>
+            <small style="color: #94a3b8;">🕒 ${formattedDate}</small>
+          </td>
+          <td>
+            <strong style="color: #f1f5f9;">${p.nombres} ${p.apellidos}</strong>
+            <small style="color: #94a3b8;">${c.motivo_consulta || 'Sin observaciones'}</small>
+          </td>
+          <td>
+            <strong style="color: #f1f5f9;">Dr(a). ${m.nombres} ${m.apellidos}</strong>
+            <small style="color: #38bdf8;">${esp.nombre}</small>
+          </td>
+          <td>
+            <span style="color: #cbd5e1;">${room.nombre}</span>
+          </td>
+          <td>
+            <span class="badge ${statusBadgeClass}">${c.estado}</span>
+          </td>
+          <td>
+            ${role === 'secretaria' ? `
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                ${c.estado === 'PENDIENTE' ? `
+                  <button type="button" class="cal-btn" onclick="window.cambiarEstadoCita('${c.id}', 'CONFIRMADA')" style="font-size: 11px; padding: 5px 10px; background: #10b981; color: #052e16; font-weight: 800; border-color: #059669;" title="Confirmar solicitud de cita">
+                    ✓ Confirmar Cita
+                  </button>
+                ` : `
+                  <span class="badge green" style="font-size: 10px;">✓ Confirmada</span>
+                  <button type="button" class="cal-btn" onclick="window.cambiarEstadoCita('${c.id}', 'EN_CONSULTA')" style="font-size: 11px; padding: 4px 8px; background: rgba(56, 189, 248, 0.2); color: #38bdf8; border-color: #0284c7;" title="Pasar a consulta">
+                    ▶ Consulta
+                  </button>
+                `}
+              </div>
+            ` : role === 'doctor' ? `
+              <button type="button" class="button secondary" onclick="window.cambiarEstadoCita('${c.id}', 'EN_CONSULTA')" style="font-size: 11px; padding: 5px 10px;">
+                🩺 Iniciar atención
+              </button>
+            ` : `
+              <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start;">
+                <div>
+                  ${isPatientCreator 
+                    ? '<span class="badge badge-patient"><span class="badge-dot green"></span>👤 Paciente</span>' 
+                    : '<span class="badge badge-admin"><span class="badge-dot purple"></span>🛡️ Recepción / Admin</span>'}
+                  <small style="margin-top: 3px; color: #64748b; display: block;">${c.canal_origen || 'WEB_PACIENTE'}</small>
+                </div>
+                ${c.estado === 'PENDIENTE' ? `
+                  <button type="button" class="cal-btn" onclick="window.cambiarEstadoCita('${c.id}', 'CONFIRMADA')" style="font-size: 11px; padding: 5px 10px; background: #10b981; color: #052e16; font-weight: 800; border-color: #059669; cursor: pointer;" title="Confirmar cita solicitada por el paciente">
+                    ✓ Confirmar Cita
+                  </button>
+                ` : ''}
+              </div>
+            `}
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    // Asignar listeners a los botones de Pase Clínico
+    document.querySelectorAll('.btn-ticket-pass').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const b = btn as HTMLElement;
+        openTicketModal({
+          id: b.dataset.citaId,
+          codigo: b.dataset.codigo,
+          fecha: b.dataset.fecha,
+          medico: b.dataset.medico,
+          especialidad: b.dataset.especialidad,
+          consultorio: b.dataset.consultorio,
+          motivo: b.dataset.motivo,
+          estado: b.dataset.estado
+        });
+      });
+    });
+  }
+
+  function initAppointmentsEvents() {
+    const searchInput = document.querySelector('[data-search]') as HTMLInputElement | null;
+    const creatorFilter = document.getElementById('filter-creator') as HTMLSelectElement | null;
+    const statusFilter = document.getElementById('filter-status') as HTMLSelectElement | null;
+
+    searchInput?.addEventListener('input', renderAppointments);
+    creatorFilter?.addEventListener('change', renderAppointments);
+    statusFilter?.addEventListener('change', renderAppointments);
+
+    // Mover de inmediato el modal a document.body para que quede 100% fijo sobre la pantalla
+    const ticketModal = document.getElementById('ticket-modal-overlay');
+    if (ticketModal && ticketModal.parentElement !== document.body) {
+      document.body.appendChild(ticketModal);
+    }
+
+    const btnCloseTicket = document.getElementById('btn-close-ticket');
+    const btnDoneTicket = document.getElementById('ticket-btn-done');
+    const btnPrintTicket = document.getElementById('ticket-btn-print');
+
+    btnCloseTicket?.addEventListener('click', closeTicketModal);
+    btnDoneTicket?.addEventListener('click', closeTicketModal);
+    btnPrintTicket?.addEventListener('click', () => {
+      window.print();
+    });
+
+    ticketModal?.addEventListener('click', (e) => {
+      if (e.target === ticketModal) closeTicketModal();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && ticketModal && ticketModal.style.display !== 'none') {
+        closeTicketModal();
+      }
+    });
+
+    window.addEventListener('medpulse:cita-creada', () => {
+      renderAppointments();
+    });
+
+    renderAppointments();
+    syncCitasFromBackend();
+    setInterval(syncCitasFromBackend, 4000);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAppointmentsEvents);
+  } else {
+    initAppointmentsEvents();
+  }
+</script>

@@ -1,9 +1,181 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import data from '../data/seeds.json';
-import Appointments from '../components/Appointments.astro';
-import Calendar from '../components/Calendar.astro';
 ---
-<Layout title="Panel principal" patient={false}>
-<div class="grid">{[['Citas registradas',data.citas.length,'Según datos iniciales'],['Pacientes',data.pacientes.length,'Perfiles disponibles'],['Médicos activos',data.medicos.length,'Equipo médico'],['Especialidades',data.especialidades.length,'Servicios de la clínica']].map(([label,value,detail])=><section class="card metric"><span>{label}</span><strong>{value}</strong><small>{detail}</small></section>)}</div><div class="grid two"><div><section class="card hero"><p>BIENVENIDO, ELVIS</p><h2>Una visión clara de tu clínica.</h2><p>Gestiona las citas y consulta la información de pacientes desde un solo lugar.</p><a class="button secondary" href="/citas">Ver agenda →</a></section><Appointments/></div><div><Calendar/><section class="card"><h2>Equipo disponible</h2>{data.medicos.map(m=><a class="list-item" href="/medicos"><span>{m.nombres} {m.apellidos}<small class="muted" style="display:block">{m.numero_colegiatura}</small></span><span class="badge green">Activo</span></a>)}</section></div></div>
+
+<Layout title="Portal Principal · MedPulse Clinical" role="admin">
+  <!-- Tarjetas de Acceso Rápido por Rol -->
+  <div style="margin-bottom: 24px;">
+    <h2 style="font-size: 20px; color: #ffffff; margin-bottom: 6px;">
+      Selecciona tu portal de trabajo o atención:
+    </h2>
+    <p class="muted" style="margin: 0 0 18px 0;">
+      La plataforma ahora cuenta con interfaces completamente separadas y diseñadas a la medida de lo que necesita cada rol:
+    </p>
+
+    <div class="portal-selection-grid">
+      <!-- PORTAL PACIENTES -->
+      <a href="/paciente" class="card" style="border-top: 4px solid #10b981; transition: transform 0.15s; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span class="badge badge-patient"><span class="badge-dot green"></span> 👤 Pacientes</span>
+            <small style="color: #34d399; font-weight: 600;">Autogestión Web</small>
+          </div>
+          <h3 style="color: #ffffff; font-size: 18px; margin-bottom: 8px;">Portal del Paciente</h3>
+          <p style="font-size: 13px; color: #94a3b8; margin: 0 0 14px 0;">
+            Diseñado para que el paciente reserve citas, consulte sus próximas atenciones y revise su perfil de salud. La asistencia conversacional se brinda por WhatsApp.
+          </p>
+          <ul style="font-size: 12px; color: #cbd5e1; padding-left: 18px; margin: 0; line-height: 1.7;">
+            <li>Reservar citas con validación anti-solapamiento</li>
+            <li>Mis citas personales (filtro exclusivo)</li>
+            <li>Perfil médico y alergias conocidas</li>
+          </ul>
+        </div>
+        <div style="margin-top: 18px; color: #34d399; font-weight: 700; font-size: 14px;">
+          Ingresar al Portal del Paciente →
+        </div>
+      </a>
+
+      <!-- PORTAL DOCTORES -->
+      <a href="/doctor" class="card" style="border-top: 4px solid #38bdf8; transition: transform 0.15s; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span class="badge badge-doctor"><span class="badge-dot blue"></span> 🩺 Médicos</span>
+            <small style="color: #38bdf8; font-weight: 600;">Atención Médica</small>
+          </div>
+          <h3 style="color: #ffffff; font-size: 18px; margin-bottom: 8px;">Portal del Médico</h3>
+          <p style="font-size: 13px; color: #94a3b8; margin: 0 0 14px 0;">
+            Diseñado para que el doctor consulte su agenda diaria personal, visualice expedientes de pacientes y registre evoluciones clínicas.
+          </p>
+          <ul style="font-size: 12px; color: #cbd5e1; padding-left: 18px; margin: 0; line-height: 1.7;">
+            <li>Agenda filtrada exclusivamente para el médico</li>
+            <li>Directorio de pacientes asignados y antecedentes</li>
+            <li>Gestión de turnos semanales y descansos</li>
+          </ul>
+        </div>
+        <div style="margin-top: 18px; color: #38bdf8; font-weight: 700; font-size: 14px;">
+          Ingresar al Portal del Médico →
+        </div>
+      </a>
+
+      <!-- PORTAL SECRETARIA -->
+      <a href="/secretaria" class="card" style="border-top: 4px solid #fbbf24; transition: transform 0.15s; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span class="badge badge-secretaria"><span class="badge-dot amber"></span> 📋 Secretaria / Recepción</span>
+            <small style="color: #fbbf24; font-weight: 600;">Mesa Central</small>
+          </div>
+          <h3 style="color: #ffffff; font-size: 18px; margin-bottom: 8px;">Mesa de Recepción</h3>
+          <p style="font-size: 13px; color: #94a3b8; margin: 0 0 14px 0;">
+            Diseñado para coordinar la sala de espera, registrar asistencias de pacientes, agendar citas presenciales/telefónicas y ubicar consultorios.
+          </p>
+          <ul style="font-size: 12px; color: #cbd5e1; padding-left: 18px; margin: 0; line-height: 1.7;">
+            <li>Control de llegadas y confirmación en sala de espera</li>
+            <li>Agendamiento inmediato con badge de Recepción</li>
+            <li>Búsqueda por DNI y registro rápido de pacientes</li>
+          </ul>
+        </div>
+        <div style="margin-top: 18px; color: #fbbf24; font-weight: 700; font-size: 14px;">
+          Ingresar a Mesa de Recepción →
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Métricas Globales de la Clínica -->
+  <div class="grid" style="margin-bottom: 24px;">
+    <section class="card metric">
+      <span>Citas Registradas</span>
+      <strong style="color: #ffffff;">{data.citas.length}</strong>
+      <small style="color: #38bdf8;">En base de datos</small>
+    </section>
+
+    <section class="card metric">
+      <span>Pacientes Registrados</span>
+      <strong style="color: #34d399;">{data.pacientes.length}</strong>
+      <small style="color: #34d399;">Historias clínicas</small>
+    </section>
+
+    <section class="card metric">
+      <span>Médicos Activos</span>
+      <strong style="color: #38bdf8;">{data.medicos.length}</strong>
+      <small style="color: #38bdf8;">Especialistas de turno</small>
+    </section>
+
+    <section class="card metric">
+      <span>Especialidades</span>
+      <strong style="color: #c084fc;">{data.especialidades.length}</strong>
+      <small style="color: #c084fc;">Servicios clínicos</small>
+    </section>
+  </div>
+
+  <!-- Enlace al panel de administración -->
+  <section class="card hero">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <p style="color: #93c5fd; margin: 0 0 6px 0; font-size: 12px; letter-spacing: 1px; font-weight: 700;">
+          ADMINISTRACIÓN GLOBAL
+        </p>
+        <h2 style="margin: 0 0 8px 0;">¿Necesitas configurar el sistema clínico?</h2>
+        <p style="margin: 0; color: #dbeafe; font-size: 14px;">
+          Accede al panel de administración para gestionar especialidades, consultorios físicos, roles de usuarios y ver el calendario maestro.
+        </p>
+      </div>
+
+      <div class="hero-action-buttons">
+        <a class="button primary-glow" href="/dashboard" style="background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%); color: #ffffff; font-weight: 700;">
+          📊 Ver Dashboard Clínico →
+        </a>
+        <a class="button secondary-glow" href="/citas">
+          📅 Calendario Maestro
+        </a>
+        <button type="button" class="button secondary" id="btn-index-logout" style="border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+          🚪 Cerrar Sesión
+        </button>
+      </div>
+    </div>
+  </section>
 </Layout>
+
+<style>
+  .portal-selection-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .hero-action-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  @media(max-width: 900px) {
+    .portal-selection-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+  }
+
+  @media(max-width: 640px) {
+    .hero-action-buttons {
+      width: 100%;
+      flex-direction: column;
+    }
+    .hero-action-buttons a,
+    .hero-action-buttons button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+
+<script>
+  document.getElementById('btn-index-logout')?.addEventListener('click', () => {
+    if (confirm('¿Deseas cerrar la sesión activa?')) {
+      localStorage.removeItem('medpulse_session');
+      window.location.href = '/login';
+    }
+  });
+</script>
