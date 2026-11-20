@@ -82,10 +82,23 @@
   2. **5B — Persistencia Dual PostgreSQL (`citas`):** Conectado `AgendamientoService` a `pool.query` (`SELECT/INSERT/UPDATE/DELETE` en `citas`, propagación de error `23P01` anti double-booking físico) manteniendo respaldo automático en memoria si PostgreSQL no está disponible en local.
   3. **GitHub Spec Kit Global:** Instaladas 10 skills `speckit*` desde `github/spec-kit` en `~/.gemini/config/skills/` e integradas en las directivas globales de seguimiento para todos los proyectos.
 
-
-
-
-
-
+## ✅ Bloque 8: Migración a Supabase (RLS), Despliegue en Vercel, Seguridad, Solo WhatsApp y Auditoría E2E
+- **Fecha:** 2026-11-19
+- **Estado:** Cerrado y Verificado (`tsx --test` 17/17 + `astro check` 0 errores + `astro build` 28 páginas + Chrome headless E2E `90/90`).
+- **Nodos:** Nodo 0 (`docs/INCIDENCIAS_Y_CIERRES.md`), Nodo 1 (`database/schemas/schema.sql`, `database/seeds/01_initial_seeds.sql`), Nodo 2 (`backend/src/controllers/auth.controller.ts`, `backend/src/config/db.ts`), Nodo 3 (`backend/src/services/agendamiento.service.ts`), Nodo 4 (`backend/src/services/chatbot.service.ts`, `backend/src/routes/whatsapp.routes.ts`), Nodo 5 (`frontend/src/data/api.ts`, `frontend/src/styles/global.css`, `frontend/src/layouts/Layout.astro`, `frontend/src/pages/login.astro`, `frontend/src/pages/*whatsapp*`, `frontend/src/pages/*asistente*`, `frontend/src/components/Appointments.astro`, `frontend/public/favicon.*`).
+- **Cambios y Correcciones Aplicadas:**
+  1. **Base de Datos en Supabase (`medpulse-clinic`, ref `dthusourhdbrfvrldxjs`):** Migrado el esquema completo (`18` tablas en `public`, motor `PostgreSQL 17.12`), rol dedicado `medpulse_app`, políticas **Row Level Security (RLS)** habilitadas en las 18 tablas (`get_advisors(security)` $\rightarrow$ `0` alertas), semillas adaptadas a Panamá (`USD $`, cédulas panameñas) y `2` citas semilla (`CIT-2026-0001`, `CIT-2026-0002`).
+  2. **Cuentas Permanentes de Prueba (`MedPulse2026!`):** Preservados `6` usuarios con hash `scrypt` (`juan.perez@gmail.com`, `maria.gomez@gmail.com`, `dr.mendoza@gmail.com`, `dra.silva@gmail.com`, `recepcion@medpulse.clinic`, `admin@medpulse.clinic`).
+  3. **Endurecimiento de Seguridad y Aislamiento de Portales:** Eliminadas contraseñas hardcodeadas y bypasses offline en `/login`; exigencia estricta de JWT/HMAC en `AUTH_STRICT=true`, protección RBAC (`ADMINISTRADOR`) en `/api/whatsapp/simular`, `/api/whatsapp/reiniciar` y `/api/db/init`; guarda de sesión y aislamiento 1:1 por rol en `Layout.astro`; desactivación automática de Baileys en entorno serverless (`VERCEL` / `DISABLE_BAILEYS`).
+  4. **Modo Solo WhatsApp (`+507 6598-2118`):** Eliminados los cuadros y formularios de chat web en `/whatsapp`, `/secretaria/whatsapp`, `/asistente` y `/paciente/asistente`, dejando únicamente el código QR oficial, enlace directo `wa.me/50765982118` y tabla de monitoreo de citas WhatsApp.
+  5. **UI, Etiquetas (`<label>`), Favicon y Moneda:** Corregidos `.form-grid` (`minmax(0, 1fr)`, `align-items: start`), flujo vertical de `<label>` en `global.css`, separación de `.input-hint` fuera de `</label>` en `login.astro`, íconos `favicon.svg` + `favicon.ico` para eliminar errores 404 en consola, y tarifa clínica unificada en `USD $`.
+  6. **Despliegue Unificado en Vercel:**
+     - **Frontend:** `https://medpulse-frontend-two.vercel.app` (`medpulse-frontend`, Astro estático, conectado a la API mediante `PUBLIC_API_URL`).
+     - **Backend:** `https://medpulse-backend-omega.vercel.app` (`medpulse-backend`, Node 22 / Express, conectado al pooler IPv4 de Supabase y CORS restringido al dominio productivo).
+- **Verificación Productiva y Limpieza Final:**
+  - `backend`: `npm test` (`17/17` exitosos en `4` suites).
+  - `frontend`: `astro check` (`0` errores, `0` advertencias) y `astro build` (`28` páginas estáticas).
+  - Auditoría E2E en Chrome headless contra producción (`1280x800` escritorio y `390x844` móvil): **`90/90` validaciones aprobadas** (`0` fallos de layout/desbordamiento/etiquetas, `0` `pageerror`, `0` `console.error`, `0` errores HTTP inesperados).
+  - Limpieza final de citas QA temporales en Supabase (`usuarios: 6`, `citas: 2`: `CIT-2026-0001`, `CIT-2026-0002`) y comprobación `200 OK` de `/api/health`, `/api/db/status`, `/favicon.ico` y `/favicon.svg`.
 
 
