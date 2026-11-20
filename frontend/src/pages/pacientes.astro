@@ -29,10 +29,7 @@ const pacientesIniciales = data.pacientes;
     </div>
 
     <div class="patient-hero-actions">
-      <a class="button primary-glow" href="/reservar">
-        <span>＋</span> Agendar Cita en Recepción
-      </a>
-      <button type="button" id="btn-open-admin-patient-modal" class="button secondary-glow">
+      <button type="button" id="btn-open-admin-patient-modal" class="button primary-glow">
         <span>👤</span> Registrar Nuevo Paciente
       </button>
     </div>
@@ -210,8 +207,8 @@ const pacientesIniciales = data.pacientes;
           <td><span style="color: #38bdf8; font-size: 13px;">${escapeHtml(p.email || '—')}</span></td>
           <td><span class="badge blue" style="font-size: 11px;">${escapeHtml(p.grupo_sanguineo || 'O+')}</span></td>
           <td style="text-align: right;">
-            <a href="/reservar?paciente_id_select=${encodeURIComponent(p.id)}" class="button" style="font-size: 12px; padding: 6px 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-              ＋ Agendar Cita
+            <a href="/citas" class="button secondary" style="font-size: 12px; padding: 6px 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+              📅 Ver citas
             </a>
           </td>
         </tr>

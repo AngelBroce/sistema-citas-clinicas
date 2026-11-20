@@ -83,8 +83,8 @@ const roleConfig = {
     avatar: 'EA',
     badgeClass: 'badge-admin',
     badgeText: '🛡️ Administrador',
-    actionText: '＋ Agendar cita clínica',
-    actionHref: '/reservar',
+    actionText: '',
+    actionHref: '',
     links: [
       ['/dashboard', 'Dashboard clínico', '📊'],
       ['/citas', 'Citas y calendario', '▦'],
@@ -105,10 +105,10 @@ const brandHome = role === 'paciente' ? '/paciente' : (role === 'doctor' ? '/doc
 
 // Rutas de la barra táctil inferior según el rol activo
 const mobileNav = {
-  paciente: { home: '/paciente', citas: '/paciente/citas', agendar: '/paciente/reservar' },
-  doctor: { home: '/doctor', citas: '/doctor/agenda', agendar: '/doctor/agenda' },
-  secretaria: { home: '/secretaria', citas: '/secretaria/citas', agendar: '/secretaria/reservar' },
-  admin: { home: '/dashboard', citas: '/citas', agendar: '/reservar' }
+  paciente: { home: '/paciente', citas: '/paciente/citas', thirdHref: '/paciente/reservar', thirdIcon: '＋', thirdLabel: 'Agendar', thirdMatch: 'reservar' },
+  doctor: { home: '/doctor', citas: '/doctor/agenda', thirdHref: '/doctor/agenda', thirdIcon: '＋', thirdLabel: 'Agendar', thirdMatch: 'reservar' },
+  secretaria: { home: '/secretaria', citas: '/secretaria/citas', thirdHref: '/secretaria/reservar', thirdIcon: '＋', thirdLabel: 'Agendar', thirdMatch: 'reservar' },
+  admin: { home: '/dashboard', citas: '/citas', thirdHref: '/usuarios', thirdIcon: '◎', thirdLabel: 'Usuarios', thirdMatch: 'usuarios' }
 }[role];
 const cleanPath = pathname.replace(/\/$/, '') || '/';
 ---
@@ -198,9 +198,11 @@ const cleanPath = pathname.replace(/\/$/, '') || '/';
         <p class="eyebrow">{current.label}</p>
         <h1>{title}</h1>
       </div>
-      <a class="button" href={current.actionHref}>
-        {current.actionText}
-      </a>
+      {current.actionHref && current.actionText && (
+        <a class="button" href={current.actionHref}>
+          {current.actionText}
+        </a>
+      )}
     </div>
 
     <slot />
@@ -218,9 +220,9 @@ const cleanPath = pathname.replace(/\/$/, '') || '/';
       <span class="icon">▦</span>
       <span>Citas</span>
     </a>
-    <a href={mobileNav.agendar} class:list={['bottom-nav-item', { active: pathname.includes('reservar') }]}>
-      <span class="icon">＋</span>
-      <span>Agendar</span>
+    <a href={mobileNav.thirdHref} class:list={['bottom-nav-item', { active: pathname.includes(mobileNav.thirdMatch) }]}>
+      <span class="icon">{mobileNav.thirdIcon}</span>
+      <span>{mobileNav.thirdLabel}</span>
     </a>
     <button type="button" class="bottom-nav-item btn-logout-mobile" style="background: none; border: 0; color: #f87171; cursor: pointer;">
       <span class="icon">🚪</span>

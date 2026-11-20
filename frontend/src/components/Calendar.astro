@@ -55,11 +55,7 @@ const isPatient = role === 'paciente' || patient;
         <a href="/secretaria/reservar" class="button" style="padding: 6px 14px; font-size: 13px;">
           ＋ Agendar cita
         </a>
-      ) : (
-        <a href="/reservar" class="button" style="padding: 6px 14px; font-size: 13px;">
-          ＋ Agendar cita
-        </a>
-      )}
+      ) : null}
     </div>
 
     <!-- Contenedor scrollable horizontal para evitar que se corten los días en pantallas estrechas -->
@@ -92,11 +88,11 @@ const isPatient = role === 'paciente' || patient;
           <a href="#doctor-appointments-wrapper" class="button secondary" style="font-size: 12px; padding: 7px 14px;">
             📋 Ver pacientes citados
           </a>
-        ) : (
-          <a href={isPatient ? '/paciente/reservar' : role === 'secretaria' ? '/secretaria/reservar' : '/reservar'} id="cal-book-for-date-link" class="button secondary" style="font-size: 12px; padding: 7px 14px;">
+        ) : (isPatient || role === 'secretaria') ? (
+          <a href={isPatient ? '/paciente/reservar' : '/secretaria/reservar'} id="cal-book-for-date-link" class="button secondary" style="font-size: 12px; padding: 7px 14px;">
             ＋ Reservar en esta fecha
           </a>
-        )}
+        ) : null}
       </div>
       <div id="cal-selected-list" class="day-appointments-list">
         <!-- Renderizado dinámico de las citas del día -->
@@ -447,8 +443,8 @@ const isPatient = role === 'paciente' || patient;
     if (!titleEl || !summaryEl || !listEl) return;
 
     titleEl.textContent = `📅 Citas del ${formatDisplayDate(dateStr)}`;
-    if (bookLink && role !== 'doctor') {
-      const targetBase = role === 'paciente' ? '/paciente/reservar' : role === 'secretaria' ? '/secretaria/reservar' : '/reservar';
+    if (bookLink && (role === 'paciente' || role === 'secretaria')) {
+      const targetBase = role === 'paciente' ? '/paciente/reservar' : '/secretaria/reservar';
       bookLink.href = `${targetBase}?fecha=${dateStr}`;
     }
 
@@ -469,8 +465,8 @@ const isPatient = role === 'paciente' || patient;
               ? '🩺 No tienes pacientes programados para esta fecha. Tu consultorio se encuentra libre.' 
               : 'No hay consultas médicas agendadas para esta fecha.'}
           </p>
-          ${role !== 'doctor' ? `
-            <a class="button" href="${role === 'paciente' ? '/paciente/reservar' : role === 'secretaria' ? '/secretaria/reservar' : '/reservar'}?fecha=${dateStr}" style="font-size: 13px; padding: 8px 16px; margin-top: 12px; display: inline-block;">
+          ${(role === 'paciente' || role === 'secretaria') ? `
+            <a class="button" href="${role === 'paciente' ? '/paciente/reservar' : '/secretaria/reservar'}?fecha=${dateStr}" style="font-size: 13px; padding: 8px 16px; margin-top: 12px; display: inline-block;">
               ＋ Agendar cita para esta fecha
             </a>
           ` : ''}

@@ -42,15 +42,19 @@ if (propRole) {
         <a class="button secondary" href="/doctor/agenda">
           📅 Ver agenda del día
         </a>
-      ) : (
+      ) : role === 'secretaria' ? (
         <>
-          <a class="button" href={role === 'secretaria' ? '/secretaria/reservar' : '/reservar'} style="background: #7c3aed;">
+          <a class="button" href="/secretaria/reservar" style="background: #7c3aed;">
             ＋ Agendar cita en recepción
           </a>
           <button type="button" class="button secondary" onclick="window.limpiarTodasLasCitas?.()" style="border-color: rgba(239, 68, 68, 0.5); color: #f87171;">
             🗑️ Eliminar todas las citas
           </button>
         </>
+      ) : (
+        <button type="button" class="button secondary" onclick="window.limpiarTodasLasCitas?.()" style="border-color: rgba(239, 68, 68, 0.5); color: #f87171;">
+          🗑️ Eliminar todas las citas
+        </button>
       )}
     </div>
   </div>

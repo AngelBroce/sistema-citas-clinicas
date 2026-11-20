@@ -100,5 +100,6 @@
   - `frontend`: `astro check` (`0` errores, `0` advertencias) y `astro build` (`28` páginas estáticas).
   - Auditoría E2E en Chrome headless contra producción (`1280x800` escritorio y `390x844` móvil): **`90/90` validaciones aprobadas** (`0` fallos de layout/desbordamiento/etiquetas, `0` `pageerror`, `0` `console.error`, `0` errores HTTP inesperados).
   - Limpieza final de citas QA temporales en Supabase (`usuarios: 6`, `citas: 2`: `CIT-2026-0001`, `CIT-2026-0002`) y comprobación `200 OK` de `/api/health`, `/api/db/status`, `/favicon.ico` y `/favicon.svg`.
+  - **Ajuste Panel Administrador (Control Global sin Agendamiento):** Retirados los botones/enlaces de agendar citas (`actionHref`, barra móvil inferior, `Appointments.astro`, `Calendar.astro`, `dashboard.astro`, `pacientes.astro`, `medicos.astro`) del portal Admin y redirigido `/reservar` a `/citas`, conservando intacto el agendamiento para **Paciente** (`/paciente/reservar`) y **Secretaria** (`/secretaria/reservar`).
 
 
