@@ -8,6 +8,8 @@ import "../styles/global.css";
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Acceso y Registro Clínico · MedPulse Panamá</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" href="/favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -205,6 +207,12 @@ import "../styles/global.css";
         display: block;
       }
 
+      .field-stack {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
       .date-quick-nav {
         display: flex;
         gap: 6px;
@@ -338,20 +346,22 @@ import "../styles/global.css";
             id="login-form"
             style="display: flex; flex-direction: column; gap: 16px; max-width: 520px; margin: 0 auto; padding: 10px 0;"
           >
-            <label>
-              Correo Electrónico
-              <input
-                type="email"
-                id="login-email"
-                placeholder="ej. juan.perez@gmail.com o dr.mendoza@gmail.com"
-                required
-                style="height: 48px; font-size: 14px;"
-              />
+            <div class="field-stack">
+              <label>
+                Correo Electrónico
+                <input
+                  type="email"
+                  id="login-email"
+                  placeholder="ej. juan.perez@gmail.com o dr.mendoza@gmail.com"
+                  required
+                  style="height: 48px; font-size: 14px;"
+                />
+              </label>
               <span class="input-hint"
                 >Ingresa tu correo registrado como paciente o especialista de
                 salud.</span
               >
-            </label>
+            </div>
 
             <label>
               Contraseña
@@ -575,7 +585,7 @@ import "../styles/global.css";
                 </label>
 
                 <!-- Si es Pasaporte -->
-                <div id="box-pasaporte-input" style="display: none;">
+                <div id="box-pasaporte-input" class="field-stack" style="display: none;">
                   <label>
                     Número de Pasaporte Internacional *
                     <input
@@ -584,10 +594,10 @@ import "../styles/global.css";
                       placeholder="ej. PA8392104"
                       style="height: 44px;"
                     />
-                    <span class="input-hint"
-                      >Para extranjeros en tránsito sin cédula panameña.</span
-                    >
                   </label>
+                  <span class="input-hint"
+                    >Para extranjeros en tránsito sin cédula panameña.</span
+                  >
                 </div>
 
                 <!-- Selector de Provincias (Prefijo 1 al 13) para Cédula Nacional -->
@@ -615,35 +625,39 @@ import "../styles/global.css";
 
               <!-- Campos de Tomo y Asiento (Solo números, 4 a 5 dígitos) -->
               <div id="box-tomo-asiento" class="form-row">
-                <label>
-                  Tomo * (4 a 5 números)
-                  <input
-                    type="text"
-                    id="reg-cedula-tomo"
-                    placeholder="ej. 1234"
-                    maxlength="5"
-                    minlength="4"
-                    inputmode="numeric"
-                    required
-                    style="height: 44px; font-family: monospace; font-size: 15px;"
-                  />
+                <div class="field-stack">
+                  <label>
+                    Tomo * (4 a 5 números)
+                    <input
+                      type="text"
+                      id="reg-cedula-tomo"
+                      placeholder="ej. 1234"
+                      maxlength="5"
+                      minlength="4"
+                      inputmode="numeric"
+                      required
+                      style="height: 44px; font-family: monospace; font-size: 15px;"
+                    />
+                  </label>
                   <span class="input-hint">Solo números (4 a 5 dígitos).</span>
-                </label>
+                </div>
 
-                <label>
-                  Asiento * (4 a 5 números)
-                  <input
-                    type="text"
-                    id="reg-cedula-asiento"
-                    placeholder="ej. 56789"
-                    maxlength="5"
-                    minlength="4"
-                    inputmode="numeric"
-                    required
-                    style="height: 44px; font-family: monospace; font-size: 15px;"
-                  />
+                <div class="field-stack">
+                  <label>
+                    Asiento * (4 a 5 números)
+                    <input
+                      type="text"
+                      id="reg-cedula-asiento"
+                      placeholder="ej. 56789"
+                      maxlength="5"
+                      minlength="4"
+                      inputmode="numeric"
+                      required
+                      style="height: 44px; font-family: monospace; font-size: 15px;"
+                    />
+                  </label>
                   <span class="input-hint">Solo números (4 a 5 dígitos).</span>
-                </label>
+                </div>
               </div>
 
               <!-- Previsualización en Vivo de la Cédula -->
@@ -661,7 +675,7 @@ import "../styles/global.css";
             </div>
 
             <!-- BLOQUE 3: FECHA DE NACIMIENTO (Búsqueda en calendario ágil) -->
-            <div style="margin-bottom: 12px;">
+            <div class="field-stack" style="margin-bottom: 12px;">
               <label>
                 Fecha de Nacimiento *
                 <input
@@ -671,11 +685,11 @@ import "../styles/global.css";
                   required
                   style="height: 44px; color-scheme: dark; font-size: 14px;"
                 />
-                <span class="input-hint"
-                  >Navega en el calendario para seleccionar año, mes y día de
-                  nacimiento.</span
-                >
               </label>
+              <span class="input-hint"
+                >Navega en el calendario para seleccionar año, mes y día de
+                nacimiento.</span
+              >
 
               <!-- Accesos rápidos para saltar décadas o años de forma ágil -->
               <div class="date-quick-nav">
@@ -712,39 +726,43 @@ import "../styles/global.css";
 
             <!-- BLOQUE 4: CONTACTO Y SEGURIDAD -->
             <div class="form-row">
-              <label>
-                Correo Electrónico *
-                <input
-                  type="email"
-                  id="reg-correo"
-                  placeholder="ej. usuario@gmail.com"
-                  required
-                  style="height: 44px;"
-                />
+              <div class="field-stack">
+                <label>
+                  Correo Electrónico *
+                  <input
+                    type="email"
+                    id="reg-correo"
+                    placeholder="ej. usuario@gmail.com"
+                    required
+                    style="height: 44px;"
+                  />
+                </label>
                 <span class="input-hint"
                   >Para recibir el pase clínico y recordatorios.</span
                 >
-              </label>
+              </div>
 
-              <label>
-                Teléfono Celular *
-                <input
-                  type="tel"
-                  id="reg-telefono"
-                  placeholder="ej. 6123-4567"
-                  value=""
-                  inputmode="numeric"
-                  pattern="[0-9]{4}-[0-9]{4}"
-                  maxlength="9"
-                  title="Formato: 4 números, un guion y 4 números (ej. 6123-4567)"
-                  oninput="let d=this.value.replace(/\D/g,'').slice(0,8); this.value = d.length>4 ? d.slice(0,4)+'-'+d.slice(4) : (d.length===4 && this.value.endsWith('-') ? d+'-' : d);"
-                  required
-                  style="height: 44px;"
-                />
+              <div class="field-stack">
+                <label>
+                  Teléfono Celular *
+                  <input
+                    type="tel"
+                    id="reg-telefono"
+                    placeholder="ej. 6123-4567"
+                    value=""
+                    inputmode="numeric"
+                    pattern="[0-9]{4}-[0-9]{4}"
+                    maxlength="9"
+                    title="Formato: 4 números, un guion y 4 números (ej. 6123-4567)"
+                    oninput="let d=this.value.replace(/\D/g,'').slice(0,8); this.value = d.length>4 ? d.slice(0,4)+'-'+d.slice(4) : (d.length===4 && this.value.endsWith('-') ? d+'-' : d);"
+                    required
+                    style="height: 44px;"
+                  />
+                </label>
                 <span class="input-hint"
                   >Formato: 4 números, guion y 4 números (ej. 6123-4567).</span
                 >
-              </label>
+              </div>
             </div>
 
             <label style="margin-bottom: 14px;">
