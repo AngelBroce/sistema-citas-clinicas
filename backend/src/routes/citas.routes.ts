@@ -4,19 +4,27 @@ import { requerirRoles } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
+// Catálogos clínicos desde Supabase
+router.get('/catalogos', CitasController.getCatalogos);
+
 // Consultar disponibilidad horaria de un médico (anti-solapamiento)
 router.get('/disponibilidad', CitasController.getDisponibilidad);
 
-// Reservar nueva cita médica con sincronización a Google Calendar
-router.post('/reservar', CitasController.crearCita);
+// Bloqueos temporales de agenda médica
+router.get('/bloqueos', CitasController.listarBloqueos);
+router.post('/bloqueos', requerirRoles(['MEDICO', 'ADMINISTRADOR']), CitasController.crearBloqueo);
+router.delete('/bloqueos/:id', requerirRoles(['MEDICO', 'ADMINISTRADOR']), CitasController.eliminarBloqueo);
 
-// Asignar cita automáticamente (el paciente no elige la hora, el sistema le asigna el primer turno libre)
-router.post('/asignar-automatica', CitasController.asignarCitaAutomatica);
+// Reservar nueva cita médica (Admin / Secretaria / Médico)
+router.post('/reservar', requerirRoles(['ADMINISTRADOR', 'RECEPCIONISTA', 'MEDICO', 'PACIENTE']), CitasController.crearCita);
 
-// Listar todas las citas
+// Asignar cita automáticamente (el paciente no elige la hora, el sistema asigna el primer turno libre)
+router.post('/asignar-automatica', requerirRoles(['PACIENTE', 'ADMINISTRADOR', 'RECEPCIONISTA']), CitasController.asignarCitaAutomatica);
+
+// Listar citas
 router.get('/', CitasController.listarCitas);
 
-// Actualizar el estado de una cita (confirmar por Admin/Secretaria/Médico o cancelar por Paciente)
+// Actualizar el estado de una cita
 router.patch(
   '/:id/estado',
   requerirRoles(['ADMINISTRADOR', 'RECEPCIONISTA', 'MEDICO', 'PACIENTE']),
@@ -28,7 +36,7 @@ router.post(
   CitasController.actualizarEstado
 );
 
-// Limpiar todas las citas (solo Administración / Recepción)
+// Limpiar todas las citas (exclusivo Administración / Recepción)
 router.delete('/', requerirRoles(['ADMINISTRADOR', 'RECEPCIONISTA']), CitasController.limpiarCitas);
 router.post('/limpiar', requerirRoles(['ADMINISTRADOR', 'RECEPCIONISTA']), CitasController.limpiarCitas);
 

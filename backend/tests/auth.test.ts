@@ -6,6 +6,8 @@ import {
   requerirAutenticacion,
   requerirRoles
 } from '../src/middlewares/auth.middleware.js';
+import { hashPassword, verifyPassword } from '../src/utils/security.js';
+import { AuthController, DEMO_PASSWORD_HASH } from '../src/controllers/auth.controller.js';
 
 function crearMockRes() {
   const res: any = {
@@ -120,6 +122,36 @@ describe('AuthMiddleware — Tokens HMAC-SHA256 y Control RBAC', () => {
     });
     assert.equal(nextAuth, false);
     assert.equal(resAuth.statusCode, 401);
+  });
+
+  it('hashea y verifica contraseñas con scrypt y bloquea permitirSinTokenEnDemo=false aunque AUTH_STRICT sea false', async () => {
+    const hash = hashPassword('ClaveSegura#2026');
+    assert.ok(hash.startsWith('scrypt$'));
+    assert.equal(verifyPassword('ClaveSegura#2026', hash), true);
+    assert.equal(verifyPassword('Incorrecta', hash), false);
+    assert.equal(verifyPassword('MedPulse2026!', DEMO_PASSWORD_HASH), true);
+
+    process.env.AUTH_STRICT = 'false';
+    const reqInit: any = { headers: {} };
+    const resInit = crearMockRes();
+    let nextInit = false;
+    requerirRoles(['ADMINISTRADOR'], { permitirSinTokenEnDemo: false })(reqInit, resInit, () => {
+      nextInit = true;
+    });
+    assert.equal(nextInit, false);
+    assert.equal(resInit.statusCode, 401);
+
+    const reqBadLogin: any = { body: { email: 'admin@medpulse.clinic', password: 'wrong' } };
+    const resBadLogin = crearMockRes();
+    await AuthController.login(reqBadLogin, resBadLogin);
+    assert.equal(resBadLogin.statusCode, 401);
+
+    const reqOkLogin: any = { body: { email: 'admin@medpulse.clinic', password: 'MedPulse2026!' } };
+    const resOkLogin = crearMockRes();
+    await AuthController.login(reqOkLogin, resOkLogin);
+    assert.equal(resOkLogin.statusCode, 200);
+    assert.equal(resOkLogin.body.ok, true);
+    assert.ok(resOkLogin.body.token);
   });
 });
 

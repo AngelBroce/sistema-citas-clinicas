@@ -2,9 +2,12 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const nodeEnv = process.env.NODE_ENV || 'development';
+
 export const config = {
   port: process.env.PORT ? parseInt(process.env.PORT, 10) : 4000,
-  nodeEnv: process.env.NODE_ENV || 'development',
+  nodeEnv,
+  isProduction: nodeEnv === 'production' || Boolean(process.env.VERCEL),
   corsOrigin: process.env.CORS_ORIGIN || '*',
   jwtSecret: process.env.JWT_SECRET || 'medpulse-dev-hmac-secret-2026',
   authStrict: process.env.AUTH_STRICT === 'true',

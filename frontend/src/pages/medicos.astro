@@ -213,7 +213,7 @@ const totalConsultorios = data.consultorios.length;
           </div>
           <div class="meta-item">
             <span class="meta-label">TARIFA DE ATENCIÓN</span>
-            <strong style="color: #34d399; font-size: 13px;">S/ {Number(doc.tarifa_consulta).toFixed(2)}</strong>
+            <strong style="color: #34d399; font-size: 13px;">USD ${Number(doc.tarifa_consulta).toFixed(2)}</strong>
           </div>
           <div class="meta-item">
             <span class="meta-label">CONTACTO CLÍNICO</span>
@@ -258,50 +258,52 @@ const totalConsultorios = data.consultorios.length;
       </div>
 
       <form id="doctor-modal-form">
-        <div class="ticket-modal-body" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+        <div class="ticket-modal-body form-grid" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start;">
           <input type="hidden" id="modal-doc-id" />
 
-          <div>
-            <label style="display: block; font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">NOMBRES</label>
+          <label style="font-size: 11px; color: #94a3b8; font-weight: 700;">
+            NOMBRES
             <input type="text" id="modal-doc-nombres" required style="width: 100%;" />
-          </div>
+          </label>
 
-          <div>
-            <label style="display: block; font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">APELLIDOS</label>
+          <label style="font-size: 11px; color: #94a3b8; font-weight: 700;">
+            APELLIDOS
             <input type="text" id="modal-doc-apellidos" required style="width: 100%;" />
-          </div>
+          </label>
 
-          <div>
-            <label style="display: block; font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">COLEGIATURA (CMP)</label>
+          <label style="font-size: 11px; color: #94a3b8; font-weight: 700;">
+            COLEGIATURA (CMP / REGISTRO)
             <input type="text" id="modal-doc-cmp" required placeholder="CMP-XXXXX" style="width: 100%;" />
-          </div>
+          </label>
 
-          <div>
-            <label style="display: block; font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">ESPECIALIDAD PRINCIPAL</label>
+          <label style="font-size: 11px; color: #94a3b8; font-weight: 700;">
+            ESPECIALIDAD PRINCIPAL
             <select id="modal-doc-especialidad" style="width: 100%;">
               {data.especialidades.map(e => (
                 <option value={e.nombre}>{e.nombre}</option>
               ))}
             </select>
-          </div>
+          </label>
 
-          <div>
-            <label style="display: block; font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">CONSULTORIO ASIGNADO</label>
+          <label style="font-size: 11px; color: #94a3b8; font-weight: 700;">
+            CONSULTORIO ASIGNADO
             <select id="modal-doc-consultorio" style="width: 100%;">
               {data.consultorios.map(c => (
                 <option value={c.nombre}>{c.nombre} ({c.piso})</option>
               ))}
             </select>
-          </div>
+          </label>
 
-          <div>
-            <label style="display: block; font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">TELÉFONO DE CONTACTO</label>
-            <input type="tel" id="modal-doc-phone" placeholder="+519XXXXXXXX" style="width: 100%;" />
-          </div>
+          <label style="font-size: 11px; color: #94a3b8; font-weight: 700;">
+            TELÉFONO DE CONTACTO
+            <input type="tel" id="modal-doc-phone" placeholder="+507 6000-0000" style="width: 100%;" />
+          </label>
 
           <div style="grid-column: span 2;">
-            <label style="display: block; font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">TARIFA DE CONSULTA (S/)</label>
-            <input type="number" id="modal-doc-fee" min="50" max="500" step="10" value="120" style="width: 100%;" />
+            <label style="font-size: 11px; color: #94a3b8; font-weight: 700;">
+              TARIFA DE CONSULTA (USD $)
+              <input type="number" id="modal-doc-fee" min="20" max="500" step="5" value="120" style="width: 100%;" />
+            </label>
           </div>
         </div>
 
@@ -525,7 +527,7 @@ const totalConsultorios = data.consultorios.length;
       if (inputCmp) inputCmp.value = '';
       if (inputEsp) inputEsp.value = 'Medicina General';
       if (inputConsultorio) inputConsultorio.value = 'Consultorio 101';
-      if (inputPhone) inputPhone.value = '+519';
+      if (inputPhone) inputPhone.value = '+507 6';
       if (inputFee) inputFee.value = '100';
       modal.style.display = 'flex';
     });

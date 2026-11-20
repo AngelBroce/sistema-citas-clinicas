@@ -39,37 +39,37 @@ const especialidades = data.especialidades;
     </div>
   </section>
 
-  <!-- Tarjeta Destacada: Próxima Cita Médica -->
+  <!-- Tarjeta Destacada: Próxima Cita Médica (Hidratada desde Supabase) -->
   <section class="card animate-slide-up delay-1" style="margin-bottom: 24px; border: 1px solid rgba(16, 185, 129, 0.4); background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.9) 100%); border-radius: 16px; padding: 22px;">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 16px;">
       <div style="display: flex; align-items: center; gap: 10px;">
         <span style="font-size: 24px;">🩺</span>
         <div>
           <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; color: #34d399;">PRÓXIMA CONSULTA EN CLÍNICA</span>
-          <h3 style="margin: 2px 0 0 0; color: #f8fafc; font-size: 18px;">Cardiología Clínica · Dr. Roberto Mendoza Valdivia</h3>
+          <h3 id="next-cita-title" style="margin: 2px 0 0 0; color: #f8fafc; font-size: 18px;">Consultando agenda en Supabase...</h3>
         </div>
       </div>
       <div style="display: flex; gap: 8px; align-items: center;">
-        <span class="badge green" style="font-size: 12px; padding: 4px 10px;">✓ Confirmada</span>
-        <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 12px;">Consultorio 201</span>
+        <span id="next-cita-badge-estado" class="badge green" style="font-size: 12px; padding: 4px 10px;">Activa</span>
+        <span id="next-cita-room" class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 12px;">Consultorio</span>
       </div>
     </div>
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; background: rgba(11, 18, 32, 0.65); border: 1px solid rgba(30, 41, 59, 0.8); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
       <div>
         <span class="muted" style="display: block; font-size: 11px; text-transform: uppercase;">FECHA Y HORA PROGRAMADA</span>
-        <strong style="color: #38bdf8; font-size: 16px; display: block; margin-top: 2px;">Lunes 05 Oct · 09:00 AM</strong>
+        <strong id="next-cita-fecha" style="color: #38bdf8; font-size: 16px; display: block; margin-top: 2px;">—</strong>
         <small style="color: #6ee7b7; font-size: 11px;">Duración estimada: 30 minutos</small>
       </div>
       <div>
         <span class="muted" style="display: block; font-size: 11px; text-transform: uppercase;">UBICACIÓN EN SEDE</span>
-        <strong style="color: #f1f5f9; font-size: 14px; display: block; margin-top: 2px;">Pabellón Central · Piso 2</strong>
-        <small style="color: #94a3b8; font-size: 11px;">Módulo de Cardiología</small>
+        <strong id="next-cita-sede" style="color: #f1f5f9; font-size: 14px; display: block; margin-top: 2px;">Sede Central · Panamá</strong>
+        <small style="color: #94a3b8; font-size: 11px;">Presentar pase digital o cédula</small>
       </div>
       <div>
         <span class="muted" style="display: block; font-size: 11px; text-transform: uppercase;">CÓDIGO DE ATENCIÓN</span>
-        <strong style="color: #34d399; font-family: monospace; font-size: 15px; display: block; margin-top: 2px;">CIT-2026-0001</strong>
-        <small style="color: #94a3b8; font-size: 11px;">Presentar en admisión física</small>
+        <strong id="next-cita-codigo" style="color: #34d399; font-family: monospace; font-size: 15px; display: block; margin-top: 2px;">—</strong>
+        <small style="color: #94a3b8; font-size: 11px;">Canal WhatsApp: +507 6598-2118</small>
       </div>
     </div>
 
@@ -194,9 +194,11 @@ const especialidades = data.especialidades;
 </Layout>
 
 <script>
-  function hydratePatientDashboard() {
+  import { apiUrl, getAuthHeaders, getSession } from '../../data/api';
+
+  async function hydratePatientDashboard() {
     try {
-      const session = JSON.parse(localStorage.getItem('medpulse_session') || '{}');
+      const session = getSession();
       if (session?.paciente) {
         const p = session.paciente;
         const titleEl = document.getElementById('patient-greeting-title');
@@ -225,14 +227,37 @@ const especialidades = data.especialidades;
         if (bentoEmName && p.contacto_emergencia_nombre) bentoEmName.textContent = p.contacto_emergencia_nombre;
         if (bentoEmTel && p.contacto_emergencia_telefono) bentoEmTel.innerHTML = `Tel: ${p.contacto_emergencia_telefono}<br><span style="color: #94a3b8; font-size: 11px;">Protocolo de notificación activo</span>`;
       }
+
+      const resp = await fetch(apiUrl('/api/citas'), { headers: getAuthHeaders() });
+      const json = await resp.json();
+      const pid = session?.paciente?.id || session?.usuario?.pacienteId || session?.usuario?.id;
+      const citas = (Array.isArray(json?.data) ? json.data : [])
+        .filter((c: any) => !pid || c.pacienteId === pid)
+        .filter((c: any) => c.estado !== 'CANCELADA');
+
+      const titleEl = document.getElementById('next-cita-title');
+      const estadoEl = document.getElementById('next-cita-badge-estado');
+      const roomEl = document.getElementById('next-cita-room');
+      const fechaEl = document.getElementById('next-cita-fecha');
+      const codigoEl = document.getElementById('next-cita-codigo');
+
+      if (citas.length > 0) {
+        const nextC = citas[0];
+        if (titleEl) titleEl.textContent = `${nextC.especialidadNombre || 'Consulta Médica'} · ${nextC.medicoNombre || 'Especialista'}`;
+        if (estadoEl) estadoEl.textContent = nextC.estado || 'PROGRAMADA';
+        if (roomEl) roomEl.textContent = nextC.consultorioNombre || 'Consultorio Central';
+        if (fechaEl) fechaEl.textContent = String(nextC.fechaHoraInicio || '').slice(0, 16).replace('T', ' · ');
+        if (codigoEl) codigoEl.textContent = nextC.codigoCita || 'CIT';
+      } else {
+        if (titleEl) titleEl.textContent = 'Sin citas pendientes actualmente';
+        if (estadoEl) estadoEl.textContent = 'Disponible';
+        if (fechaEl) fechaEl.textContent = 'Agenda tu próxima consulta';
+        if (codigoEl) codigoEl.textContent = 'Nuevo turno';
+      }
     } catch (e) {
       console.warn('Error hidratando dashboard de paciente:', e);
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', hydratePatientDashboard);
-  } else {
-    hydratePatientDashboard();
-  }
+  hydratePatientDashboard();
 </script>

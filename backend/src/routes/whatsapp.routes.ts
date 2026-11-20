@@ -21,11 +21,9 @@ router.post('/qr/iniciar', requerirRoles(['ADMINISTRADOR', 'RECEPCIONISTA']), Wh
 // Historial de conversaciones y citas agendadas por WhatsApp
 router.get('/conversaciones', WhatsAppController.listarConversaciones);
 
-// Endpoint interactivo de simulación / conversación completa con guardado de citas en agenda
-router.post('/simular', WhatsAppController.simularMensaje);
-
-// Reiniciar conversación para nuevas pruebas
-router.post('/reiniciar', WhatsAppController.reiniciarConversacion);
+// Endpoints de prueba administrativa (bloqueados al público general; el chatbot opera exclusivamente por WhatsApp)
+router.post('/simular', requerirRoles(['ADMINISTRADOR']), WhatsAppController.simularMensaje);
+router.post('/reiniciar', requerirRoles(['ADMINISTRADOR']), WhatsAppController.reiniciarConversacion);
 
 // Enviar mensaje real de prueba vía Meta Cloud API
 router.post('/enviar-prueba', requerirRoles(['ADMINISTRADOR', 'RECEPCIONISTA']), WhatsAppController.enviarMensajePruebaReal);

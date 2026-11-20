@@ -38,7 +38,7 @@ const userList = data.usuarios.map(u => {
     if (pac) {
       profileName = `${pac.nombres} ${pac.apellidos}`;
       phone = pac.telefono;
-      extraInfo = `DNI: ${pac.documento_numero} · ${pac.grupo_sanguineo || 'O+'}`;
+      extraInfo = `Cédula: ${pac.documento_numero} · ${pac.grupo_sanguineo || 'O+'}`;
       initials = `${pac.nombres[0]}${pac.apellidos[0]}`;
     }
   }
@@ -264,7 +264,7 @@ const totalPacientes = userList.filter(u => u.rol_id === 'PACIENTE').length;
 
             <label>
               <span style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 4px;">Teléfono de Contacto</span>
-              <input type="tel" id="modal-user-phone" placeholder="+51 987 654 321" style="background: #090e17; border: 1px solid #263342; border-radius: 8px; padding: 10px 14px; width: 100%; font-size: 14px;" />
+              <input type="tel" id="modal-user-phone" placeholder="+507 6598-2118" style="background: #090e17; border: 1px solid #263342; border-radius: 8px; padding: 10px 14px; width: 100%; font-size: 14px;" />
             </label>
           </div>
 
@@ -319,7 +319,6 @@ const totalPacientes = userList.filter(u => u.rol_id === 'PACIENTE').length;
   function initUserManagement() {
     const searchInput = document.getElementById('search-users-input') as HTMLInputElement | null;
     const filterTabs = document.querySelectorAll('.role-filter-tab');
-    const rows = document.querySelectorAll('.user-row');
     const emptyMsg = document.getElementById('users-empty-message');
     const modal = document.getElementById('user-modal-overlay');
     const btnNewUser = document.getElementById('btn-new-user');
@@ -340,7 +339,7 @@ const totalPacientes = userList.filter(u => u.rol_id === 'PACIENTE').length;
       const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
       let visibleCount = 0;
 
-      rows.forEach(r => {
+      document.querySelectorAll('.user-row').forEach(r => {
         const row = r as HTMLElement;
         const role = row.dataset.role || '';
         const searchTarget = row.dataset.search || '';
@@ -409,18 +408,112 @@ const totalPacientes = userList.filter(u => u.rol_id === 'PACIENTE').length;
       if (e.target === modal) closeModal();
     });
 
-    userForm?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const toast = document.getElementById('toast');
-      const name = modalUserName ? modalUserName.value : 'Usuario';
-      closeModal();
+    const modalStatusSelect = document.getElementById('modal-user-status') as HTMLSelectElement | null;
 
-      if (toast) {
-        toast.textContent = `✓ Usuario "${name}" guardado con éxito.`;
-        toast.style.display = 'block';
-        setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3500);
+    async function cargarUsuariosSupabase() {
+      const { apiUrl, escapeHtml, getAuthHeaders } = await import('../data/api');
+      try {
+        const resp = await fetch(apiUrl('/api/auth/usuarios'), { headers: getAuthHeaders() });
+        const json = await resp.json();
+        const tbody = document.getElementById('users-tbody');
+        const totalEl = document.getElementById('stat-total-users');
+        if (!resp.ok || !Array.isArray(json?.data) || !tbody) return;
+
+        if (totalEl) totalEl.textContent = String(json.data.length);
+
+        const roleBadges: Record<string, string> = {
+          ADMINISTRADOR: '<span class="badge badge-admin"><span class="badge-dot purple"></span>🛡️ Administrador</span>',
+          MEDICO: '<span class="badge badge-doctor"><span class="badge-dot blue"></span>🩺 Médico Especialista</span>',
+          RECEPCIONISTA: '<span class="badge badge-secretaria"><span class="badge-dot amber"></span>📋 Recepción</span>',
+          PACIENTE: '<span class="badge badge-patient"><span class="badge-dot green"></span>👤 Paciente</span>'
+        };
+
+        tbody.innerHTML = json.data.map((u: any) => {
+          const initials = String(u.nombre || u.email || 'US').split(/\s+/).filter(Boolean).slice(0, 2).map((x: string) => x[0]).join('').toUpperCase() || 'US';
+          const activo = u.esta_activo !== false;
+          return `
+            <tr class="user-row" data-role="${escapeHtml(u.rol_id)}" data-search="${escapeHtml(`${u.nombre} ${u.email} ${u.extra || ''} ${u.telefono || ''}`).toLowerCase()}" style="background: #0d1420; transition: background 0.15s;">
+              <td style="padding: 12px 14px; border-top-left-radius: 8px; border-bottom-left-radius: 8px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <span class="avatar" style="width: 38px; height: 38px; font-size: 14px; flex-shrink: 0; background: #131b26; border-color: #263342; color: #f1f5f9;">${escapeHtml(initials)}</span>
+                  <div>
+                    <strong style="color: #f8fafc; font-size: 14px; display: block;">${escapeHtml(u.nombre)}</strong>
+                    <span style="color: #94a3b8; font-size: 12px;">${escapeHtml(u.email)}</span>
+                  </div>
+                </div>
+              </td>
+              <td style="padding: 12px 14px;">${roleBadges[u.rol_id] || roleBadges.PACIENTE}</td>
+              <td style="padding: 12px 14px;"><span style="color: #cbd5e1; font-size: 13px; font-weight: 500;">${escapeHtml(u.extra || '—')}</span></td>
+              <td style="padding: 12px 14px;"><span style="color: #94a3b8; font-size: 13px;">${escapeHtml(u.telefono || '—')}</span></td>
+              <td style="padding: 12px 14px;"><span class="badge ${activo ? 'green' : 'red'}" style="font-size: 11px;"><span class="badge-dot ${activo ? 'green' : 'red'}"></span> ${activo ? 'Activo' : 'Suspendido'}</span></td>
+              <td style="padding: 12px 14px; text-align: right; border-top-right-radius: 8px; border-bottom-right-radius: 8px;">
+                <button type="button" class="button secondary btn-edit-user" data-user-id="${escapeHtml(u.id)}" data-user-name="${escapeHtml(u.nombre)}" data-user-email="${escapeHtml(u.email)}" data-user-role="${escapeHtml(u.rol_id)}" data-user-phone="${escapeHtml(u.telefono || '')}" data-user-active="${String(activo)}" style="padding: 6px 12px; font-size: 12px;">✎ Editar</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        tbody.querySelectorAll('.btn-edit-user').forEach(btn => {
+          btn.addEventListener('click', () => {
+            if (!modal) return;
+            const b = btn as HTMLElement;
+            if (modalTitle) modalTitle.textContent = 'Editar Credenciales de Usuario';
+            if (modalUserId) modalUserId.value = b.dataset.userId || '';
+            if (modalUserName) modalUserName.value = b.dataset.userName || '';
+            if (modalUserEmail) modalUserEmail.value = b.dataset.userEmail || '';
+            if (modalUserRole) modalUserRole.value = b.dataset.userRole || 'PACIENTE';
+            if (modalUserPhone) modalUserPhone.value = b.dataset.userPhone || '';
+            if (modalStatusSelect) modalStatusSelect.value = b.dataset.userActive || 'true';
+            modal.style.display = 'flex';
+          });
+        });
+
+        applyFilters();
+      } catch {}
+    }
+
+    userForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const { apiUrl, getAuthHeaders } = await import('../data/api');
+      const toast = document.getElementById('toast');
+      const nombre = modalUserName?.value.trim() || 'Usuario';
+      const email = modalUserEmail?.value.trim().toLowerCase() || '';
+      const rol_id = modalUserRole?.value || 'PACIENTE';
+      const telefono = modalUserPhone?.value.trim() || '+507 6598-2118';
+      const esta_activo = modalStatusSelect?.value !== 'false';
+
+      try {
+        const resp = await fetch(apiUrl('/api/auth/usuarios'), {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ nombre, email, rol_id, telefono, esta_activo })
+        });
+        const json = await resp.json().catch(() => ({}));
+        if (!resp.ok || !json?.ok) {
+          if (toast) {
+            toast.textContent = json?.error || 'Error guardando usuario en Supabase.';
+            toast.style.display = 'block';
+            setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3500);
+          }
+          return;
+        }
+        closeModal();
+        await cargarUsuariosSupabase();
+        if (toast) {
+          toast.textContent = `✓ Usuario "${nombre}" guardado en Supabase.`;
+          toast.style.display = 'block';
+          setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3500);
+        }
+      } catch {
+        if (toast) {
+          toast.textContent = 'Error de conexión al guardar usuario.';
+          toast.style.display = 'block';
+          setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3500);
+        }
       }
     });
+
+    cargarUsuariosSupabase();
   }
 
   if (document.readyState === 'loading') {

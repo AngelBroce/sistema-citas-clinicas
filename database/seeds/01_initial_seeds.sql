@@ -1,11 +1,10 @@
 -- ============================================================================
--- PROYECTO: Sistema Inteligente de Gestión de Citas Clínicas
+-- PROYECTO: Sistema Inteligente de Gestión de Citas Clínicas (MedPulse)
 -- ARCHIVO: database/seeds/01_initial_seeds.sql
--- AUTOR: Elvis (DBA)
--- MOTOR: PostgreSQL 14+
--- DESCRIPCIÓN: Datos iniciales de prueba (Seeds) para desarrollo y testing.
---              Contraseña por defecto de usuarios de prueba: Password123!
---              (Hash bcrypt: $2b$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRpH.eQYvM9B6Nl0bFz6yYm6K2Gti)
+-- MOTOR: PostgreSQL 14+ / Supabase
+-- DESCRIPCIÓN: Datos iniciales de prueba permanentes (Seeds).
+--              Contraseña de cuentas de prueba: MedPulse2026!
+--              (Hash scrypt verificado por AuthController)
 -- ============================================================================
 
 BEGIN;
@@ -33,7 +32,6 @@ INSERT INTO especialidades (id, nombre, descripcion, duracion_estimada_min, esta
 (7, 'Oftalmología', 'Salud visual integral y diagnóstico ocular', 20, TRUE)
 ON CONFLICT (id) DO NOTHING;
 
--- Sincronizar secuencia de especialidades
 SELECT setval('especialidades_id_seq', (SELECT MAX(id) FROM especialidades));
 
 -- ----------------------------------------------------------------------------
@@ -47,63 +45,51 @@ INSERT INTO consultorios (id, nombre, piso, sede, descripcion, esta_activo) VALU
 (5, 'Consultorio 301', 'Piso 3', 'Sede Central', 'Consultorio de Ginecología y Dermatología', TRUE)
 ON CONFLICT (id) DO NOTHING;
 
--- Sincronizar secuencia de consultorios
 SELECT setval('consultorios_id_seq', (SELECT MAX(id) FROM consultorios));
 
 -- ----------------------------------------------------------------------------
--- 4. USUARIOS BASE Y PERFILES
+-- 4. USUARIOS PERMANENTES DE PRUEBA Y PERFILES (Contraseña: MedPulse2026!)
 -- ----------------------------------------------------------------------------
 
 -- A. Administrador
 INSERT INTO usuarios (id, email, password_hash, rol_id, esta_activo) VALUES
-('a0000000-0000-0000-0000-000000000001', 'admin@clinica.com', '$2b$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRpH.eQYvM9B6Nl0bFz6yYm6K2Gti', 'ADMINISTRADOR', TRUE)
+('a0000000-0000-0000-0000-000000000001', 'admin@medpulse.clinic', 'scrypt$15f68bd918980da8002379c19487b6a2$66ff29f1b4afaf677a0c024276bce4b9a92de45d8692dc9b2ee8653cd1fa65d9054dbd25a102c6b5d951e46af8dbb87f9a207b9c4baa3679bf2f20f7c2f7288f', 'ADMINISTRADOR', TRUE)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO administradores (id, nombres, apellidos, telefono) VALUES
-('a0000000-0000-0000-0000-000000000001', 'Elvis', 'Admin Principal', '+51987654321')
+('a0000000-0000-0000-0000-000000000001', 'Elvis', 'Admin Principal', '+507 6300-2001')
 ON CONFLICT (id) DO NOTHING;
 
 -- B. Recepcionista
 INSERT INTO usuarios (id, email, password_hash, rol_id, esta_activo) VALUES
-('b0000000-0000-0000-0000-000000000001', 'recepcion@clinica.com', '$2b$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRpH.eQYvM9B6Nl0bFz6yYm6K2Gti', 'RECEPCIONISTA', TRUE)
+('b0000000-0000-0000-0000-000000000001', 'recepcion@medpulse.clinic', 'scrypt$15f68bd918980da8002379c19487b6a2$66ff29f1b4afaf677a0c024276bce4b9a92de45d8692dc9b2ee8653cd1fa65d9054dbd25a102c6b5d951e46af8dbb87f9a207b9c4baa3679bf2f20f7c2f7288f', 'RECEPCIONISTA', TRUE)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO recepcionistas (id, nombres, apellidos, telefono, sede) VALUES
-('b0000000-0000-0000-0000-000000000001', 'Laura', 'García Paredes', '+51987654322', 'Sede Central')
+('b0000000-0000-0000-0000-000000000001', 'Elena', 'Ramos Morales', '+507 6300-2101', 'Sede Central')
 ON CONFLICT (id) DO NOTHING;
 
 -- C. Médicos
--- Médico 1: Dr. Roberto Mendoza (Cardiología)
 INSERT INTO usuarios (id, email, password_hash, rol_id, esta_activo) VALUES
-('c0000000-0000-0000-0000-000000000001', 'roberto.mendoza@clinica.com', '$2b$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRpH.eQYvM9B6Nl0bFz6yYm6K2Gti', 'MEDICO', TRUE)
+('c0000000-0000-0000-0000-000000000001', 'dr.mendoza@gmail.com', 'scrypt$15f68bd918980da8002379c19487b6a2$66ff29f1b4afaf677a0c024276bce4b9a92de45d8692dc9b2ee8653cd1fa65d9054dbd25a102c6b5d951e46af8dbb87f9a207b9c4baa3679bf2f20f7c2f7288f', 'MEDICO', TRUE),
+('c0000000-0000-0000-0000-000000000002', 'dra.silva@gmail.com', 'scrypt$15f68bd918980da8002379c19487b6a2$66ff29f1b4afaf677a0c024276bce4b9a92de45d8692dc9b2ee8653cd1fa65d9054dbd25a102c6b5d951e46af8dbb87f9a207b9c4baa3679bf2f20f7c2f7288f', 'MEDICO', TRUE)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO medicos (id, numero_colegiatura, nombres, apellidos, telefono, biografia, tarifa_consulta, esta_activo) VALUES
-('c0000000-0000-0000-0000-000000000001', 'CMP-45892', 'Roberto', 'Mendoza Valdivia', '+51987654323', 'Especialista en cardiología clínica y preventiva con más de 12 años de trayectoria.', 120.00, TRUE)
+('c0000000-0000-0000-0000-000000000001', 'CMP-45892', 'Roberto', 'Mendoza Valdivia', '+507 6300-2201', 'Especialista en cardiología clínica y preventiva con más de 12 años de trayectoria.', 120.00, TRUE),
+('c0000000-0000-0000-0000-000000000002', 'CMP-51204', 'Carmen', 'Silva Rojas', '+507 6300-2202', 'Especialista en pediatría y desarrollo infantil integral.', 100.00, TRUE)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO medicos_especialidades (medico_id, especialidad_id, es_principal) VALUES
-('c0000000-0000-0000-0000-000000000001', 2, TRUE) -- Cardiología
+('c0000000-0000-0000-0000-000000000001', 2, TRUE),
+('c0000000-0000-0000-0000-000000000002', 3, TRUE),
+('c0000000-0000-0000-0000-000000000002', 1, FALSE)
 ON CONFLICT (medico_id, especialidad_id) DO NOTHING;
 
--- Médico 2: Dra. Carmen Silva (Pediatría y Medicina General)
+-- D. Pacientes (Panamá)
 INSERT INTO usuarios (id, email, password_hash, rol_id, esta_activo) VALUES
-('c0000000-0000-0000-0000-000000000002', 'carmen.silva@clinica.com', '$2b$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRpH.eQYvM9B6Nl0bFz6yYm6K2Gti', 'MEDICO', TRUE)
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO medicos (id, numero_colegiatura, nombres, apellidos, telefono, biografia, tarifa_consulta, esta_activo) VALUES
-('c0000000-0000-0000-0000-000000000002', 'CMP-51204', 'Carmen', 'Silva Rojas', '+51987654324', 'Especialista en pediatría y desarrollo infantil integral.', 100.00, TRUE)
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO medicos_especialidades (medico_id, especialidad_id, es_principal) VALUES
-('c0000000-0000-0000-0000-000000000002', 3, TRUE), -- Pediatría (Principal)
-('c0000000-0000-0000-0000-000000000002', 1, FALSE) -- Medicina General
-ON CONFLICT (medico_id, especialidad_id) DO NOTHING;
-
--- D. Pacientes
--- Paciente 1: Juan Pérez (Con cuenta web registrada)
-INSERT INTO usuarios (id, email, password_hash, rol_id, esta_activo) VALUES
-('d0000000-0000-0000-0000-000000000001', 'juan.perez@gmail.com', '$2b$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRpH.eQYvM9B6Nl0bFz6yYm6K2Gti', 'PACIENTE', TRUE)
+('d0000000-0000-0000-0000-000000000001', 'juan.perez@gmail.com', 'scrypt$15f68bd918980da8002379c19487b6a2$66ff29f1b4afaf677a0c024276bce4b9a92de45d8692dc9b2ee8653cd1fa65d9054dbd25a102c6b5d951e46af8dbb87f9a207b9c4baa3679bf2f20f7c2f7288f', 'PACIENTE', TRUE),
+('d0000000-0000-0000-0000-000000000002', 'maria.gomez@gmail.com', 'scrypt$15f68bd918980da8002379c19487b6a2$66ff29f1b4afaf677a0c024276bce4b9a92de45d8692dc9b2ee8653cd1fa65d9054dbd25a102c6b5d951e46af8dbb87f9a207b9c4baa3679bf2f20f7c2f7288f', 'PACIENTE', TRUE)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO pacientes (
@@ -113,123 +99,112 @@ INSERT INTO pacientes (
 ) VALUES (
     'e0000000-0000-0000-0000-000000000001',
     'd0000000-0000-0000-0000-000000000001',
-    'DNI',
-    '72849102',
+    'CEDULA_NACIONAL',
+    '8-1234-56789',
     'Juan Carlos',
     'Pérez Salazar',
     '1992-05-14',
     'MASCULINO',
-    '+51912345678',
+    '+507 6123-4567',
     'juan.perez@gmail.com',
-    'Av. Javier Prado Este 2450, San Borja',
+    'Vía España 245, Bella Vista, Ciudad de Panamá',
     'O+',
     'Penicilina',
     'Rosa Salazar (Madre)',
-    '+51912345670'
-) ON CONFLICT (id) DO NOTHING;
-
--- Paciente 2: María Gómez (Registrada inicialmente por WhatsApp sin usuario web aún)
-INSERT INTO pacientes (
-    id, usuario_id, documento_tipo, documento_numero, nombres, apellidos,
-    fecha_nacimiento, genero, telefono, email, direccion, grupo_sanguineo, alergias,
-    contacto_emergencia_nombre, contacto_emergencia_telefono
-) VALUES (
+    '+507 6123-4560'
+), (
     'e0000000-0000-0000-0000-000000000002',
-    NULL,
-    'DNI',
-    '44589201',
+    'd0000000-0000-0000-0000-000000000002',
+    'CEDULA_NACIONAL',
+    '8-9876-54321',
     'María Elena',
     'Gómez Torres',
     '1988-11-20',
     'FEMENINO',
-    '+51988887777',
-    'maria.gomez@hotmail.com',
-    'Jr. Las Begonias 340, San Isidro',
+    '+507 6888-7777',
+    'maria.gomez@gmail.com',
+    'Calle 50, San Francisco, Ciudad de Panamá',
     'A+',
     'Ninguna conocida',
     'Carlos Gómez (Hermano)',
-    '+51988887770'
+    '+507 6888-7770'
 ) ON CONFLICT (id) DO NOTHING;
 
 -- ----------------------------------------------------------------------------
--- 5. HORARIOS LABORALES DE MÉDICOS
+-- 5. HORARIOS LABORALES DE MÉDICOS (Lunes a Sábado)
 -- ----------------------------------------------------------------------------
--- Dr. Roberto Mendoza: Lunes a Viernes de 08:00 a 13:00 en Consultorio 201
 INSERT INTO horarios_medicos (medico_id, consultorio_id, dia_semana, hora_inicio, hora_fin, duracion_cita_min, esta_activo) VALUES
-('c0000000-0000-0000-0000-000000000001', 3, 1, '08:00:00', '13:00:00', 30, TRUE), -- Lunes
-('c0000000-0000-0000-0000-000000000001', 3, 2, '08:00:00', '13:00:00', 30, TRUE), -- Martes
-('c0000000-0000-0000-0000-000000000001', 3, 3, '08:00:00', '13:00:00', 30, TRUE), -- Miércoles
-('c0000000-0000-0000-0000-000000000001', 3, 4, '08:00:00', '13:00:00', 30, TRUE), -- Jueves
-('c0000000-0000-0000-0000-000000000001', 3, 5, '08:00:00', '13:00:00', 30, TRUE); -- Viernes
-
--- Dra. Carmen Silva: Lunes, Miércoles y Viernes de 14:00 a 19:00 en Consultorio 102
-INSERT INTO horarios_medicos (medico_id, consultorio_id, dia_semana, hora_inicio, hora_fin, duracion_cita_min, esta_activo) VALUES
-('c0000000-0000-0000-0000-000000000002', 2, 1, '14:00:00', '19:00:00', 30, TRUE), -- Lunes
-('c0000000-0000-0000-0000-000000000002', 2, 3, '14:00:00', '19:00:00', 30, TRUE), -- Miércoles
-('c0000000-0000-0000-0000-000000000002', 2, 5, '14:00:00', '19:00:00', 30, TRUE); -- Viernes
+('c0000000-0000-0000-0000-000000000001', 3, 1, '08:00:00', '18:00:00', 30, TRUE),
+('c0000000-0000-0000-0000-000000000001', 3, 2, '08:00:00', '18:00:00', 30, TRUE),
+('c0000000-0000-0000-0000-000000000001', 3, 3, '08:00:00', '18:00:00', 30, TRUE),
+('c0000000-0000-0000-0000-000000000001', 3, 4, '08:00:00', '18:00:00', 30, TRUE),
+('c0000000-0000-0000-0000-000000000001', 3, 5, '08:00:00', '18:00:00', 30, TRUE),
+('c0000000-0000-0000-0000-000000000001', 3, 6, '08:00:00', '14:00:00', 30, TRUE),
+('c0000000-0000-0000-0000-000000000002', 2, 1, '08:00:00', '19:00:00', 30, TRUE),
+('c0000000-0000-0000-0000-000000000002', 2, 2, '08:00:00', '19:00:00', 30, TRUE),
+('c0000000-0000-0000-0000-000000000002', 2, 3, '08:00:00', '19:00:00', 30, TRUE),
+('c0000000-0000-0000-0000-000000000002', 2, 4, '08:00:00', '19:00:00', 30, TRUE),
+('c0000000-0000-0000-0000-000000000002', 2, 5, '08:00:00', '19:00:00', 30, TRUE),
+('c0000000-0000-0000-0000-000000000002', 2, 6, '08:00:00', '14:00:00', 30, TRUE)
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- 6. CITAS MÉDICAS DE PRUEBA
 -- ----------------------------------------------------------------------------
--- Cita 1: Juan Pérez con Dr. Roberto Mendoza (Cardiología)
 INSERT INTO citas (
     id, codigo_cita, paciente_id, medico_id, especialidad_id, consultorio_id,
-    fecha_hora_inicio, fecha_hora_fin, estado, motivo_consulta, canal_origen
+    fecha_hora_inicio, fecha_hora_fin, estado, motivo_consulta, canal_origen, reservado_por
 ) VALUES (
     'f0000000-0000-0000-0000-000000000001',
     'CIT-2026-0001',
     'e0000000-0000-0000-0000-000000000001',
     'c0000000-0000-0000-0000-000000000001',
-    2, -- Cardiología
-    3, -- Consultorio 201
-    '2026-10-05 09:00:00-05',
-    '2026-10-05 09:30:00-05',
+    2,
+    3,
+    '2026-11-23 09:00:00-05',
+    '2026-11-23 09:30:00-05',
     'CONFIRMADA',
     'Chequeo de rutina por presión arterial ligeramente elevada',
-    'WEB_PACIENTE'
-) ON CONFLICT (id) DO NOTHING;
-
--- Cita 2: María Gómez con Dra. Carmen Silva (Pediatría/Consulta)
-INSERT INTO citas (
-    id, codigo_cita, paciente_id, medico_id, especialidad_id, consultorio_id,
-    fecha_hora_inicio, fecha_hora_fin, estado, motivo_consulta, canal_origen
-) VALUES (
+    'WEB_PACIENTE',
+    'PACIENTE'
+), (
     'f0000000-0000-0000-0000-000000000002',
     'CIT-2026-0002',
     'e0000000-0000-0000-0000-000000000002',
     'c0000000-0000-0000-0000-000000000002',
-    3, -- Pediatría
-    2, -- Consultorio 102
-    '2026-10-05 15:00:00-05',
-    '2026-10-05 15:30:00-05',
+    3,
+    2,
+    '2026-11-24 15:00:00-05',
+    '2026-11-24 15:30:00-05',
     'PENDIENTE',
     'Control pediátrico de desarrollo infantil para su menor hijo',
-    'CHATBOT_WHATSAPP'
+    'CHATBOT_WHATSAPP',
+    'PACIENTE'
 ) ON CONFLICT (id) DO NOTHING;
 
 -- ----------------------------------------------------------------------------
--- 7. CONVERSACIÓN DE EJEMPLO DEL CHATBOT WHATSAPP
+-- 7. CONVERSACIÓN DE EJEMPLO DEL CHATBOT WHATSAPP (+507)
 -- ----------------------------------------------------------------------------
 INSERT INTO conversaciones_chatbot (
     id, whatsapp_from, paciente_id, estado_conversacion, contexto_conversacion,
     nivel_triaje, resumen_triaje, especialidad_sugerida_id
 ) VALUES (
     '10000000-0000-0000-0000-000000000001',
-    '+51988887777',
+    '+50768887777',
     'e0000000-0000-0000-0000-000000000002',
     'FINALIZADA',
     '{"paso": "reserva_completada", "cita_creada": "CIT-2026-0002"}'::jsonb,
     'LEVE',
-    'Paciente solicitó cita para control preventivo infantil. Sin síntomas de alarma respiratoria ni fiebre.',
-    3 -- Pediatría
+    'Paciente solicitó cita para control preventivo infantil por WhatsApp.',
+    3
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO mensajes_chatbot (conversacion_id, remitente, tipo_mensaje, contenido, intencion_detectada) VALUES
 ('10000000-0000-0000-0000-000000000001', 'USUARIO', 'TEXTO', 'Hola, buenas tardes, quisiera agendar una cita para mi hijo de 4 años', 'AGENDAR_CITA'),
 ('10000000-0000-0000-0000-000000000001', 'BOT', 'TEXTO', '¡Hola! Con gusto te ayudo. ¿Tu pequeño presenta algún malestar urgente como fiebre alta o es un control regular?', 'TRIAJE'),
 ('10000000-0000-0000-0000-000000000001', 'USUARIO', 'TEXTO', 'Es solo su control de crecimiento y vacunas', 'RESPUESTA_TRIAJE'),
-('10000000-0000-0000-0000-000000000001', 'BOT', 'TEXTO', 'Perfecto, te sugiero la especialidad de Pediatría con la Dra. Carmen Silva. Tenemos horario el Lunes 5 de Octubre a las 15:00 hrs. ¿Deseas confirmarla?', 'PROPONER_HORARIO'),
+('10000000-0000-0000-0000-000000000001', 'BOT', 'TEXTO', 'Perfecto, te sugiero Pediatría con la Dra. Carmen Silva. Tenemos horario el Martes 24 de Noviembre a las 15:00 hrs. ¿Deseas confirmarla?', 'PROPONER_HORARIO'),
 ('10000000-0000-0000-0000-000000000001', 'USUARIO', 'TEXTO', 'Sí, confirmo por favor', 'CONFIRMAR_CITA'),
-('10000000-0000-0000-0000-000000000001', 'BOT', 'TEXTO', '¡Excelente! Tu cita quedó reservada con el código CIT-2026-0002. Te enviaremos un recordatorio previo a la cita.', 'CITA_GENERADA');
+('10000000-0000-0000-0000-000000000001', 'BOT', 'TEXTO', '¡Excelente! Tu cita quedó reservada con el código CIT-2026-0002. Te enviaremos un recordatorio previo por WhatsApp.', 'CITA_GENERADA');
 
 COMMIT;

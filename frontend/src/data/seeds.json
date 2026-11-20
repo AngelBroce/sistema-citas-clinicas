@@ -117,31 +117,37 @@
   "usuarios": [
     {
       "id": "a0000000-0000-0000-0000-000000000001",
-      "email": "admin@clinica.com",
+      "email": "admin@medpulse.clinic",
       "rol_id": "ADMINISTRADOR",
       "esta_activo": true
     },
     {
       "id": "b0000000-0000-0000-0000-000000000001",
-      "email": "recepcion@clinica.com",
+      "email": "recepcion@medpulse.clinic",
       "rol_id": "RECEPCIONISTA",
       "esta_activo": true
     },
     {
       "id": "c0000000-0000-0000-0000-000000000001",
-      "email": "roberto.mendoza@clinica.com",
+      "email": "dr.mendoza@gmail.com",
       "rol_id": "MEDICO",
       "esta_activo": true
     },
     {
       "id": "c0000000-0000-0000-0000-000000000002",
-      "email": "carmen.silva@clinica.com",
+      "email": "dra.silva@gmail.com",
       "rol_id": "MEDICO",
       "esta_activo": true
     },
     {
       "id": "d0000000-0000-0000-0000-000000000001",
       "email": "juan.perez@gmail.com",
+      "rol_id": "PACIENTE",
+      "esta_activo": true
+    },
+    {
+      "id": "d0000000-0000-0000-0000-000000000002",
+      "email": "maria.gomez@gmail.com",
       "rol_id": "PACIENTE",
       "esta_activo": true
     }
@@ -151,15 +157,15 @@
       "id": "a0000000-0000-0000-0000-000000000001",
       "nombres": "Elvis",
       "apellidos": "Admin Principal",
-      "telefono": "+51987654321"
+      "telefono": "+507 6300-2001"
     }
   ],
   "recepcionistas": [
     {
       "id": "b0000000-0000-0000-0000-000000000001",
-      "nombres": "Laura",
-      "apellidos": "García Paredes",
-      "telefono": "+51987654322",
+      "nombres": "Elena",
+      "apellidos": "Ramos Morales",
+      "telefono": "+507 6300-2101",
       "sede": "Sede Central"
     }
   ],
@@ -169,7 +175,7 @@
       "numero_colegiatura": "CMP-45892",
       "nombres": "Roberto",
       "apellidos": "Mendoza Valdivia",
-      "telefono": "+51987654323",
+      "telefono": "+507 6300-2201",
       "biografia": "Especialista en cardiología clínica y preventiva con más de 12 años de trayectoria.",
       "tarifa_consulta": 120,
       "esta_activo": true
@@ -179,7 +185,7 @@
       "numero_colegiatura": "CMP-51204",
       "nombres": "Carmen",
       "apellidos": "Silva Rojas",
-      "telefono": "+51987654324",
+      "telefono": "+507 6300-2202",
       "biografia": "Especialista en pediatría y desarrollo infantil integral.",
       "tarifa_consulta": 100,
       "esta_activo": true
@@ -206,36 +212,36 @@
     {
       "id": "e0000000-0000-0000-0000-000000000001",
       "usuario_id": "d0000000-0000-0000-0000-000000000001",
-      "documento_tipo": "DNI",
-      "documento_numero": "72849102",
+      "documento_tipo": "CEDULA_NACIONAL",
+      "documento_numero": "8-1234-56789",
       "nombres": "Juan Carlos",
       "apellidos": "Pérez Salazar",
       "fecha_nacimiento": "1992-05-14",
       "genero": "MASCULINO",
-      "telefono": "+51912345678",
+      "telefono": "+507 6123-4567",
       "email": "juan.perez@gmail.com",
-      "direccion": "Av. Javier Prado Este 2450, San Borja",
+      "direccion": "Vía España 245, Bella Vista, Ciudad de Panamá",
       "grupo_sanguineo": "O+",
       "alergias": "Penicilina",
       "contacto_emergencia_nombre": "Rosa Salazar (Madre)",
-      "contacto_emergencia_telefono": "+51912345670"
+      "contacto_emergencia_telefono": "+507 6123-4560"
     },
     {
       "id": "e0000000-0000-0000-0000-000000000002",
-      "usuario_id": null,
-      "documento_tipo": "DNI",
-      "documento_numero": "44589201",
+      "usuario_id": "d0000000-0000-0000-0000-000000000002",
+      "documento_tipo": "CEDULA_NACIONAL",
+      "documento_numero": "8-9876-54321",
       "nombres": "María Elena",
       "apellidos": "Gómez Torres",
       "fecha_nacimiento": "1988-11-20",
       "genero": "FEMENINO",
-      "telefono": "+51988887777",
-      "email": "maria.gomez@hotmail.com",
-      "direccion": "Jr. Las Begonias 340, San Isidro",
+      "telefono": "+507 6888-7777",
+      "email": "maria.gomez@gmail.com",
+      "direccion": "Calle 50, San Francisco, Ciudad de Panamá",
       "grupo_sanguineo": "A+",
       "alergias": "Ninguna conocida",
       "contacto_emergencia_nombre": "Carlos Gómez (Hermano)",
-      "contacto_emergencia_telefono": "+51988887770"
+      "contacto_emergencia_telefono": "+507 6888-7770"
     }
   ],
   "horarios_medicos": [
@@ -244,7 +250,7 @@
       "consultorio_id": 3,
       "dia_semana": 1,
       "hora_inicio": "08:00:00",
-      "hora_fin": "13:00:00",
+      "hora_fin": "18:00:00",
       "duracion_cita_min": 30,
       "esta_activo": true
     },
@@ -253,7 +259,7 @@
       "consultorio_id": 3,
       "dia_semana": 2,
       "hora_inicio": "08:00:00",
-      "hora_fin": "13:00:00",
+      "hora_fin": "18:00:00",
       "duracion_cita_min": 30,
       "esta_activo": true
     },
@@ -262,7 +268,7 @@
       "consultorio_id": 3,
       "dia_semana": 3,
       "hora_inicio": "08:00:00",
-      "hora_fin": "13:00:00",
+      "hora_fin": "18:00:00",
       "duracion_cita_min": 30,
       "esta_activo": true
     },
@@ -271,7 +277,7 @@
       "consultorio_id": 3,
       "dia_semana": 4,
       "hora_inicio": "08:00:00",
-      "hora_fin": "13:00:00",
+      "hora_fin": "18:00:00",
       "duracion_cita_min": 30,
       "esta_activo": true
     },
@@ -280,7 +286,16 @@
       "consultorio_id": 3,
       "dia_semana": 5,
       "hora_inicio": "08:00:00",
-      "hora_fin": "13:00:00",
+      "hora_fin": "18:00:00",
+      "duracion_cita_min": 30,
+      "esta_activo": true
+    },
+    {
+      "medico_id": "c0000000-0000-0000-0000-000000000001",
+      "consultorio_id": 3,
+      "dia_semana": 6,
+      "hora_inicio": "08:00:00",
+      "hora_fin": "14:00:00",
       "duracion_cita_min": 30,
       "esta_activo": true
     },
@@ -288,7 +303,16 @@
       "medico_id": "c0000000-0000-0000-0000-000000000002",
       "consultorio_id": 2,
       "dia_semana": 1,
-      "hora_inicio": "14:00:00",
+      "hora_inicio": "08:00:00",
+      "hora_fin": "19:00:00",
+      "duracion_cita_min": 30,
+      "esta_activo": true
+    },
+    {
+      "medico_id": "c0000000-0000-0000-0000-000000000002",
+      "consultorio_id": 2,
+      "dia_semana": 2,
+      "hora_inicio": "08:00:00",
       "hora_fin": "19:00:00",
       "duracion_cita_min": 30,
       "esta_activo": true
@@ -297,7 +321,16 @@
       "medico_id": "c0000000-0000-0000-0000-000000000002",
       "consultorio_id": 2,
       "dia_semana": 3,
-      "hora_inicio": "14:00:00",
+      "hora_inicio": "08:00:00",
+      "hora_fin": "19:00:00",
+      "duracion_cita_min": 30,
+      "esta_activo": true
+    },
+    {
+      "medico_id": "c0000000-0000-0000-0000-000000000002",
+      "consultorio_id": 2,
+      "dia_semana": 4,
+      "hora_inicio": "08:00:00",
       "hora_fin": "19:00:00",
       "duracion_cita_min": 30,
       "esta_activo": true
@@ -306,8 +339,17 @@
       "medico_id": "c0000000-0000-0000-0000-000000000002",
       "consultorio_id": 2,
       "dia_semana": 5,
-      "hora_inicio": "14:00:00",
+      "hora_inicio": "08:00:00",
       "hora_fin": "19:00:00",
+      "duracion_cita_min": 30,
+      "esta_activo": true
+    },
+    {
+      "medico_id": "c0000000-0000-0000-0000-000000000002",
+      "consultorio_id": 2,
+      "dia_semana": 6,
+      "hora_inicio": "08:00:00",
+      "hora_fin": "14:00:00",
       "duracion_cita_min": 30,
       "esta_activo": true
     }
@@ -316,12 +358,12 @@
   "conversaciones_chatbot": [
     {
       "id": "10000000-0000-0000-0000-000000000001",
-      "whatsapp_from": "+51988887777",
+      "whatsapp_from": "+50768887777",
       "paciente_id": "e0000000-0000-0000-0000-000000000002",
       "estado_conversacion": "FINALIZADA",
       "contexto_conversacion": "{\"paso\": \"reserva_completada\", \"cita_creada\": \"CIT-2026-0002\"}",
       "nivel_triaje": "LEVE",
-      "resumen_triaje": "Paciente solicitó cita para control preventivo infantil. Sin síntomas de alarma respiratoria ni fiebre.",
+      "resumen_triaje": "Paciente solicitó cita para control preventivo infantil por WhatsApp.",
       "especialidad_sugerida_id": 3
     }
   ],
@@ -351,7 +393,7 @@
       "conversacion_id": "10000000-0000-0000-0000-000000000001",
       "remitente": "BOT",
       "tipo_mensaje": "TEXTO",
-      "contenido": "Perfecto, te sugiero la especialidad de Pediatría con la Dra. Carmen Silva. Tenemos horario el Lunes 5 de Octubre a las 15:00 hrs. ¿Deseas confirmarla?",
+      "contenido": "Perfecto, te sugiero Pediatría con la Dra. Carmen Silva. Tenemos horario el Martes 24 de Noviembre a las 15:00 hrs. ¿Deseas confirmarla?",
       "intencion_detectada": "PROPONER_HORARIO"
     },
     {
@@ -365,7 +407,7 @@
       "conversacion_id": "10000000-0000-0000-0000-000000000001",
       "remitente": "BOT",
       "tipo_mensaje": "TEXTO",
-      "contenido": "¡Excelente! Tu cita quedó reservada con el código CIT-2026-0002. Te enviaremos un recordatorio previo a la cita.",
+      "contenido": "¡Excelente! Tu cita quedó reservada con el código CIT-2026-0002. Te enviaremos un recordatorio previo por WhatsApp.",
       "intencion_detectada": "CITA_GENERADA"
     }
   ]

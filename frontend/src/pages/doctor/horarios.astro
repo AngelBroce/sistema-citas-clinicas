@@ -8,14 +8,14 @@ const dayNames: Record<number, string> = { 1: 'Lunes', 2: 'Martes', 3: 'Miércol
 ---
 
 <Layout title="Mis Horarios y Disponibilidad Semanal" role="doctor">
-  <div class="grid two">
+  <div class="grid two" style="align-items: start;">
     <section class="card">
       <h2>Turnos de Atención Configurados</h2>
-      <p class="muted">
-        Estos son los turnos en los que el motor de agendamiento permite a los pacientes y a recepción reservar citas contigo.
+      <p class="muted" id="doctor-schedule-subtitle">
+        Turnos semanales en los que el motor de agendamiento permite reservar citas médicas contigo.
       </p>
 
-      <div style="display: grid; gap: 12px; margin-top: 18px;">
+      <div id="doctor-schedules-list" style="display: grid; gap: 12px; margin-top: 18px;">
         {mySchedules.map(h => {
           const room = data.consultorios.find(c => c.id === h.consultorio_id);
           return (
@@ -46,28 +46,193 @@ const dayNames: Record<number, string> = { 1: 'Lunes', 2: 'Martes', 3: 'Miércol
     <section class="card">
       <h2>Bloqueos y Excepciones de Agenda</h2>
       <p class="muted">
-        Programa ausencias justificadas (vacaciones, congresos, capacitaciones médicas o guardias de emergencia). El sistema bloqueará automáticamente la disponibilidad en Google Calendar.
+        Programa ausencias justificadas (vacaciones, congresos, capacitaciones médicas o guardias). El sistema bloqueará automáticamente esas fechas en Supabase.
       </p>
 
-      <form style="display: grid; gap: 14px; margin-top: 18px;">
+      <form id="doctor-block-form" style="display: grid; gap: 14px; margin-top: 18px;">
         <label>
-          Motivo del bloqueo
-          <input type="text" placeholder="Ej. Congreso Anual de Cardiología" required />
+          Motivo del bloqueo *
+          <input type="text" id="block-motivo" placeholder="Ej. Congreso Anual de Cardiología" required maxlength="200" />
         </label>
         <div class="form-grid">
           <label>
-            Fecha inicio
-            <input type="date" required />
+            Fecha inicio *
+            <input type="date" id="block-inicio" required />
           </label>
           <label>
-            Fecha fin
-            <input type="date" required />
+            Fecha fin *
+            <input type="date" id="block-fin" required />
           </label>
         </div>
-        <button type="button" class="button" style="justify-content: center;">
+
+        <div id="block-feedback" style="display: none; padding: 10px 12px; border-radius: 8px; font-size: 13px;"></div>
+
+        <button type="submit" id="btn-submit-block" class="button" style="justify-content: center;">
           🔒 Registrar bloqueo temporal
         </button>
       </form>
+
+      <div style="margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+        <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #cbd5e1;">Bloqueos Activos Registrados</h3>
+        <div id="doctor-blocks-list" style="display: grid; gap: 10px;">
+          <p class="muted" style="margin: 0;">Cargando bloqueos de Supabase...</p>
+        </div>
+      </div>
     </section>
   </div>
 </Layout>
+
+<script>
+  import { apiUrl, escapeHtml, getAuthHeaders, getSession } from '../../data/api';
+
+  const session = getSession();
+  const medicoId = session?.usuario?.medicoId || session?.usuario?.id || 'c0000000-0000-0000-0000-000000000001';
+  const form = document.getElementById('doctor-block-form') as HTMLFormElement | null;
+  const motivoInput = document.getElementById('block-motivo') as HTMLInputElement | null;
+  const inicioInput = document.getElementById('block-inicio') as HTMLInputElement | null;
+  const finInput = document.getElementById('block-fin') as HTMLInputElement | null;
+  const feedbackEl = document.getElementById('block-feedback');
+  const submitBtn = document.getElementById('btn-submit-block') as HTMLButtonElement | null;
+  const blocksListEl = document.getElementById('doctor-blocks-list');
+
+  const todayIso = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Panama' }).format(new Date());
+  if (inicioInput) {
+    inicioInput.min = todayIso;
+    inicioInput.value = todayIso;
+  }
+  if (finInput) {
+    finInput.min = todayIso;
+    finInput.value = todayIso;
+  }
+
+  function setFeedback(msg: string, isError = false) {
+    if (!feedbackEl) return;
+    feedbackEl.textContent = msg;
+    feedbackEl.style.display = 'block';
+    feedbackEl.style.background = isError ? 'rgba(239, 68, 68, 0.14)' : 'rgba(16, 185, 129, 0.14)';
+    feedbackEl.style.border = isError ? '1px solid #ef4444' : '1px solid #10b981';
+    feedbackEl.style.color = isError ? '#fca5a5' : '#34d399';
+  }
+
+  async function cargarBloqueos() {
+    if (!blocksListEl) return;
+    try {
+      const resp = await fetch(apiUrl(`/api/citas/bloqueos?medicoId=${encodeURIComponent(medicoId)}`), {
+        headers: getAuthHeaders()
+      });
+      const json = await resp.json();
+      const items = Array.isArray(json?.data) ? json.data : [];
+
+      if (items.length === 0) {
+        blocksListEl.innerHTML = '<p class="muted" style="margin: 0;">No tienes bloqueos temporales activos.</p>';
+        return;
+      }
+
+      blocksListEl.innerHTML = items.map((b: any) => {
+        const ini = String(b.inicio || '').slice(0, 10);
+        const fin = String(b.fin || '').slice(0, 10);
+        return `
+          <div style="padding: 10px 14px; border-radius: 8px; background: #090e17; border: 1px solid #263342; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+            <div>
+              <strong style="color: #f8fafc; font-size: 13px; display: block;">${escapeHtml(b.motivo)}</strong>
+              <small style="color: #94a3b8;">📅 ${escapeHtml(ini)} → ${escapeHtml(fin)}</small>
+            </div>
+            <button type="button" class="cal-btn btn-delete-block" data-id="${escapeHtml(b.id)}" style="padding: 5px 10px; font-size: 11px; color: #f87171; border-color: rgba(239,68,68,0.4);">
+              ✕ Eliminar
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      blocksListEl.querySelectorAll('.btn-delete-block').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = (btn as HTMLElement).dataset.id;
+          if (!id) return;
+          const resDel = await fetch(apiUrl(`/api/citas/bloqueos/${encodeURIComponent(id)}`), {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+          });
+          if (resDel.ok) {
+            setFeedback('Bloqueo eliminado correctamente.');
+            await cargarBloqueos();
+          } else {
+            const errJson = await resDel.json().catch(() => ({}));
+            setFeedback(errJson?.error || 'No se pudo eliminar el bloqueo.', true);
+          }
+        });
+      });
+    } catch {
+      blocksListEl.innerHTML = '<p class="muted" style="margin: 0; color: #fca5a5;">No se pudieron consultar los bloqueos.</p>';
+    }
+  }
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const motivo = motivoInput?.value.trim() || '';
+    const fechaInicio = inicioInput?.value || '';
+    const fechaFin = finInput?.value || '';
+    if (!motivo || !fechaInicio || !fechaFin) return;
+    if (fechaFin < fechaInicio) {
+      setFeedback('La fecha de fin debe ser igual o posterior a la fecha de inicio.', true);
+      return;
+    }
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Guardando bloqueo...';
+    }
+
+    try {
+      const resp = await fetch(apiUrl('/api/citas/bloqueos'), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ medicoId, fechaInicio, fechaFin, motivo })
+      });
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok || !json?.ok) {
+        setFeedback(json?.error || 'No se pudo registrar el bloqueo.', true);
+      } else {
+        setFeedback('✓ Bloqueo registrado en Supabase. Esos días ya no mostrarán cupos.');
+        if (motivoInput) motivoInput.value = '';
+        await cargarBloqueos();
+      }
+    } catch {
+      setFeedback('Error de conexión con el servidor.', true);
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '🔒 Registrar bloqueo temporal';
+      }
+    }
+  });
+
+  // Cargar horarios reales del médico en sesión desde /api/citas/catalogos si aplica
+  fetch(apiUrl('/api/citas/catalogos'), { headers: getAuthHeaders() })
+    .then(r => r.json())
+    .then(json => {
+      const horarios = (json?.data?.horariosMedicos || []).filter((h: any) => h.medico_id === medicoId);
+      const listEl = document.getElementById('doctor-schedules-list');
+      const consultorios = json?.data?.consultorios || [];
+      const dias: Record<number, string> = { 1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 7: 'Domingo' };
+      if (listEl && horarios.length > 0) {
+        listEl.innerHTML = horarios.map((h: any) => {
+          const room = consultorios.find((c: any) => c.id === h.consultorio_id);
+          return `
+            <div style="padding: 14px 18px; border-radius: 10px; background: #0c162c; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong style="color: #38bdf8; font-size: 16px; display: block;">📅 ${escapeHtml(dias[h.dia_semana] || 'Día')}</strong>
+                <span class="muted" style="font-size: 13px;">${escapeHtml(room ? `${room.nombre} · ${room.piso} (${room.sede})` : 'Consultorio General')}</span>
+              </div>
+              <div style="text-align: right;">
+                <span class="badge blue" style="font-size: 13px; font-weight: 700;">🕒 ${escapeHtml(String(h.hora_inicio).slice(0, 5))} - ${escapeHtml(String(h.hora_fin).slice(0, 5))}</span>
+                <small style="display: block; color: #10b981; margin-top: 4px; font-weight: 600;">Turno Activo (${escapeHtml(h.duracion_cita_min)} min / cita)</small>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    })
+    .catch(() => {});
+
+  cargarBloqueos();
+</script>

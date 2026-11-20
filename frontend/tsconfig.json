@@ -8,5 +8,6 @@
     "allowJs": true,
     "skipLibCheck": true
   },
-  "include": [".astro/types.d.ts", "**/*"]
+  "include": [".astro/types.d.ts", "src/**/*"],
+  "exclude": ["dist", "node_modules", "MedPulse_Astro"]
 }

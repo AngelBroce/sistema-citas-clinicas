@@ -304,7 +304,8 @@ const defaultPaciente = data.pacientes[0];
   .form-grid label {
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    justify-content: flex-start;
+    align-items: stretch;
     gap: 6px;
     font-size: 13px;
     color: #e2e8f0;
@@ -345,110 +346,67 @@ const defaultPaciente = data.pacientes[0];
 
 <script>
   import data from '../../data/seeds.json';
+  import { apiUrl, escapeHtml, getAuthHeaders, getSession } from '../../data/api';
 
-  function initProfilePage() {
+  async function initProfilePage() {
     const defaultP: any = data.pacientes[0];
     let currentPatient: any = { ...defaultP };
+    const session = getSession();
 
-    // 1. Cargar datos desde sesión activa en localStorage
-    try {
-      const session = JSON.parse(localStorage.getItem('medpulse_session') || '{}');
-      if (session?.paciente) {
-        currentPatient = {
-          ...currentPatient,
-          ...session.paciente,
-          id: session.paciente.id || currentPatient.id,
-          email: session.paciente.email || session.paciente.correo || session.usuario?.email || currentPatient.email
-        };
-      } else if (session?.usuario && session.usuario.rol === 'PACIENTE') {
-        const parts = (session.usuario.nombreCompleto || '').split(' ');
-        currentPatient = {
-          ...currentPatient,
-          id: session.usuario.id,
-          nombres: parts[0] || 'Paciente',
-          apellidos: parts.slice(1).join(' ') || '',
-          email: session.usuario.email
-        };
-      }
-    } catch (e) {
-      console.warn('Error leyendo sesión:', e);
+    if (session?.paciente) {
+      currentPatient = {
+        ...currentPatient,
+        ...session.paciente,
+        id: session.paciente.id || currentPatient.id,
+        email: session.paciente.email || session.paciente.correo || session.usuario?.email || currentPatient.email
+      };
+    } else if (session?.usuario && session.usuario.rol === 'PACIENTE') {
+      const parts = (session.usuario.nombreCompleto || '').split(' ');
+      currentPatient = {
+        ...currentPatient,
+        id: session.usuario.pacienteId || session.usuario.id,
+        nombres: parts[0] || 'Paciente',
+        apellidos: parts.slice(1).join(' ') || '',
+        email: session.usuario.email
+      };
     }
 
-    // 2. Hidratar elementos visuales del Hero y Bento Cards
-    const displayName = document.getElementById('profile-display-name');
-    const tagDoc = document.getElementById('profile-tag-doc');
-    const tagEmail = document.getElementById('profile-tag-email');
-    const tagBlood = document.getElementById('profile-tag-blood');
+    // Consultar el perfil actualizado directo desde Supabase
+    try {
+      const resPerfil = await fetch(apiUrl('/api/auth/perfil'), { headers: getAuthHeaders() });
+      const perfilJson = await resPerfil.json();
+      if (resPerfil.ok && perfilJson?.ok && perfilJson?.paciente) {
+        currentPatient = {
+          ...currentPatient,
+          ...perfilJson.paciente,
+          email: perfilJson.paciente.email || perfilJson.usuario?.email || currentPatient.email
+        };
+      }
+    } catch {}
 
-    const bentoName = document.getElementById('bento-titular-name');
-    const bentoDoc = document.getElementById('bento-titular-doc');
-    const bentoEmail = document.getElementById('bento-titular-email');
-    const bentoPhone = document.getElementById('bento-phone');
-    const bentoAlergias = document.getElementById('bento-alergias');
-    const bentoBlood = document.getElementById('bento-blood');
-    const bentoEmName = document.getElementById('bento-emergency-name');
-    const bentoEmPhone = document.getElementById('bento-emergency-phone');
-
-    const primerNombre = currentPatient.primer_nombre || (currentPatient.nombres ? currentPatient.nombres.split(' ')[0] : 'Juan');
-    const segundoNombre = currentPatient.segundo_nombre || (currentPatient.nombres ? currentPatient.nombres.split(' ').slice(1).join(' ') : 'Carlos');
-    const primerApellido = currentPatient.primer_apellido || (currentPatient.apellidos ? currentPatient.apellidos.split(' ')[0] : 'Pérez');
-    const segundoApellido = currentPatient.segundo_apellido || (currentPatient.apellidos ? currentPatient.apellidos.split(' ').slice(1).join(' ') : 'Salazar');
-    const docNumero = currentPatient.documento_numero || currentPatient.documentoNumero || '8-1234-56789';
-
-    const fullName = `${primerNombre}${segundoNombre ? ' ' + segundoNombre : ''} ${primerApellido}${segundoApellido ? ' ' + segundoApellido : ''}`.trim();
-
-    if (displayName) displayName.textContent = `Expediente de ${fullName} 👤`;
-    if (tagDoc) tagDoc.innerHTML = `<strong>🇵🇦 Cédula:</strong> <span style="color:#34d399; font-family: monospace;">${docNumero}</span>`;
-    if (tagEmail) tagEmail.innerHTML = `<strong>Correo:</strong> ${currentPatient.email}`;
-    if (tagBlood) tagBlood.innerHTML = `<strong>Grupo sanguíneo:</strong> ${currentPatient.grupo_sanguineo || 'O+'}`;
-
-    if (bentoName) bentoName.textContent = fullName;
-    if (bentoDoc) bentoDoc.innerHTML = `🇵🇦 Cédula: <strong style="color: #34d399; font-family: monospace;">${docNumero}</strong><br><span id="bento-titular-email" style="color: #38bdf8;">${currentPatient.email}</span>`;
-    if (bentoPhone) bentoPhone.textContent = currentPatient.telefono || '+507 6123-4567';
-    if (bentoAlergias) bentoAlergias.textContent = currentPatient.alergias || 'Ninguna conocida';
-    if (bentoBlood) bentoBlood.textContent = currentPatient.grupo_sanguineo || 'O+';
-    if (bentoEmName) bentoEmName.textContent = currentPatient.contacto_emergencia_nombre || 'Contacto Familiar';
-    if (bentoEmPhone) bentoEmPhone.textContent = `Tel: ${currentPatient.contacto_emergencia_telefono || '—'}`;
-
-    // 3. Rellenar inputs del formulario
     const setVal = (id: string, val: any) => {
       const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
       if (el && val !== undefined && val !== null) el.value = String(val);
     };
 
-    setVal('prof-primer-nombre', primerNombre);
-    setVal('prof-segundo-nombre', segundoNombre);
-    setVal('prof-primer-apellido', primerApellido);
-    setVal('prof-segundo-apellido', segundoApellido);
-    setVal('prof-doc-tipo', currentPatient.documento_tipo || 'CEDULA_NACIONAL');
-    setVal('prof-doc-numero', docNumero);
-    setVal('prof-nacimiento', currentPatient.fecha_nacimiento || '1995-05-15');
-    setVal('prof-email', currentPatient.email);
-    setVal('prof-telefono', currentPatient.telefono || '+507 6123-4567');
-    setVal('prof-grupo-sanguineo', currentPatient.grupo_sanguineo || 'O+');
-    setVal('prof-direccion', currentPatient.direccion || '');
-    setVal('prof-contacto-nombre', currentPatient.contacto_emergencia_nombre || '');
-    setVal('prof-contacto-tel', currentPatient.contacto_emergencia_telefono || '');
-
-    // Manejo de Alergias Dinámicas y Grupo Sanguíneo
     const allergiesContainer = document.getElementById('allergies-active-container');
     const allergiesHidden = document.getElementById('prof-alergias') as HTMLInputElement | null;
     const customAllergyInput = document.getElementById('custom-allergy-input') as HTMLInputElement | null;
     const btnAddCustom = document.getElementById('btn-add-custom-allergy');
     const btnSinAlergias = document.getElementById('btn-declarar-sin-alergias');
     const selectBlood = document.getElementById('prof-grupo-sanguineo') as HTMLSelectElement | null;
+    const bentoAlergias = document.getElementById('bento-alergias');
+    const bentoBlood = document.getElementById('bento-blood');
+    const tagBlood = document.getElementById('profile-tag-blood');
 
     let activeAllergies: string[] = [];
-    if (currentPatient.alergias && currentPatient.alergias !== 'Ninguna' && currentPatient.alergias !== 'Ninguna conocida') {
-      activeAllergies = currentPatient.alergias.split(',').map((s: string) => s.trim()).filter(Boolean);
-    }
 
     function renderAllergies() {
       if (!allergiesContainer || !allergiesHidden) return;
       allergiesContainer.innerHTML = '';
       if (activeAllergies.length === 0) {
         allergiesContainer.innerHTML = `<span style="color: #64748b; font-size: 12px; font-style: italic;">✓ Declarado sin alergias conocidas actualmente.</span>`;
-        allergiesHidden.value = 'Ninguna';
+        allergiesHidden.value = 'Ninguna conocida';
         if (bentoAlergias) bentoAlergias.textContent = 'Ninguna conocida';
         return;
       }
@@ -460,7 +418,7 @@ const defaultPaciente = data.pacientes[0];
       activeAllergies.forEach((allergy, index) => {
         const chip = document.createElement('div');
         chip.style.cssText = 'display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px; color: #fca5a5; font-size: 12px; font-weight: 600;';
-        chip.innerHTML = `<span>⚠️ ${allergy}</span> <button type="button" style="background: none; border: 0; color: #f87171; cursor: pointer; padding: 0 2px; font-size: 13px; font-weight: bold;" title="Eliminar alergia">✕</button>`;
+        chip.innerHTML = `<span>⚠️ ${escapeHtml(allergy)}</span> <button type="button" style="background: none; border: 0; color: #f87171; cursor: pointer; padding: 0 2px; font-size: 13px; font-weight: bold;" title="Eliminar alergia">✕</button>`;
         chip.querySelector('button')!.addEventListener('click', () => {
           activeAllergies.splice(index, 1);
           renderAllergies();
@@ -468,6 +426,59 @@ const defaultPaciente = data.pacientes[0];
         allergiesContainer.appendChild(chip);
       });
     }
+
+    function hydrateViewFromPatient(pat: any) {
+      const displayName = document.getElementById('profile-display-name');
+      const tagDoc = document.getElementById('profile-tag-doc');
+      const tagEmail = document.getElementById('profile-tag-email');
+      const bentoName = document.getElementById('bento-titular-name');
+      const bentoDoc = document.getElementById('bento-titular-doc');
+      const bentoPhone = document.getElementById('bento-phone');
+      const bentoEmName = document.getElementById('bento-emergency-name');
+      const bentoEmPhone = document.getElementById('bento-emergency-phone');
+
+      const primerNombre = pat.primer_nombre || (pat.nombres ? String(pat.nombres).split(' ')[0] : 'Juan');
+      const segundoNombre = pat.segundo_nombre ?? (pat.nombres ? String(pat.nombres).split(' ').slice(1).join(' ') : '');
+      const primerApellido = pat.primer_apellido || (pat.apellidos ? String(pat.apellidos).split(' ')[0] : 'Pérez');
+      const segundoApellido = pat.segundo_apellido ?? (pat.apellidos ? String(pat.apellidos).split(' ').slice(1).join(' ') : '');
+      const docNumero = pat.documento_numero || pat.documentoNumero || '8-1234-56789';
+      const fullName = `${primerNombre}${segundoNombre ? ' ' + segundoNombre : ''} ${primerApellido}${segundoApellido ? ' ' + segundoApellido : ''}`.trim();
+
+      if (displayName) displayName.textContent = `Expediente de ${fullName} 👤`;
+      if (tagDoc) tagDoc.innerHTML = `<strong>🇵🇦 Cédula:</strong> <span style="color:#34d399; font-family: monospace;">${escapeHtml(docNumero)}</span>`;
+      if (tagEmail) tagEmail.innerHTML = `<strong>Correo:</strong> ${escapeHtml(pat.email)}`;
+      if (tagBlood) tagBlood.innerHTML = `<strong>Grupo sanguíneo:</strong> ${escapeHtml(pat.grupo_sanguineo || 'O+')}`;
+
+      if (bentoName) bentoName.textContent = fullName;
+      if (bentoDoc) bentoDoc.innerHTML = `🇵🇦 Cédula: <strong style="color: #34d399; font-family: monospace;">${escapeHtml(docNumero)}</strong><br><span id="bento-titular-email" style="color: #38bdf8;">${escapeHtml(pat.email)}</span>`;
+      if (bentoPhone) bentoPhone.textContent = pat.telefono || '+507 6123-4567';
+      if (bentoAlergias) bentoAlergias.textContent = pat.alergias || 'Ninguna conocida';
+      if (bentoBlood) bentoBlood.textContent = pat.grupo_sanguineo || 'O+';
+      if (bentoEmName) bentoEmName.textContent = pat.contacto_emergencia_nombre || 'Contacto Familiar';
+      if (bentoEmPhone) bentoEmPhone.textContent = `Tel: ${pat.contacto_emergencia_telefono || '—'}`;
+
+      setVal('prof-primer-nombre', primerNombre);
+      setVal('prof-segundo-nombre', segundoNombre);
+      setVal('prof-primer-apellido', primerApellido);
+      setVal('prof-segundo-apellido', segundoApellido);
+      setVal('prof-doc-tipo', pat.documento_tipo || 'CEDULA_NACIONAL');
+      setVal('prof-doc-numero', docNumero);
+      setVal('prof-nacimiento', pat.fecha_nacimiento || '1995-05-15');
+      setVal('prof-email', pat.email);
+      setVal('prof-telefono', pat.telefono || '+507 6123-4567');
+      setVal('prof-grupo-sanguineo', pat.grupo_sanguineo || 'O+');
+      setVal('prof-direccion', pat.direccion || '');
+      setVal('prof-contacto-nombre', pat.contacto_emergencia_nombre || '');
+      setVal('prof-contacto-tel', pat.contacto_emergencia_telefono || '');
+
+      activeAllergies = [];
+      if (pat.alergias && pat.alergias !== 'Ninguna' && pat.alergias !== 'Ninguna conocida') {
+        activeAllergies = String(pat.alergias).split(',').map((s: string) => s.trim()).filter(Boolean);
+      }
+      renderAllergies();
+    }
+
+    hydrateViewFromPatient(currentPatient);
 
     function addAllergy(name: string) {
       const clean = name.trim();
@@ -506,17 +517,15 @@ const defaultPaciente = data.pacientes[0];
 
     selectBlood?.addEventListener('change', () => {
       if (bentoBlood) bentoBlood.textContent = selectBlood.value;
-      if (tagBlood) tagBlood.innerHTML = `<strong>Grupo sanguíneo:</strong> ${selectBlood.value}`;
+      if (tagBlood) tagBlood.innerHTML = `<strong>Grupo sanguíneo:</strong> ${escapeHtml(selectBlood.value)}`;
     });
 
-    renderAllergies();
-
-    // 4. Manejador para guardar perfil
     const form = document.getElementById('patient-profile-form') as HTMLFormElement | null;
-    form?.addEventListener('submit', (e) => {
-      e.preventDefault();
+    const saveBtn = form?.querySelector('button[type="submit"]') as HTMLButtonElement | null;
 
-      const getVal = (id: string) => (document.getElementById(id) as HTMLInputElement)?.value.trim();
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const getVal = (id: string) => (document.getElementById(id) as HTMLInputElement)?.value.trim() || '';
 
       const pNom = getVal('prof-primer-nombre');
       const sNom = getVal('prof-segundo-nombre');
@@ -525,20 +534,16 @@ const defaultPaciente = data.pacientes[0];
       const nomFinal = `${pNom}${sNom ? ' ' + sNom : ''}`.trim();
       const apeFinal = `${pApe}${sApe ? ' ' + sApe : ''}`.trim();
 
-      const updatedPatient = {
-        ...currentPatient,
+      const payload = {
         primer_nombre: pNom,
         segundo_nombre: sNom,
         primer_apellido: pApe,
         segundo_apellido: sApe,
         nombres: nomFinal,
         apellidos: apeFinal,
-        nombreCompleto: `${nomFinal} ${apeFinal}`,
         documento_tipo: getVal('prof-doc-tipo'),
         documento_numero: getVal('prof-doc-numero'),
         fecha_nacimiento: getVal('prof-nacimiento'),
-        email: getVal('prof-email'),
-        correo: getVal('prof-email'),
         telefono: getVal('prof-telefono'),
         grupo_sanguineo: getVal('prof-grupo-sanguineo'),
         alergias: getVal('prof-alergias'),
@@ -547,46 +552,72 @@ const defaultPaciente = data.pacientes[0];
         contacto_emergencia_telefono: getVal('prof-contacto-tel')
       };
 
-      // Guardar en sesión
-      try {
-        const session = JSON.parse(localStorage.getItem('medpulse_session') || '{}');
-        session.paciente = updatedPatient;
-        if (session.usuario) {
-          session.usuario.nombreCompleto = updatedPatient.nombreCompleto;
-          session.usuario.email = updatedPatient.email;
-        }
-        localStorage.setItem('medpulse_session', JSON.stringify(session));
-
-        // Actualizar lista de pacientes personalizados
-        const custom = JSON.parse(localStorage.getItem('medpulse_custom_patients') || '[]');
-        const idx = custom.findIndex((p: any) => p.id === updatedPatient.id || p.email === updatedPatient.email);
-        if (idx >= 0) {
-          custom[idx] = updatedPatient;
-        } else {
-          custom.push(updatedPatient);
-        }
-        localStorage.setItem('medpulse_custom_patients', JSON.stringify(custom));
-      } catch (err) {
-        console.warn('Error guardando en localStorage:', err);
+      const origText = saveBtn?.textContent || '';
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Guardando en Supabase...';
       }
 
       const toast = document.getElementById('toast');
-      if (toast) {
-        toast.textContent = '✓ ¡Perfil médico y Cédula de Panamá actualizados con éxito!';
-        toast.style.display = 'block';
-        setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3500);
-      }
+      try {
+        const res = await fetch(apiUrl('/api/auth/perfil'), {
+          method: 'PATCH',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
 
-      initProfilePage();
+        if (!res.ok || !json?.ok) {
+          if (toast) {
+            toast.textContent = json?.error || 'No se pudo actualizar el perfil médico.';
+            toast.style.display = 'block';
+            setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3500);
+          }
+          return;
+        }
+
+        currentPatient = {
+          ...currentPatient,
+          ...payload,
+          ...(json.paciente || {}),
+          nombreCompleto: `${nomFinal} ${apeFinal}`.trim()
+        };
+
+        try {
+          const curSess = JSON.parse(localStorage.getItem('medpulse_session') || '{}');
+          curSess.paciente = currentPatient;
+          if (curSess.usuario) curSess.usuario.nombreCompleto = currentPatient.nombreCompleto;
+          localStorage.setItem('medpulse_session', JSON.stringify(curSess));
+        } catch {}
+
+        hydrateViewFromPatient(currentPatient);
+
+        if (toast) {
+          toast.textContent = '✓ ¡Perfil médico guardado en Supabase con éxito!';
+          toast.style.display = 'block';
+          setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3500);
+        }
+      } catch {
+        if (toast) {
+          toast.textContent = 'Error de conexión al guardar perfil médico.';
+          toast.style.display = 'block';
+          setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3500);
+        }
+      } finally {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = origText || 'Guardar perfil médico';
+        }
+      }
     });
 
     document.getElementById('btn-reset-profile')?.addEventListener('click', () => {
-      initProfilePage();
+      hydrateViewFromPatient(currentPatient);
     });
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initProfilePage);
+    document.addEventListener('DOMContentLoaded', () => { initProfilePage(); });
   } else {
     initProfilePage();
   }

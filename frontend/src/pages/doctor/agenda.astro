@@ -37,7 +37,7 @@ const consultorio = data.consultorios.find(c => c.id === 3); // Consultorio 201
       <a class="button primary-glow" href="#doctor-calendar-section">
         <span>🗓️</span> Calendario Mensual
       </a>
-      <a class="button secondary-glow" href="#appointments-section">
+      <a class="button secondary-glow" href="#doctor-appointments-wrapper">
         <span>📋</span> Pacientes Citados
       </a>
     </div>
@@ -48,7 +48,7 @@ const consultorio = data.consultorios.find(c => c.id === 3); // Consultorio 201
     <a href="#doctor-calendar-section" class="tab-pill active">
       <span>🗓️</span> Calendario Mensual
     </a>
-    <a href="#appointments-section" class="tab-pill">
+    <a href="#doctor-appointments-wrapper" class="tab-pill">
       <span>📋</span> Consultas Asignadas
     </a>
   </div>
@@ -59,7 +59,7 @@ const consultorio = data.consultorios.find(c => c.id === 3); // Consultorio 201
   </div>
 
   <!-- Lista de Consultas Asignadas al Doctor -->
-  <div id="appointments-section" class="patient-section-wrap animate-slide-up delay-3">
+  <div id="doctor-appointments-wrapper" class="patient-section-wrap animate-slide-up delay-3">
     <Appointments role="doctor" doctorId={doctor.id} />
   </div>
 </Layout>

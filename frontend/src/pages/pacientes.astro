@@ -13,19 +13,18 @@ const pacientesIniciales = data.pacientes;
         <span class="live-pulse-dot"></span>
         <span style="font-weight: 700; color: #38bdf8; letter-spacing: 0.5px;">PADRÓN DE PACIENTES</span>
         <span class="separator" style="color: #475569;">·</span>
-        <span class="verified-tag" style="color: #34d399; font-weight: 600;">✓ Registros Clínicos Activos</span>
+        <span class="verified-tag" style="color: #34d399; font-weight: 600;">✓ Registros en Supabase</span>
       </div>
       
       <h2 style="font-size: 24px; margin: 10px 0 8px 0; color: #ffffff;">Directorio General de Pacientes 👥</h2>
       <p style="margin: 0 0 16px 0; color: #cbd5e1; max-width: 740px; font-size: 14px; line-height: 1.6;">
-        Consulta y administra la base de pacientes registrados en MedPulse, incluyendo registros importados y nuevos pacientes registrados desde la web y recepción.
+        Consulta y registra pacientes directamente desde administración manteniendo tu sesión activa.
       </p>
 
       <div class="patient-quick-tags">
         <span class="tag-chip" id="kpi-total-badge"><strong>Total Pacientes:</strong> {pacientesIniciales.length}</span>
-        <span class="tag-chip"><strong>Identificación:</strong> Cédula / Pasaporte</span>
+        <span class="tag-chip"><strong>Identificación:</strong> Cédula Panameña / Pasaporte</span>
         <span class="tag-chip"><strong>Sede:</strong> Sede Central</span>
-        <span class="tag-chip"><strong>Sincronización:</strong> Activa en tiempo real</span>
       </div>
     </div>
 
@@ -33,13 +32,13 @@ const pacientesIniciales = data.pacientes;
       <a class="button primary-glow" href="/reservar">
         <span>＋</span> Agendar Cita en Recepción
       </a>
-      <a class="button secondary-glow" href="/login">
+      <button type="button" id="btn-open-admin-patient-modal" class="button secondary-glow">
         <span>👤</span> Registrar Nuevo Paciente
-      </a>
+      </button>
     </div>
   </section>
 
-  <!-- Tabla de Pacientes con Buscador Reactivo -->
+  <!-- Tabla de Pacientes -->
   <section class="card animate-slide-up delay-1" style="background: #0f172a; border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 16px; padding: 22px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
       <div>
@@ -47,7 +46,7 @@ const pacientesIniciales = data.pacientes;
           <span>📋</span> Lista Completa de Pacientes
         </h2>
         <p class="muted" style="margin: 4px 0 0 0; font-size: 13px;">
-          Filtra por nombre, apellidos, documento de identidad o correo electrónico.
+          Filtra por nombre, apellidos, cédula de Panamá o correo electrónico.
         </p>
       </div>
 
@@ -73,9 +72,7 @@ const pacientesIniciales = data.pacientes;
             <th style="text-align: right;">Acciones</th>
           </tr>
         </thead>
-        <tbody id="patients-tbody">
-          <!-- Renderizado reactivo dinámico con pacientes base y recién creados -->
-        </tbody>
+        <tbody id="patients-tbody"></tbody>
       </table>
 
       <p id="no-patients-found" hidden style="text-align: center; padding: 32px; color: #94a3b8; background: #090e17; border-radius: 8px; margin-top: 12px;">
@@ -83,82 +80,90 @@ const pacientesIniciales = data.pacientes;
       </p>
     </div>
   </section>
+
+  <!-- Modal Inline de Registro de Paciente (Mantiene sesión Admin) -->
+  <div id="admin-patient-modal" class="ticket-modal-overlay" style="display: none;">
+    <div class="ticket-modal-card">
+      <div class="ticket-modal-header">
+        <div>
+          <strong style="color: #ffffff; font-size: 16px;">👤 Registrar Nuevo Paciente</strong>
+          <small style="display: block; color: #34d399;">Guardado directo en Supabase sin cerrar sesión Admin</small>
+        </div>
+        <button type="button" id="btn-close-admin-patient" class="ticket-close-btn">&times;</button>
+      </div>
+      <form id="admin-new-patient-form" style="padding: 18px 22px;">
+        <div class="form-grid" style="margin-bottom: 12px;">
+          <label>
+            Nombres *
+            <input type="text" id="adm-pac-nombres" required placeholder="Ej. Ana Lucía" />
+          </label>
+          <label>
+            Apellidos *
+            <input type="text" id="adm-pac-apellidos" required placeholder="Ej. Morales Castillo" />
+          </label>
+          <label>
+            Tipo de Documento *
+            <select id="adm-pac-doc-tipo">
+              <option value="CEDULA_NACIONAL" selected>Cédula Panameña</option>
+              <option value="CEDULA_E">Cédula E</option>
+              <option value="PASAPORTE">Pasaporte</option>
+            </select>
+          </label>
+          <label>
+            Número de Cédula / Doc *
+            <input type="text" id="adm-pac-doc-num" required placeholder="8-1234-56789" />
+          </label>
+          <label>
+            Correo Electrónico *
+            <input type="email" id="adm-pac-email" required placeholder="paciente@correo.com" />
+          </label>
+          <label>
+            Teléfono Móvil *
+            <input type="tel" id="adm-pac-tel" required placeholder="+507 6000-0000" />
+          </label>
+          <label>
+            Fecha de Nacimiento
+            <input type="date" id="adm-pac-nac" value="1994-05-15" />
+          </label>
+          <label>
+            Grupo Sanguíneo
+            <select id="adm-pac-sangre">
+              <option value="O+" selected>O+</option>
+              <option value="A+">A+</option>
+              <option value="B+">B+</option>
+              <option value="AB+">AB+</option>
+              <option value="O-">O-</option>
+            </select>
+          </label>
+        </div>
+        <div id="adm-pac-error" style="display:none; padding: 10px; margin-bottom: 10px; border-radius: 8px; background: rgba(239,68,68,0.15); border: 1px solid #ef4444; color: #fca5a5; font-size: 12px;"></div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px;">
+          <button type="button" id="btn-cancel-admin-patient" class="button secondary">Cancelar</button>
+          <button type="submit" id="btn-submit-admin-patient" class="button primary-glow">✓ Guardar Paciente</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </Layout>
 
 <script>
   import data from '../data/seeds.json';
+  import { apiUrl, escapeHtml, getAuthHeaders } from '../data/api';
 
   function docLabel(tipo: string): string {
     if (tipo === 'PASAPORTE') return 'Pasaporte';
     if (tipo === 'CEDULA_E') return 'Cédula E';
-    if (tipo === 'CEDULA_NACIONAL' || tipo === 'CEDULA_PANAMA') return 'Cédula';
-    if (tipo === 'DNI') return 'Cédula';
-    return tipo || 'Cédula';
+    return 'Cédula';
   }
 
-  interface PacienteDisplay {
-    id: string;
-    nombres: string;
-    apellidos: string;
-    documento_tipo?: string;
-    documento_numero?: string;
-    email?: string;
-    telefono?: string;
-    grupo_sanguineo?: string;
-    alergias?: string;
-    isCustom?: boolean;
-    [key: string]: any;
-  }
+  let backendPacientes: any[] = [];
 
-  function getAllPatients(): PacienteDisplay[] {
-    const list: PacienteDisplay[] = [...data.pacientes];
-
-    // Cargar pacientes nuevos de localStorage
-    try {
-      const custom = JSON.parse(localStorage.getItem('medpulse_custom_patients') || '[]');
-      custom.forEach((cp: any) => {
-        const exists = list.some(p => p.id === cp.id || p.documento_numero === cp.documento_numero || (p.email && p.email === (cp.email || cp.correo)));
-        if (!exists) {
-          list.unshift({
-            id: cp.id,
-            nombres: cp.nombres,
-            apellidos: cp.apellidos,
-            documento_tipo: cp.documento_tipo || 'DNI',
-            documento_numero: cp.documento_numero || cp.documentoNumero || '—',
-            email: cp.email || cp.correo || '—',
-            telefono: cp.telefono || '—',
-            grupo_sanguineo: cp.grupo_sanguineo || 'O+',
-            alergias: cp.alergias || 'Ninguna conocida',
-            isCustom: true
-          });
-        }
-      });
-    } catch {}
-
-    // Cargar también paciente de sesión si no estuviera
-    try {
-      const session = JSON.parse(localStorage.getItem('medpulse_session') || '{}');
-      if (session?.paciente) {
-        const sp = session.paciente;
-        const exists = list.some(p => p.id === sp.id || (p.email && p.email === (sp.email || sp.correo)));
-        if (!exists) {
-          list.unshift({
-            id: sp.id,
-            nombres: sp.nombres,
-            apellidos: sp.apellidos,
-            documento_tipo: sp.documento_tipo || 'DNI',
-            documento_numero: sp.documento_numero || '—',
-            email: sp.email || sp.correo || '—',
-            telefono: sp.telefono || '—',
-            grupo_sanguineo: sp.grupo_sanguineo || 'O+',
-            alergias: sp.alergias || 'Ninguna conocida',
-            isCustom: true
-          });
-        }
-      }
-    } catch {}
-
-    return list;
+  function getMergedPatients(): any[] {
+    const map = new Map<string, any>();
+    [...data.pacientes, ...backendPacientes].forEach((p: any) => {
+      map.set(p.id || p.documento_numero, p);
+    });
+    return Array.from(map.values());
   }
 
   function renderPatients() {
@@ -166,18 +171,15 @@ const pacientesIniciales = data.pacientes;
     const noFound = document.getElementById('no-patients-found');
     const searchInput = document.getElementById('patient-search-input') as HTMLInputElement | null;
     const kpiBadge = document.getElementById('kpi-total-badge');
-
     if (!tbody) return;
 
-    const all = getAllPatients();
+    const all = getMergedPatients();
     if (kpiBadge) kpiBadge.innerHTML = `<strong>Total Pacientes:</strong> ${all.length}`;
 
     const query = (searchInput?.value || '').toLowerCase().trim();
-
     const filtered = all.filter(p => {
       if (!query) return true;
-      const matchStr = `${p.nombres} ${p.apellidos} ${p.documento_numero} ${p.email} ${p.telefono}`.toLowerCase();
-      return matchStr.includes(query);
+      return `${p.nombres} ${p.apellidos} ${p.documento_numero} ${p.email} ${p.telefono}`.toLowerCase().includes(query);
     });
 
     if (filtered.length === 0) {
@@ -187,44 +189,28 @@ const pacientesIniciales = data.pacientes;
     }
 
     if (noFound) noFound.hidden = true;
-
     tbody.innerHTML = filtered.map(p => {
-      const isNew = Boolean(p.isCustom);
+      const initials = ((p.nombres?.[0] || 'P') + (p.apellidos?.[0] || 'T')).toUpperCase();
       return `
         <tr>
           <td>
             <div style="display: flex; align-items: center; gap: 10px;">
-              <div class="avatar" style="width: 34px; height: 34px; font-size: 13px; background: ${isNew ? 'linear-gradient(135deg, #059669, #10b981)' : '#1e293b'}; color: #fff;">
-                ${(p.nombres[0] || 'P') + (p.apellidos[0] || 'T')}
-              </div>
+              <div class="avatar" style="width: 34px; height: 34px; font-size: 13px; background: #1e293b; color: #fff;">${escapeHtml(initials)}</div>
               <div>
-                <strong style="color: #f8fafc; font-size: 14px; display: flex; align-items: center; gap: 6px;">
-                  ${p.nombres} ${p.apellidos}
-                  ${isNew ? '<span class="badge green" style="font-size: 10px; padding: 1px 6px;">Nuevo</span>' : ''}
-                </strong>
-                <small style="color: #64748b; font-size: 11px;">ID: ${p.id.slice(0, 12)}...</small>
+                <strong style="color: #f8fafc; font-size: 14px;">${escapeHtml(`${p.nombres} ${p.apellidos}`)}</strong>
+                <small style="display: block; color: #64748b; font-size: 11px;">ID: ${escapeHtml(String(p.id || '').slice(0, 12))}...</small>
               </div>
             </div>
           </td>
           <td>
-            <strong style="color: #38bdf8; font-size: 13px;">${docLabel(p.documento_tipo || '')}</strong>
-            <span style="color: #cbd5e1; font-size: 13px; margin-left: 4px;">${p.documento_numero}</span>
+            <strong style="color: #38bdf8; font-size: 13px;">${escapeHtml(docLabel(p.documento_tipo || ''))}</strong>
+            <span style="color: #cbd5e1; font-size: 13px; margin-left: 4px;">${escapeHtml(p.documento_numero || '—')}</span>
           </td>
-          <td>
-            <span style="color: #cbd5e1; font-size: 13px;">${p.telefono || '—'}</span>
-          </td>
-          <td>
-            <span style="color: #38bdf8; font-size: 13px;">${p.email || '—'}</span>
-          </td>
-          <td>
-            <span class="badge blue" style="font-size: 11px;">${p.grupo_sanguineo || 'O+'}</span>
-          </td>
+          <td><span style="color: #cbd5e1; font-size: 13px;">${escapeHtml(p.telefono || '—')}</span></td>
+          <td><span style="color: #38bdf8; font-size: 13px;">${escapeHtml(p.email || '—')}</span></td>
+          <td><span class="badge blue" style="font-size: 11px;">${escapeHtml(p.grupo_sanguineo || 'O+')}</span></td>
           <td style="text-align: right;">
-            <a 
-              href="/reservar?paciente_id_select=${p.id}" 
-              class="button" 
-              style="font-size: 12px; padding: 6px 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;"
-            >
+            <a href="/reservar?paciente_id_select=${encodeURIComponent(p.id)}" class="button" style="font-size: 12px; padding: 6px 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
               ＋ Agendar Cita
             </a>
           </td>
@@ -233,14 +219,91 @@ const pacientesIniciales = data.pacientes;
     }).join('');
   }
 
-  function init() {
-    renderPatients();
-    document.getElementById('patient-search-input')?.addEventListener('input', renderPatients);
+  async function cargarCatalogoPacientes() {
+    try {
+      const resp = await fetch(apiUrl('/api/citas/catalogos'), { headers: getAuthHeaders() });
+      const json = await resp.json();
+      if (resp.ok && Array.isArray(json?.data?.pacientes)) {
+        backendPacientes = json.data.pacientes;
+        renderPatients();
+      }
+    } catch {}
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  const modal = document.getElementById('admin-patient-modal');
+  const form = document.getElementById('admin-new-patient-form') as HTMLFormElement | null;
+  const errBox = document.getElementById('adm-pac-error');
+  const submitBtn = document.getElementById('btn-submit-admin-patient') as HTMLButtonElement | null;
+
+  document.getElementById('btn-open-admin-patient-modal')?.addEventListener('click', () => {
+    if (errBox) errBox.style.display = 'none';
+    if (modal) modal.style.display = 'flex';
+  });
+  const closeModal = () => { if (modal) modal.style.display = 'none'; };
+  document.getElementById('btn-close-admin-patient')?.addEventListener('click', closeModal);
+  document.getElementById('btn-cancel-admin-patient')?.addEventListener('click', closeModal);
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (errBox) errBox.style.display = 'none';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Guardando en Supabase...';
+    }
+
+    const payload = {
+      nombres: (document.getElementById('adm-pac-nombres') as HTMLInputElement).value.trim(),
+      apellidos: (document.getElementById('adm-pac-apellidos') as HTMLInputElement).value.trim(),
+      documento_tipo: (document.getElementById('adm-pac-doc-tipo') as HTMLSelectElement).value,
+      documento_numero: (document.getElementById('adm-pac-doc-num') as HTMLInputElement).value.trim(),
+      email: (document.getElementById('adm-pac-email') as HTMLInputElement).value.trim().toLowerCase(),
+      telefono: (document.getElementById('adm-pac-tel') as HTMLInputElement).value.trim(),
+      fecha_nacimiento: (document.getElementById('adm-pac-nac') as HTMLInputElement).value || '1994-05-15',
+      grupo_sanguineo: (document.getElementById('adm-pac-sangre') as HTMLSelectElement).value,
+      password: 'MedPulse2026!'
+    };
+
+    try {
+      const resp = await fetch(apiUrl('/api/auth/register-paciente'), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload)
+      });
+      const json = await resp.json();
+      if (!resp.ok || !json?.ok) {
+        if (errBox) {
+          errBox.textContent = json?.error || 'No se pudo registrar el paciente.';
+          errBox.style.display = 'block';
+        }
+        return;
+      }
+
+      if (json.paciente) backendPacientes.unshift(json.paciente);
+      renderPatients();
+      form.reset();
+      closeModal();
+
+      const toast = document.getElementById('toast');
+      if (toast) {
+        toast.textContent = `✓ Paciente ${payload.nombres} ${payload.apellidos} registrado en Supabase.`;
+        toast.style.display = 'block';
+        setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3500);
+      }
+      await cargarCatalogoPacientes();
+    } catch {
+      if (errBox) {
+        errBox.textContent = 'Error de conexión con el servidor.';
+        errBox.style.display = 'block';
+      }
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '✓ Guardar Paciente';
+      }
+    }
+  });
+
+  renderPatients();
+  cargarCatalogoPacientes();
+  document.getElementById('patient-search-input')?.addEventListener('input', renderPatients);
 </script>

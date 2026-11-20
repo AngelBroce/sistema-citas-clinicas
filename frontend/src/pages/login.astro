@@ -359,8 +359,8 @@ import "../styles/global.css";
                 <input
                   type="password"
                   id="login-password"
-                  placeholder="••••••••"
-                  value="123456"
+                  placeholder="Ingresa tu contraseña"
+                  autocomplete="current-password"
                   required
                   style="height: 48px; font-size: 14px;"
                 />
@@ -394,23 +394,32 @@ import "../styles/global.css";
               Ingresar al Portal Clínico →
             </button>
 
-            <!-- Botones de Acceso Rápido en 1 Clic por Rol -->
+            <!-- Cuentas Permanentes de Prueba en Supabase -->
             <div style="margin-top: 12px; padding: 14px; background: #090e17; border: 1px solid #263342; border-radius: 12px;">
-              <span style="display: block; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; text-align: center;">
-                ⚡ Acceso Rápido en 1 Clic (Cuentas Demo):
+              <span style="display: block; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; text-align: center;">
+                ⚡ Acceso Rápido · Cuentas Permanentes de Prueba
               </span>
+              <p style="margin: 0 0 10px 0; font-size: 11px; color: #64748b; text-align: center;">
+                Contraseña compartida: <code style="color: #34d399; font-weight: 700;">MedPulse2026!</code>
+              </p>
               <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
                 <button type="button" class="quick-role-btn" data-email="admin@medpulse.clinic" style="padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(139, 92, 246, 0.45); background: rgba(139, 92, 246, 0.14); color: #ddd6fe; font-size: 12px; font-weight: 700; cursor: pointer;">
-                  🛡️ Entrar como Admin
+                  🛡️ Admin<br/><small style="font-weight:400;opacity:0.85;">admin@medpulse.clinic</small>
                 </button>
                 <button type="button" class="quick-role-btn" data-email="recepcion@medpulse.clinic" style="padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.14); color: #fde68a; font-size: 12px; font-weight: 700; cursor: pointer;">
-                  🗂️ Entrar como Secretaria
+                  🗂️ Secretaria<br/><small style="font-weight:400;opacity:0.85;">recepcion@medpulse.clinic</small>
                 </button>
                 <button type="button" class="quick-role-btn" data-email="dr.mendoza@gmail.com" style="padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(6, 182, 212, 0.45); background: rgba(6, 182, 212, 0.14); color: #a5f3fc; font-size: 12px; font-weight: 700; cursor: pointer;">
-                  🩺 Entrar como Médico
+                  🩺 Dr. Mendoza<br/><small style="font-weight:400;opacity:0.85;">dr.mendoza@gmail.com</small>
+                </button>
+                <button type="button" class="quick-role-btn" data-email="dra.silva@gmail.com" style="padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.45); background: rgba(56, 189, 248, 0.12); color: #bae6fd; font-size: 12px; font-weight: 700; cursor: pointer;">
+                  🩺 Dra. Silva<br/><small style="font-weight:400;opacity:0.85;">dra.silva@gmail.com</small>
                 </button>
                 <button type="button" class="quick-role-btn" data-email="juan.perez@gmail.com" style="padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.45); background: rgba(16, 185, 129, 0.14); color: #a7f3d0; font-size: 12px; font-weight: 700; cursor: pointer;">
-                  👤 Entrar como Paciente
+                  👤 Juan Pérez<br/><small style="font-weight:400;opacity:0.85;">juan.perez@gmail.com</small>
+                </button>
+                <button type="button" class="quick-role-btn" data-email="maria.gomez@gmail.com" style="padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(52, 211, 153, 0.45); background: rgba(52, 211, 153, 0.12); color: #d1fae5; font-size: 12px; font-weight: 700; cursor: pointer;">
+                  👤 María Gómez<br/><small style="font-weight:400;opacity:0.85;">maria.gomez@gmail.com</small>
                 </button>
               </div>
             </div>
@@ -584,7 +593,7 @@ import "../styles/global.css";
                 <!-- Selector de Provincias (Prefijo 1 al 13) para Cédula Nacional -->
                 <div id="box-provincia-select">
                   <label id="label-prefijo-text">
-                    Prefijo de Provincia / Región *
+                    <span id="label-prefijo-span">Prefijo de Provincia / Región *</span>
                     <select id="reg-prefijo" style="height: 44px;">
                       <option value="1">01 - Bocas del Toro</option>
                       <option value="2">02 - Coclé</option>
@@ -659,7 +668,6 @@ import "../styles/global.css";
                   type="date"
                   id="reg-nacimiento"
                   min="1910-01-01"
-                  max="2026-10-19"
                   required
                   style="height: 44px; color-scheme: dark; font-size: 14px;"
                 />
@@ -786,7 +794,7 @@ import "../styles/global.css";
           style="text-align: center; margin-top: 24px; font-size: 12px; color: #64748b; border-top: 1px solid #19222e; padding-top: 16px;"
         >
           MedPulse Clinical System · Adaptado para la República de Panamá ·
-          PostgreSQL 16
+          Supabase PostgreSQL
         </div>
       </div>
     </div>
@@ -960,31 +968,30 @@ import "../styles/global.css";
           if (pasaporteInput) pasaporteInput.required = false;
 
           // Actualizar opciones del prefijo según el tipo especial de Panamá
+          const labelPrefijoSpan = document.getElementById("label-prefijo-span");
           if (tipo === "CEDULA_NACIONAL") {
-            if (labelPrefijoText)
-              labelPrefijoText.firstChild!.textContent =
-                "Prefijo de Provincia * ";
+            if (labelPrefijoSpan)
+              labelPrefijoSpan.textContent = "Prefijo de Provincia *";
             actualizarOpcionesPrefijo("NACIONAL");
           } else if (tipo === "CEDULA_E") {
-            if (labelPrefijoText)
-              labelPrefijoText.firstChild!.textContent =
-                "Letra Especial de Extranjero * ";
+            if (labelPrefijoSpan)
+              labelPrefijoSpan.textContent = "Letra Especial de Extranjero *";
             actualizarOpcionesPrefijo("E");
           } else if (tipo === "CEDULA_PE") {
-            if (labelPrefijoText)
-              labelPrefijoText.firstChild!.textContent = "Letra Especial PE * ";
+            if (labelPrefijoSpan)
+              labelPrefijoSpan.textContent = "Letra Especial PE *";
             actualizarOpcionesPrefijo("PE");
           } else if (tipo === "CEDULA_N") {
-            if (labelPrefijoText)
-              labelPrefijoText.firstChild!.textContent = "Letra Especial N * ";
+            if (labelPrefijoSpan)
+              labelPrefijoSpan.textContent = "Letra Especial N *";
             actualizarOpcionesPrefijo("N");
           } else if (tipo === "CEDULA_PI") {
-            if (labelPrefijoText)
-              labelPrefijoText.firstChild!.textContent = "Letra Especial PI * ";
+            if (labelPrefijoSpan)
+              labelPrefijoSpan.textContent = "Letra Especial PI *";
             actualizarOpcionesPrefijo("PI");
           } else if (tipo === "CEDULA_AV") {
-            if (labelPrefijoText)
-              labelPrefijoText.firstChild!.textContent = "Letra Especial AV * ";
+            if (labelPrefijoSpan)
+              labelPrefijoSpan.textContent = "Letra Especial AV *";
             actualizarOpcionesPrefijo("AV");
           }
         }
@@ -1091,6 +1098,9 @@ import "../styles/global.css";
       const nacimientoInput = document.getElementById(
         "reg-nacimiento",
       ) as HTMLInputElement | null;
+      if (nacimientoInput) {
+        nacimientoInput.max = new Date().toISOString().split("T")[0];
+      }
       document.querySelectorAll(".date-nav-btn").forEach((btn) => {
         btn.addEventListener("click", (e) => {
           const targetYear = (e.currentTarget as HTMLElement).dataset.year;
@@ -1105,7 +1115,7 @@ import "../styles/global.css";
       // Iniciar preview
       updateCedulaPreview();
 
-      // Botones de acceso rápido en 1 clic por rol
+      // Botones de acceso rápido en 1 clic por rol (cuentas permanentes con contraseña MedPulse2026!)
       document.querySelectorAll(".quick-role-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
           const emailTarget = (btn as HTMLElement).dataset.email || "";
@@ -1113,13 +1123,13 @@ import "../styles/global.css";
           const passInput = document.getElementById("login-password") as HTMLInputElement | null;
           const loginForm = document.getElementById("login-form") as HTMLFormElement | null;
           if (emailInput) emailInput.value = emailTarget;
-          if (passInput && !passInput.value) passInput.value = "123456";
+          if (passInput) passInput.value = "MedPulse2026!";
           loginForm?.requestSubmit();
         });
       });
 
       // ==========================================
-      // HANDLER 1: INICIAR SESIÓN
+      // HANDLER 1: INICIAR SESIÓN (AUTENTICACIÓN REAL)
       // ==========================================
       document
         .getElementById("login-form")
@@ -1150,8 +1160,10 @@ import "../styles/global.css";
             });
             const data = await res.json();
             const userObj = data.usuario || data.data?.usuario;
+            const token = data.token || data.data?.token;
+            const pacienteObj = data.paciente || data.data?.paciente || null;
 
-            if (res.ok && (data.ok || data.success) && userObj) {
+            if (res.ok && (data.ok || data.success) && userObj && token) {
               showAlert(
                 `✓ Bienvenido(a), ${userObj.nombreCompleto} (${userObj.rol})`,
                 "success",
@@ -1160,121 +1172,37 @@ import "../styles/global.css";
                 "medpulse_session",
                 JSON.stringify({
                   usuario: userObj,
-                  token: data.token || data.data?.token || "jwt-token"
+                  paciente: pacienteObj,
+                  token
                 }),
               );
 
               setTimeout(() => {
                 const rol = userObj.rol;
                 if (rol === "PACIENTE") window.location.href = "/paciente";
-                else if (rol === "MEDICO") window.location.href = "/doctor";
+                else if (rol === "MEDICO") window.location.href = "/doctor/agenda";
                 else if (rol === "RECEPCIONISTA")
                   window.location.href = "/secretaria";
                 else window.location.href = "/citas";
-              }, 500);
+              }, 350);
             } else {
-              // Fallback con datos locales si el servidor en memoria o localStorage tiene la cuenta
-              const customPatients = JSON.parse(
-                localStorage.getItem("medpulse_custom_patients") || "[]",
+              showAlert(
+                data.error || "Correo o contraseña incorrectos.",
+                "error",
               );
-              const cp = customPatients.find(
-                (p: any) => p.email === email || p.correo === email,
-              );
-              if (cp) {
-                const session = {
-                  usuario: {
-                    id: cp.id,
-                    email: email,
-                    nombreCompleto:
-                      cp.nombreCompleto || `${cp.nombres} ${cp.apellidos}`,
-                    rol: "PACIENTE",
-                  },
-                  paciente: cp,
-                  token: "local-session-patient",
-                };
-                localStorage.setItem(
-                  "medpulse_session",
-                  JSON.stringify(session),
-                );
-                showAlert(
-                  `✓ Bienvenido de vuelta, ${session.usuario.nombreCompleto}`,
-                  "success",
-                );
-                setTimeout(() => {
-                  window.location.href = "/paciente";
-                }, 600);
-                return;
-              }
-
-              // Redirección por roles conocidos
-              if (email.includes("admin") || email.includes("elvis")) {
-                localStorage.setItem("medpulse_session", JSON.stringify({
-                  usuario: { id: "a0000000-0000-0000-0000-000000000001", email, nombreCompleto: "Elvis · Administrador General", rol: "ADMINISTRADOR" },
-                  token: "local-admin-token"
-                }));
-                window.location.href = "/citas";
-              } else if (email.includes("paciente") || email.includes("perez") || email.includes("gomez")) {
-                window.location.href = "/paciente";
-              } else if (
-                email.includes("doctor") ||
-                email.includes("medico") ||
-                email.includes("mendoza") ||
-                email.includes("silva")
-              ) {
-                window.location.href = "/doctor";
-              } else if (
-                email.includes("recepcion") ||
-                email.includes("secretaria") ||
-                email.includes("ramos")
-              ) {
-                window.location.href = "/secretaria";
-              } else {
-                showAlert(
-                  "Credenciales no encontradas. Verifica tu correo o regístrate como paciente.",
-                  "error",
-                );
-                if (submitBtn) {
-                  submitBtn.disabled = false;
-                  submitBtn.textContent = "Ingresar al Portal Clínico →";
-                }
+              if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Ingresar al Portal Clínico →";
               }
             }
-          } catch (err) {
-            // Manejo offline
-            const customPatients = JSON.parse(
-              localStorage.getItem("medpulse_custom_patients") || "[]",
+          } catch {
+            showAlert(
+              "No se pudo conectar con el servidor de autenticación. Verifica tu conexión e inténtalo nuevamente.",
+              "error",
             );
-            const cp = customPatients.find(
-              (p: any) => p.email === email || p.correo === email,
-            );
-            if (cp) {
-              const session = {
-                usuario: {
-                  id: cp.id,
-                  email: email,
-                  nombreCompleto:
-                    cp.nombreCompleto || `${cp.nombres} ${cp.apellidos}`,
-                  rol: "PACIENTE",
-                },
-                paciente: cp,
-                token: "local-session-patient",
-              };
-              localStorage.setItem("medpulse_session", JSON.stringify(session));
-              showAlert(
-                `✓ Bienvenido de vuelta, ${session.usuario.nombreCompleto}`,
-                "success",
-              );
-              setTimeout(() => {
-                window.location.href = "/paciente";
-              }, 600);
-            } else if (email.includes("paciente")) {
-              window.location.href = "/paciente";
-            } else if (email.includes("doctor")) {
-              window.location.href = "/doctor";
-            } else if (email.includes("recepcion")) {
-              window.location.href = "/secretaria";
-            } else {
-              window.location.href = "/citas";
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = "Ingresar al Portal Clínico →";
             }
           }
         });
@@ -1470,7 +1398,7 @@ import "../styles/global.css";
             cedula_asiento: asiento,
             fecha_nacimiento: nacimiento,
             telefono,
-            password: password || "123456",
+            password,
           };
 
           try {
@@ -1485,63 +1413,35 @@ import "../styles/global.css";
 
             const data = await res.json();
 
-            if (res.ok && (data.ok || data.success)) {
+            if (res.ok && (data.ok || data.success) && data.token && data.usuario) {
               showAlert(
                 `✓ ¡Paciente ${nombreCompleto} registrado exitosamente con Cédula ${documentoNumeroFinal}!`,
                 "success",
               );
 
-              const usuarioObj = data.usuario || {
-                id: "p-" + Date.now(),
-                email: correo,
-                nombreCompleto: nombreCompleto,
-                rol: "PACIENTE",
-              };
-
+              const usuarioObj = data.usuario;
               const pacienteObj = data.paciente || {
-                id: usuarioObj.id,
+                id: usuarioObj.pacienteId || usuarioObj.id,
                 ...payload,
-                nombreCompleto: nombreCompleto,
+                nombreCompleto,
               };
 
-              // Guardar en sesión
               localStorage.setItem(
                 "medpulse_session",
                 JSON.stringify({
                   usuario: usuarioObj,
                   paciente: pacienteObj,
-                  token: data.token || "jwt-paciente-panama",
+                  token: data.token,
                 }),
               );
 
-              // Guardar en pacientes personalizados
-              try {
-                const list = JSON.parse(
-                  localStorage.getItem("medpulse_custom_patients") || "[]",
-                );
-                const idx = list.findIndex(
-                  (p: any) =>
-                    p.email === correo ||
-                    p.documento_numero === documentoNumeroFinal,
-                );
-                if (idx >= 0) {
-                  list[idx] = pacienteObj;
-                } else {
-                  list.push(pacienteObj);
-                }
-                localStorage.setItem(
-                  "medpulse_custom_patients",
-                  JSON.stringify(list),
-                );
-              } catch {}
-
               setTimeout(() => {
-                window.location.href = `/paciente/reservar?nuevo_paciente_id=${pacienteObj.id}`;
-              }, 900);
+                window.location.href = `/paciente/reservar`;
+              }, 700);
             } else {
               showAlert(
                 data.error ||
-                  "No se pudo completar el registro. Verifica los datos.",
+                  "No se pudo completar el registro. Verifica los datos ingresados.",
                 "error",
               );
               if (submitBtn) {
@@ -1550,49 +1450,16 @@ import "../styles/global.css";
                   "Crear Paciente y Agendar Cita en Panamá →";
               }
             }
-          } catch (err) {
-            console.warn("Backend local fallback:", err);
-            // Fallback local garantizado
-            const fallbackId = "p-" + Date.now();
-            const fallbackPaciente = {
-              id: fallbackId,
-              ...payload,
-              nombreCompleto,
-            };
-            const fallbackUsuario = {
-              id: fallbackId,
-              email: correo,
-              nombreCompleto,
-              rol: "PACIENTE",
-            };
-
-            localStorage.setItem(
-              "medpulse_session",
-              JSON.stringify({
-                usuario: fallbackUsuario,
-                paciente: fallbackPaciente,
-                token: "local-session-token",
-              }),
-            );
-
-            try {
-              const list = JSON.parse(
-                localStorage.getItem("medpulse_custom_patients") || "[]",
-              );
-              list.push(fallbackPaciente);
-              localStorage.setItem(
-                "medpulse_custom_patients",
-                JSON.stringify(list),
-              );
-            } catch {}
-
+          } catch {
             showAlert(
-              `✓ ¡Paciente ${nombreCompleto} registrado con Cédula ${documentoNumeroFinal}! Redirigiendo a agendar...`,
-              "success",
+              "No se pudo conectar con el servidor para registrar tu cuenta. Verifica tu conexión.",
+              "error",
             );
-            setTimeout(() => {
-              window.location.href = `/paciente/reservar?nuevo_paciente_id=${fallbackId}`;
-            }, 900);
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.textContent =
+                "Crear Paciente y Agendar Cita en Panamá →";
+            }
           }
         });
     </script>

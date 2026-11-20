@@ -124,5 +124,39 @@ describe('AgendamientoService — Anti Double-Booking y Slots', () => {
     assert.equal(fueraTurno.disponible, false);
     assert.equal(fueraTurno.motivoRechazo, 'FUERA_DE_HORARIO');
   });
+
+  it('respeta bloqueos temporales de agenda médica y los libera al eliminarlos', async () => {
+    const bloqueo = await AgendamientoService.crearBloqueo({
+      medicoId: MEDICO_ROBERTO,
+      fechaInicio: LUNES_HABIL,
+      fechaFin: LUNES_HABIL,
+      motivo: 'Congreso Nacional de Cardiología'
+    });
+
+    const bloqueos = await AgendamientoService.listarBloqueos(MEDICO_ROBERTO);
+    assert.ok(bloqueos.some(b => b.id === bloqueo.id));
+
+    const slotsBloqueados = await AgendamientoService.obtenerDisponibilidad(MEDICO_ROBERTO, LUNES_HABIL);
+    assert.equal(slotsBloqueados.length, 0);
+
+    await assert.rejects(
+      () =>
+        AgendamientoService.reservarCita({
+          pacienteId: PACIENTE_ID,
+          medicoId: MEDICO_ROBERTO,
+          especialidadId: 2,
+          fecha: LUNES_HABIL,
+          horaInicio: '09:00',
+          sincronizarGoogleCalendar: false
+        }),
+      /CONFLICTO_HORARIO|BLOQUE/i
+    );
+
+    const eliminado = await AgendamientoService.eliminarBloqueo(bloqueo.id);
+    assert.equal(eliminado, true);
+
+    const slotsLiberados = await AgendamientoService.obtenerDisponibilidad(MEDICO_ROBERTO, LUNES_HABIL);
+    assert.ok(slotsLiberados.length > 0);
+  });
 });
 

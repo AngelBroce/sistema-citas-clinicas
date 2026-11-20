@@ -72,7 +72,7 @@ import data from '../../data/seeds.json';
               <!-- Selector de Prefijo -->
               <div id="booking-box-prefijo">
                 <label style="margin: 0; font-size: 12px;" id="booking-label-prefijo">
-                  Prefijo Provincia *
+                  <span id="booking-label-prefijo-span">Prefijo Provincia *</span>
                   <select id="booking-select-prefijo" style="height: 40px; font-size: 12px; width: 100%;">
                     <option value="1">01 - Bocas del Toro</option>
                     <option value="2">02 - Coclé</option>
@@ -139,7 +139,7 @@ import data from '../../data/seeds.json';
         <input type="hidden" name="paciente_id" id="patient-id-input" value={data.pacientes[0].id} />
         <input type="hidden" name="reservado_por" id="reservado-por-input" value="PACIENTE" />
 
-        <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+        <div class="form-grid" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start;">
           <label>
             Especialidad médica
             <select name="especialidad_id" id="specialty" required style="height: 44px;">
@@ -167,15 +167,9 @@ import data from '../../data/seeds.json';
           </label>
         </div>
 
-        <!-- Botones rápidos de selección de fecha -->
-        <div style="display: flex; gap: 6px; margin-top: 10px; margin-bottom: 4px; flex-wrap: wrap;" class="no-scrollbar">
-          <span style="font-size: 11px; color: #64748b; display: flex; align-items: center; margin-right: 4px;">Fechas sugeridas:</span>
-          <button type="button" class="cal-btn" id="btn-quick-oct5" style="padding: 4px 10px; font-size: 11px; background: #1a2535; border: 1px solid #263342; border-radius: 6px; color: #6ee7b7; cursor: pointer;">5 Oct (Lun)</button>
-          <button type="button" class="cal-btn" id="btn-quick-oct12" style="padding: 4px 10px; font-size: 11px; background: #1a2535; border: 1px solid #263342; border-radius: 6px; color: #6ee7b7; cursor: pointer;">12 Oct (Lun)</button>
-          <button type="button" class="cal-btn" id="btn-quick-oct20" style="padding: 4px 10px; font-size: 11px; background: #1a2535; border: 1px solid #263342; border-radius: 6px; color: #6ee7b7; cursor: pointer;">20 Oct (Mar)</button>
-          <button type="button" class="cal-btn" id="btn-quick-oct21" style="padding: 4px 10px; font-size: 11px; background: #1a2535; border: 1px solid #263342; border-radius: 6px; color: #6ee7b7; cursor: pointer;">21 Oct (Mié)</button>
-          <button type="button" class="cal-btn" id="btn-quick-oct22" style="padding: 4px 10px; font-size: 11px; background: #1a2535; border: 1px solid #263342; border-radius: 6px; color: #6ee7b7; cursor: pointer;">22 Oct (Jue)</button>
-          <button type="button" class="cal-btn" id="btn-quick-oct23" style="padding: 4px 10px; font-size: 11px; background: #1a2535; border: 1px solid #263342; border-radius: 6px; color: #6ee7b7; cursor: pointer;">23 Oct (Vie)</button>
+        <!-- Botones rápidos de selección de fecha (próximos días hábiles en Panamá) -->
+        <div id="quick-dates-container" style="display: flex; gap: 6px; margin-top: 10px; margin-bottom: 4px; flex-wrap: wrap;" class="no-scrollbar">
+          <span style="font-size: 11px; color: #64748b; display: flex; align-items: center; margin-right: 4px;">Fechas próximas:</span>
         </div>
 
         <!-- MÓDULO DESTACADO STITCH: ASIGNACIÓN INTELIGENTE DE HORARIO (SIN SELECCIÓN MANUAL) -->
@@ -216,7 +210,7 @@ import data from '../../data/seeds.json';
         <input type="hidden" name="hora" id="slot-assigned-value" value="" />
 
         <!-- Motivo de consulta -->
-        <label style="margin-top: 16px; display: block;">
+        <label style="margin-top: 16px;">
           Motivo de la consulta
           <textarea
             name="motivo_consulta"
@@ -229,6 +223,7 @@ import data from '../../data/seeds.json';
         </label>
 
         <p id="booking-info" style="font-size: 12px; color: #94a3b8; margin: 8px 0 0;"></p>
+        <div id="booking-error-alert" style="display: none; margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: rgba(239, 68, 68, 0.14); border: 1px solid #ef4444; color: #fca5a5; font-size: 13px;"></div>
 
         <!-- Botón de Confirmación Principal -->
         <div style="margin-top: 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
@@ -320,61 +315,49 @@ import data from '../../data/seeds.json';
 
 <script>
   import data from '../../data/seeds.json';
-  import { apiUrl } from '../../data/api';
+  import { apiUrl, escapeHtml, getAuthHeaders, getSession } from '../../data/api';
 
   const STORAGE_KEY = 'medpulse_citas_v2';
 
+  function getPanamaTodayIso(): string {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Panama' }).format(new Date());
+  }
+
+  function getUpcomingBusinessDays(count = 5): { iso: string; label: string }[] {
+    const out: { iso: string; label: string }[] = [];
+    const base = new Date(`${getPanamaTodayIso()}T12:00:00`);
+    const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    for (let i = 0; i < 20 && out.length < count; i++) {
+      const d = new Date(base);
+      d.setDate(base.getDate() + i);
+      const dow = d.getDay();
+      if (dow === 0) continue; // Domingo cerrado
+      const iso = d.toISOString().slice(0, 10);
+      out.push({ iso, label: `${d.getDate()} ${months[d.getMonth()]} (${days[dow]})` });
+    }
+    return out;
+  }
+
   function getAllCitas() {
     try {
-      if (!localStorage.getItem('medpulse_reset_zero_v2')) {
-        localStorage.setItem(STORAGE_KEY, '[]');
-        localStorage.setItem('medpulse_reset_zero_v2', '1');
-      }
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) return parsed;
       }
     } catch {}
-    const defaults = [...data.citas];
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaults));
-    } catch {}
-    return defaults;
+    return [...data.citas];
   }
 
-  function saveCita(nuevaCita: any) {
+  function appendCitaLocal(nuevaCita: any) {
     const list = getAllCitas();
-    list.push(nuevaCita);
+    if (!list.some((c: any) => c.id === nuevaCita.id || c.codigo_cita === nuevaCita.codigo_cita)) {
+      list.unshift(nuevaCita);
+    }
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-    } catch (e) {
-      console.warn('No se pudo guardar en localStorage:', e);
-    }
-
-    // Intentar sincronizar con el backend
-    fetch(apiUrl('/api/citas/asignar-automatica'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        pacienteId: nuevaCita.paciente_id,
-        paciente_id: nuevaCita.paciente_id,
-        medicoId: nuevaCita.medico_id,
-        medico_id: nuevaCita.medico_id,
-        especialidadId: nuevaCita.especialidad_id,
-        especialidad_id: nuevaCita.especialidad_id,
-        fecha: nuevaCita.fecha_hora_inicio.slice(0, 10),
-        motivoConsulta: nuevaCita.motivo_consulta,
-        motivo_consulta: nuevaCita.motivo_consulta,
-        canalOrigen: nuevaCita.canal_origen,
-        canal_origen: nuevaCita.canal_origen,
-        reservadoPor: nuevaCita.reservado_por,
-        reservado_por: nuevaCita.reservado_por
-      })
-    }).then(res => res.json())
-      .then(d => console.log('Cita registrada en backend PostgreSQL:', d))
-      .catch(() => console.log('Backend offline, cita persistida localmente con éxito'));
-
+    } catch {}
     window.dispatchEvent(new CustomEvent('medpulse:cita-creada', {
       detail: {
         fecha: nuevaCita.fecha_hora_inicio.slice(0, 10),
@@ -463,13 +446,13 @@ import data from '../../data/seeds.json';
           activePatient = session.paciente;
         } else if (session?.usuario && session.usuario.rol === 'PACIENTE') {
           activePatient = {
-            id: session.usuario.id,
+            id: session.usuario.pacienteId || session.usuario.id,
             nombres: session.usuario.nombreCompleto?.split(' ')[0] || 'Paciente',
             apellidos: session.usuario.nombreCompleto?.split(' ').slice(1).join(' ') || '',
             correo: session.usuario.email,
             email: session.usuario.email,
-            documento_tipo: 'DNI',
-            documento_numero: '74839201'
+            documento_tipo: 'CEDULA_NACIONAL',
+            documento_numero: '8-1234-56789'
           };
         }
       } catch {}
@@ -516,7 +499,7 @@ import data from '../../data/seeds.json';
       const cedulaContainer = document.getElementById('cedula-fields-container');
       const bookingDocTipo = document.getElementById('booking-doc-tipo') as HTMLSelectElement | null;
       const bookingSelectPrefijo = document.getElementById('booking-select-prefijo') as HTMLSelectElement | null;
-      const bookingLabelPrefijo = document.getElementById('booking-label-prefijo');
+      const bookingLabelPrefijoSpan = document.getElementById('booking-label-prefijo-span');
       const bookingBoxPrefijo = document.getElementById('booking-box-prefijo');
       const bookingBoxTomoAsiento = document.getElementById('booking-box-tomo-asiento');
       const bookingBoxPasaporte = document.getElementById('booking-box-pasaporte');
@@ -573,7 +556,7 @@ import data from '../../data/seeds.json';
           if (bookingSelectPrefijo) {
             bookingSelectPrefijo.innerHTML = '';
             if (tipo === 'CEDULA_NACIONAL') {
-              if (bookingLabelPrefijo) bookingLabelPrefijo.firstChild!.textContent = 'Prefijo Provincia * ';
+              if (bookingLabelPrefijoSpan) bookingLabelPrefijoSpan.textContent = 'Prefijo Provincia *';
               const provincias = [
                 { val: '1', label: '01 - Bocas del Toro' },
                 { val: '2', label: '02 - Coclé' },
@@ -597,28 +580,31 @@ import data from '../../data/seeds.json';
                 bookingSelectPrefijo.appendChild(opt);
               });
             } else if (tipo === 'CEDULA_E') {
-              if (bookingLabelPrefijo) bookingLabelPrefijo.firstChild!.textContent = 'Letra Especial Extranjero * ';
+              if (bookingLabelPrefijoSpan) bookingLabelPrefijoSpan.textContent = 'Letra Especial Extranjero *';
               const opt = document.createElement('option');
               opt.value = 'E';
               opt.textContent = 'E - Extranjero Naturalizado / Residente';
               bookingSelectPrefijo.appendChild(opt);
             } else if (tipo === 'CEDULA_PE') {
-              if (bookingLabelPrefijo) bookingLabelPrefijo.firstChild!.textContent = 'Letra Especial PE * ';
+              if (bookingLabelPrefijoSpan) bookingLabelPrefijoSpan.textContent = 'Letra Especial PE *';
               const opt = document.createElement('option');
               opt.value = 'PE';
               opt.textContent = 'PE - Panameño nacido en Extranjero';
               bookingSelectPrefijo.appendChild(opt);
             } else if (tipo === 'CEDULA_N') {
+              if (bookingLabelPrefijoSpan) bookingLabelPrefijoSpan.textContent = 'Letra Especial N *';
               const opt = document.createElement('option');
               opt.value = 'N';
               opt.textContent = 'N - Naturalizado (Carta)';
               bookingSelectPrefijo.appendChild(opt);
             } else if (tipo === 'CEDULA_PI') {
+              if (bookingLabelPrefijoSpan) bookingLabelPrefijoSpan.textContent = 'Letra Especial PI *';
               const opt = document.createElement('option');
               opt.value = 'PI';
               opt.textContent = 'PI - Población Indígena';
               bookingSelectPrefijo.appendChild(opt);
             } else if (tipo === 'CEDULA_AV') {
+              if (bookingLabelPrefijoSpan) bookingLabelPrefijoSpan.textContent = 'Letra Especial AV *';
               const opt = document.createElement('option');
               opt.value = 'AV';
               opt.textContent = 'AV - Antes de Vigencia';
@@ -682,19 +668,31 @@ import data from '../../data/seeds.json';
       });
     }
 
-    if (fechaParam) {
+    const panamaToday = getPanamaTodayIso();
+    const businessDays = getUpcomingBusinessDays(5);
+    dateInput.min = panamaToday;
+    if (fechaParam && fechaParam >= panamaToday) {
       dateInput.value = fechaParam;
     } else {
-      dateInput.value = '2026-10-05';
+      dateInput.value = businessDays[0]?.iso || panamaToday;
     }
 
-    // Botones rápidos de fecha
-    document.getElementById('btn-quick-oct5')?.addEventListener('click', () => { dateInput.value = '2026-10-05'; calculateAutomaticSlot(); });
-    document.getElementById('btn-quick-oct12')?.addEventListener('click', () => { dateInput.value = '2026-10-12'; calculateAutomaticSlot(); });
-    document.getElementById('btn-quick-oct20')?.addEventListener('click', () => { dateInput.value = '2026-10-20'; calculateAutomaticSlot(); });
-    document.getElementById('btn-quick-oct21')?.addEventListener('click', () => { dateInput.value = '2026-10-21'; calculateAutomaticSlot(); });
-    document.getElementById('btn-quick-oct22')?.addEventListener('click', () => { dateInput.value = '2026-10-22'; calculateAutomaticSlot(); });
-    document.getElementById('btn-quick-oct23')?.addEventListener('click', () => { dateInput.value = '2026-10-23'; calculateAutomaticSlot(); });
+    const quickDatesContainer = document.getElementById('quick-dates-container');
+    if (quickDatesContainer) {
+      businessDays.forEach((item) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'cal-btn';
+        btn.dataset.date = item.iso;
+        btn.textContent = item.label;
+        btn.style.cssText = 'padding: 4px 10px; font-size: 11px; background: #1a2535; border: 1px solid #263342; border-radius: 6px; color: #6ee7b7; cursor: pointer;';
+        btn.addEventListener('click', () => {
+          dateInput.value = item.iso;
+          calculateAutomaticSlot();
+        });
+        quickDatesContainer.appendChild(btn);
+      });
+    }
 
     const dayNames: Record<number, string> = { 1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 7: 'Domingo' };
 
@@ -711,8 +709,21 @@ import data from '../../data/seeds.json';
       return `${String(h).padStart(2, '0')}:${m} ${ampm}`;
     };
 
-    // CÁLCULO DE ASIGNACIÓN AUTOMÁTICA DE TURNO (REGLA: EL PACIENTE NO ELIGE LA HORA)
-    const calculateAutomaticSlot = () => {
+    const errorAlert = document.getElementById('booking-error-alert');
+    const showBookingError = (msg: string) => {
+      if (!errorAlert) return;
+      errorAlert.textContent = msg;
+      errorAlert.style.display = 'block';
+    };
+    const clearBookingError = () => {
+      if (!errorAlert) return;
+      errorAlert.textContent = '';
+      errorAlert.style.display = 'none';
+    };
+
+    // CÁLCULO EN VIVO DESDE SUPABASE (/api/citas/disponibilidad) CON CONTROL ANTI-COLISIONES Y BLOQUEOS
+    const calculateAutomaticSlot = async () => {
+      clearBookingError();
       slotAssignedValue.value = '';
       if (!dateInput.value || !doctor.value) {
         assignedSlotDisplay.textContent = 'Selecciona fecha y médico';
@@ -723,19 +734,16 @@ import data from '../../data/seeds.json';
 
       const dateObj = new Date(dateInput.value + 'T12:00:00');
       const dayOfWeek = dateObj.getDay() || 7;
-
       const horario = data.horarios_medicos.find(
         h => h.medico_id === doctor.value && h.dia_semana === dayOfWeek
       );
 
       if (!horario) {
-        const docShifts = data.horarios_medicos.filter(h => h.medico_id === doctor.value);
-        const shiftDaysStr = docShifts.map(h => dayNames[h.dia_semana]).join(', ');
         assignedSlotDisplay.textContent = `Sin turno para el día ${dayNames[dayOfWeek]}`;
         assignedSlotDisplay.style.color = '#f59e0b';
         roomInput.value = 'Sin consultorio';
         if (assignedRoomBadge) assignedRoomBadge.textContent = 'No programado';
-        infoText.textContent = `⚠️ Este especialista atiende únicamente los días: ${shiftDaysStr}. Por favor selecciona una de esas fechas.`;
+        infoText.textContent = '⚠️ Este especialista atiende de Lunes a Sábado. Selecciona otro día hábil.';
         if (submitBtn) submitBtn.disabled = true;
         return;
       }
@@ -745,60 +753,44 @@ import data from '../../data/seeds.json';
       roomInput.dataset.id = String(room ? room.id : '1');
       if (assignedRoomBadge) assignedRoomBadge.textContent = room ? room.nombre : 'Consultorio';
 
-      const parseMin = (t: string) => {
-        const [hh, mm] = t.split(':').map(Number);
-        return hh * 60 + mm;
-      };
+      assignedSlotDisplay.textContent = 'Consultando disponibilidad real...';
+      assignedSlotDisplay.style.color = '#38bdf8';
 
-      const startMin = parseMin(horario.hora_inicio);
-      const endMin = parseMin(horario.hora_fin);
-      const dur = horario.duracion_cita_min || 30;
+      try {
+        const resp = await fetch(
+          apiUrl(`/api/citas/disponibilidad?medicoId=${encodeURIComponent(doctor.value)}&fecha=${encodeURIComponent(dateInput.value)}`),
+          { headers: getAuthHeaders() }
+        );
+        const payload = await resp.json();
+        const slots = Array.isArray(payload?.data?.slots) ? payload.data.slots : [];
 
-      const existingCitas = getAllCitas();
-      let firstAvailableTime: string | null = null;
-      let totalAvailable = 0;
-
-      for (let m = startMin; m + dur <= endMin; m += dur) {
-        const hh = String(Math.floor(m / 60)).padStart(2, '0');
-        const mm = String(m % 60).padStart(2, '0');
-        const timeStr = `${hh}:${mm}`;
-
-        const isOccupied = existingCitas.some(c => {
-          if (c.medico_id !== doctor.value) return false;
-          if (c.estado === 'CANCELADA') return false;
-          const cDate = c.fecha_hora_inicio.slice(0, 10);
-          const cTime = c.fecha_hora_inicio.slice(11, 16);
-          return cDate === dateInput.value && cTime === timeStr;
-        });
-
-        if (!isOccupied) {
-          totalAvailable++;
-          if (!firstAvailableTime) {
-            firstAvailableTime = timeStr;
+        if (resp.ok && slots.length > 0) {
+          const primero = slots[0];
+          const dur = primero.duracionMin || horario.duracion_cita_min || 30;
+          slotAssignedValue.value = primero.horaInicio;
+          const time12 = formatTime12h(primero.horaInicio);
+          const end12 = formatTime12h(primero.horaFin);
+          assignedSlotDisplay.textContent = `${time12} - ${end12} (${dur} min)`;
+          assignedSlotDisplay.style.color = '#10b981';
+          infoText.textContent = `✓ Disponibilidad verificada en Supabase: ${slots.length} turnos libres. Próxima ranura automática: ${time12}.`;
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = `✅ Confirmar Cita Médica (${time12})`;
+          }
+        } else {
+          assignedSlotDisplay.textContent = 'Sin cupos disponibles (Agenda llena o bloqueada)';
+          assignedSlotDisplay.style.color = '#ef4444';
+          infoText.textContent = '❌ No hay turnos disponibles en esta fecha (agenda ocupada o día bloqueado por el especialista).';
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Fecha sin turnos libres';
           }
         }
-      }
-
-      if (firstAvailableTime) {
-        slotAssignedValue.value = firstAvailableTime;
-        const time12 = formatTime12h(firstAvailableTime);
-        const start12 = formatTime12h(horario.hora_inicio.slice(0, 5));
-        const end12 = formatTime12h(horario.hora_fin.slice(0, 5));
-        assignedSlotDisplay.textContent = `${time12} (Turno de ${dur} min)`;
-        assignedSlotDisplay.style.color = '#10b981';
-        infoText.textContent = `✓ Horario laboral: ${start12} a ${end12} · ${totalAvailable} cupos disponibles. Se asigna automáticamente la ranura libre más próxima (${time12}).`;
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = `✅ Confirmar Cita Médica (${time12})`;
-        }
-      } else {
-        assignedSlotDisplay.textContent = 'Horario Lleno (Sin cupos disponibles)';
+      } catch {
+        assignedSlotDisplay.textContent = 'No se pudo consultar disponibilidad';
         assignedSlotDisplay.style.color = '#ef4444';
-        infoText.textContent = '❌ Todos los turnos para este médico en esta fecha han sido ocupados. Por favor elige otra fecha.';
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.textContent = 'Fecha sin turnos libres';
-        }
+        infoText.textContent = '⚠️ Error al conectar con el servidor de disponibilidad.';
+        if (submitBtn) submitBtn.disabled = true;
       }
     };
 
@@ -826,127 +818,129 @@ import data from '../../data/seeds.json';
     // Inicializar
     updateDoctors();
 
-    // Procesar reserva automática
-    form.addEventListener('submit', (e) => {
+    // Procesar reserva automática REAL contra Supabase y verificar HTTP ok
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      clearBookingError();
       if (!slotAssignedValue.value) {
-        alert('No hay un turno válido asignado para esta fecha. Por favor selecciona otra fecha.');
+        showBookingError('No hay un turno válido asignado para esta fecha. Selecciona otro día hábil.');
         return;
       }
 
+      const session = getSession();
       const formData = new FormData(form);
-      const reservadoPor = formData.get('reservado_por') || 'PACIENTE';
-      const isPatient = reservadoPor === 'PACIENTE';
-      const canalOrigen = isPatient ? 'WEB_PACIENTE' : 'RECEPCION_PRESENCIAL';
-
       const fecha = dateInput.value;
-      const hora = slotAssignedValue.value;
-      const [hh, mm] = hora.split(':').map(Number);
-      const endMins = hh * 60 + mm + 30;
-      const horaFin = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`;
-
-      const fechaHoraInicio = `${fecha} ${hora}:00-05`;
-      const fechaHoraFin = `${fecha} ${horaFin}:00-05`;
-
-      const numRandom = Math.floor(1000 + Math.random() * 9000);
-      const codigoCita = isPatient ? `CIT-PAC-${numRandom}` : `CIT-ADM-${numRandom}`;
-
-      const pacienteId = formData.get('paciente_id');
+      const pacienteId = String(formData.get('paciente_id') || session?.paciente?.id || session?.usuario?.pacienteId || session?.usuario?.id || '');
       const medicoId = doctor.value;
       const especialidadId = Number(specialty.value);
-      const consultorioId = Number(roomInput.dataset.id || '1');
-      const motivoConsulta = formData.get('motivo_consulta');
+      const motivoConsulta = String(formData.get('motivo_consulta') || '').trim();
+      const pacienteNombre = session?.paciente
+        ? `${session.paciente.nombres || ''} ${session.paciente.apellidos || ''}`.trim()
+        : (session?.usuario?.nombreCompleto || 'Paciente Registrado');
+      const cedPreview = document.getElementById('booking-cedula-preview')?.textContent || '';
+      const pacienteDocumento = session?.paciente?.documento_numero || (!cedPreview.includes('_') ? cedPreview : '') || '8-1234-56789';
+      const pacienteTelefono = session?.paciente?.telefono || '+507 6123-4567';
 
-      const nuevaCita = {
-        id: 'f' + Date.now().toString(16),
-        codigo_cita: codigoCita,
-        paciente_id: pacienteId,
-        medico_id: medicoId,
-        especialidad_id: especialidadId,
-        consultorio_id: consultorioId,
-        fecha_hora_inicio: fechaHoraInicio,
-        fecha_hora_fin: fechaHoraFin,
-        estado: isPatient ? 'PENDIENTE' : 'CONFIRMADA',
-        motivo_consulta: motivoConsulta,
-        canal_origen: canalOrigen,
-        reservado_por: reservadoPor
-      };
-
-      saveCita(nuevaCita);
-
-      // Obtener datos para el resumen
-      let pacienteNombre = 'Paciente Registrado';
-      const p = data.pacientes.find(x => x.id === pacienteId);
-      if (p) {
-        pacienteNombre = `${p.nombres} ${p.apellidos}`;
-      } else {
-        try {
-          const customP = JSON.parse(localStorage.getItem('medpulse_custom_patients') || '[]');
-          const cp = customP.find((x: any) => x.id === pacienteId);
-          if (cp) pacienteNombre = `${cp.nombres} ${cp.apellidos} (${cp.correo})`;
-        } catch {}
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Confirmando turno en Supabase...';
       }
 
-      const m = data.medicos.find(x => x.id === medicoId);
-      const esp = data.especialidades.find(x => x.id === especialidadId);
-
-      if (summaryContent) {
-        summaryContent.innerHTML = `
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-            <div><strong style="color: #94a3b8;">Código de Cita:</strong> <span style="font-family: monospace; font-size: 15px; color: #10b981; font-weight: 700;">${codigoCita}</span></div>
-            <div><strong style="color: #94a3b8;">Modalidad:</strong> ${isPatient 
-              ? '<span class="badge badge-patient"><span class="badge-dot green"></span>👤 Paciente (Web)</span>' 
-              : '<span class="badge badge-admin"><span class="badge-dot purple"></span>🛡️ Recepción (Clínica)</span>'}
-            </div>
-            <div><strong style="color: #94a3b8;">Paciente:</strong> <span style="color: #f8fafc; font-weight: 600;">${pacienteNombre}</span></div>
-            <div><strong style="color: #94a3b8;">Médico:</strong> Dr(a). ${m?.nombres} ${m?.apellidos}</div>
-            <div><strong style="color: #94a3b8;">Especialidad:</strong> ${esp?.nombre}</div>
-            <div><strong style="color: #94a3b8;">Horario Asignado:</strong> <span style="color: #10b981; font-weight: 700;">📅 ${fecha} a las 🕒 ${formatTime12h(hora)}</span></div>
-            <div><strong style="color: #94a3b8;">Consultorio:</strong> ${roomInput.value}</div>
-            <div><strong style="color: #94a3b8;">Estado Clínico:</strong> <span class="badge green">CONFIRMADA (Anti-Colisión OK)</span></div>
-          </div>
-        `;
-      }
-
-      form.style.display = 'none';
-      if (successBox) successBox.style.display = 'block';
-
-      // Generar URL y sincronizar automáticamente con Google Calendar
-      const startGCal = `${fecha.replace(/-/g, '')}T${hora.replace(':', '')}00`;
-      const endGCal = `${fecha.replace(/-/g, '')}T${horaFin.replace(':', '')}00`;
-      const gcalTitle = encodeURIComponent(`🩺 Cita Médica MedPulse: ${esp?.nombre || 'Consulta'} - Dr(a). ${m?.nombres} ${m?.apellidos}`);
-      const gcalDetails = encodeURIComponent(
-        `Consulta Médica Programada en MedPulse Clinic.\n\n` +
-        `• Código de Atención: ${codigoCita}\n` +
-        `• Paciente: ${pacienteNombre}\n` +
-        `• Especialidad: ${esp?.nombre || 'Consulta Médica'}\n` +
-        `• Médico Especialista: Dr(a). ${m?.nombres} ${m?.apellidos}\n` +
-        `• Consultorio: ${roomInput.value}\n` +
-        `• Horario: ${fecha} a las ${formatTime12h(hora)} (Duración 30 min)\n` +
-        `• Motivo: ${motivoConsulta || 'Consulta de control'}\n\n` +
-        `Favor de presentarse 10 minutos antes en la recepción del pabellón con su documento de identidad o pase digital.`
-      );
-      const gcalLocation = encodeURIComponent(`MedPulse Clinic Sede Central - ${roomInput.value}`);
-      const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${gcalTitle}&dates=${startGCal}/${endGCal}&details=${gcalDetails}&location=${gcalLocation}`;
-
-      // 1. Abrir automáticamente en Google Calendar
       try {
-        window.open(googleCalendarUrl, '_blank');
-      } catch (e) {
-        console.log('Ventana automática bloqueada por navegador:', e);
-      }
+        const res = await fetch(apiUrl('/api/citas/asignar-automatica'), {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            pacienteId,
+            pacienteNombre,
+            pacienteDocumento,
+            pacienteTelefono,
+            medicoId,
+            especialidadId,
+            fecha,
+            motivoConsulta,
+            canalOrigen: 'WEB_PACIENTE',
+            reservadoPor: 'PACIENTE'
+          })
+        });
 
-      // 2. Conectar el botón de la interfaz para abrir/reabrir
-      const btnGCal = document.getElementById('btn-gcal-open') as HTMLAnchorElement | null;
-      if (btnGCal) {
-        btnGCal.href = googleCalendarUrl;
-      }
+        const payload = await res.json();
+        if (!res.ok || !payload?.ok || !payload?.data?.cita) {
+          showBookingError(payload?.error || 'No se pudo completar la reserva. Intenta nuevamente.');
+          await calculateAutomaticSlot();
+          return;
+        }
 
-      const toast = document.querySelector('#toast') as HTMLElement | null;
-      if (toast) {
-        toast.textContent = `¡Cita ${codigoCita} agendada y sincronizada con Google Calendar!`;
-        toast.style.display = 'block';
-        setTimeout(() => { if (toast) toast.style.display = 'none'; }, 4000);
+        const citaBackend = payload.data.cita;
+        const hora = String(citaBackend.fechaHoraInicio || '').slice(11, 16) || slotAssignedValue.value;
+        const horaFin = String(citaBackend.fechaHoraFin || '').slice(11, 16) || hora;
+        const codigoCita = citaBackend.codigoCita || 'CIT-PAC';
+
+        appendCitaLocal({
+          id: citaBackend.id,
+          codigo_cita: codigoCita,
+          paciente_id: citaBackend.pacienteId,
+          paciente_nombre_directo: citaBackend.pacienteNombre || pacienteNombre,
+          paciente_documento_directo: citaBackend.pacienteDocumento || pacienteDocumento,
+          medico_id: citaBackend.medicoId,
+          especialidad_id: citaBackend.especialidadId,
+          consultorio_id: citaBackend.consultorioId || Number(roomInput.dataset.id || '1'),
+          fecha_hora_inicio: `${fecha} ${hora}:00-05`,
+          fecha_hora_fin: `${fecha} ${horaFin}:00-05`,
+          estado: citaBackend.estado || 'PENDIENTE',
+          motivo_consulta: motivoConsulta,
+          canal_origen: 'WEB_PACIENTE',
+          reservado_por: 'PACIENTE'
+        });
+
+        const m = data.medicos.find(x => x.id === medicoId);
+        const esp = data.especialidades.find(x => x.id === especialidadId);
+
+        if (summaryContent) {
+          summaryContent.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;">
+              <div><strong style="color: #94a3b8;">Código de Cita:</strong> <span style="font-family: monospace; font-size: 15px; color: #10b981; font-weight: 700;">${escapeHtml(codigoCita)}</span></div>
+              <div><strong style="color: #94a3b8;">Modalidad:</strong> <span class="badge badge-patient"><span class="badge-dot green"></span>👤 Paciente (Web)</span></div>
+              <div><strong style="color: #94a3b8;">Paciente:</strong> <span style="color: #f8fafc; font-weight: 600;">${escapeHtml(pacienteNombre)}</span></div>
+              <div><strong style="color: #94a3b8;">Médico:</strong> Dr(a). ${escapeHtml(m?.nombres)} ${escapeHtml(m?.apellidos)}</div>
+              <div><strong style="color: #94a3b8;">Especialidad:</strong> ${escapeHtml(esp?.nombre)}</div>
+              <div><strong style="color: #94a3b8;">Horario Asignado:</strong> <span style="color: #10b981; font-weight: 700;">📅 ${escapeHtml(fecha)} a las 🕒 ${escapeHtml(formatTime12h(hora))}</span></div>
+              <div><strong style="color: #94a3b8;">Consultorio:</strong> ${escapeHtml(roomInput.value)}</div>
+              <div><strong style="color: #94a3b8;">Estado Clínico:</strong> <span class="badge amber">${escapeHtml(citaBackend.estado || 'PENDIENTE')}</span></div>
+            </div>
+          `;
+        }
+
+        form.style.display = 'none';
+        if (successBox) successBox.style.display = 'block';
+
+        const startGCal = `${fecha.replace(/-/g, '')}T${hora.replace(':', '')}00`;
+        const endGCal = `${fecha.replace(/-/g, '')}T${horaFin.replace(':', '')}00`;
+        const gcalTitle = encodeURIComponent(`🩺 Cita Médica MedPulse: ${esp?.nombre || 'Consulta'} - Dr(a). ${m?.nombres} ${m?.apellidos}`);
+        const gcalDetails = encodeURIComponent(
+          `Consulta Médica Programada en MedPulse Clinic.\n\n` +
+          `• Código: ${codigoCita}\n` +
+          `• Paciente: ${pacienteNombre}\n` +
+          `• Especialidad: ${esp?.nombre || 'Consulta Médica'}\n` +
+          `• Médico: Dr(a). ${m?.nombres} ${m?.apellidos}\n` +
+          `• Consultorio: ${roomInput.value}\n` +
+          `• Horario: ${fecha} ${formatTime12h(hora)} (30 min)`
+        );
+        const gcalLocation = encodeURIComponent(`MedPulse Clinic Sede Central - ${roomInput.value}`);
+        const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${gcalTitle}&dates=${startGCal}/${endGCal}&details=${gcalDetails}&location=${gcalLocation}`;
+
+        const btnGCal = document.getElementById('btn-gcal-open') as HTMLAnchorElement | null;
+        if (btnGCal) btnGCal.href = googleCalendarUrl;
+
+        const toast = document.querySelector('#toast') as HTMLElement | null;
+        if (toast) {
+          toast.textContent = `¡Cita ${codigoCita} registrada en Supabase correctamente!`;
+          toast.style.display = 'block';
+          setTimeout(() => { if (toast) toast.style.display = 'none'; }, 4000);
+        }
+      } catch {
+        showBookingError('No se pudo conectar con el servidor para confirmar la cita. Verifica tu conexión.');
+        await calculateAutomaticSlot();
       }
     });
 

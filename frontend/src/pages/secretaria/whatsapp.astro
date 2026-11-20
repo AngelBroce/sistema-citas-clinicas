@@ -1,0 +1,122 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="WhatsApp IA, Triaje y Conexión QR" role="secretaria">
+  <div class="grid" style="margin-bottom: 20px;">
+    <section class="card metric" style="border-top: 3px solid #10b981;">
+      <span style="display: flex; align-items: center; gap: 6px;">
+        <span class="badge-dot green"></span> Línea Oficial WhatsApp
+      </span>
+      <strong style="color: #10b981; font-size: 20px;">+507 6598-2118</strong>
+      <small>Canal Exclusivo WhatsApp 24/7</small>
+    </section>
+
+    <section class="card metric" style="border-top: 3px solid #06b6d4;">
+      <span>Estado del Canal</span>
+      <strong id="wa-sec-status" style="color: #38bdf8; font-size: 18px;">Listo para Escanear</strong>
+      <small>Triaje automático sin chat web</small>
+    </section>
+
+    <section class="card metric" style="border-top: 3px solid #f59e0b;">
+      <span>Citas por WhatsApp</span>
+      <strong id="wa-sec-citas" style="color: #fbbf24; font-size: 22px;">0</strong>
+      <small><a href="/secretaria/citas" style="color: #38bdf8; text-decoration: underline;">Confirmar en Recepción →</a></small>
+    </section>
+  </div>
+
+  <div class="grid two" style="align-items: start;">
+    <section class="card" style="background: linear-gradient(145deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.92) 100%); border: 1px solid rgba(16, 185, 129, 0.35);">
+      <span class="badge green" style="margin-bottom: 8px; display: inline-flex;">📱 Mesa de Recepción · WhatsApp QR</span>
+      <h2 style="margin: 0 0 10px 0; font-size: 18px; color: #f8fafc;">Enlace Directo para Pacientes (+507 6598-2118)</h2>
+      <p style="color: #94a3b8; font-size: 13px; margin: 0 0 14px; line-height: 1.5;">
+        Comparte este código QR en mostrador para que el paciente solicite triaje o agende su cita directamente desde su propio WhatsApp.
+      </p>
+
+      <div style="display: flex; flex-direction: column; align-items: center; padding: 18px; background: #090d16; border: 1px solid #1e293b; border-radius: 14px;">
+        <div style="background: #ffffff; padding: 12px; border-radius: 12px; min-width: 210px; min-height: 210px; display: flex; align-items: center; justify-content: center;">
+          <img id="sec-wa-qr-image" src="" alt="Código QR WhatsApp MedPulse" style="width: 190px; height: 190px; display: none; border-radius: 6px;" />
+          <div id="sec-wa-qr-placeholder" style="color: #0f172a; font-size: 12px; font-weight: 700;">Cargando código QR...</div>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; justify-content: center;">
+          <button type="button" id="sec-btn-refresh-qr" class="button" style="padding: 8px 14px; font-size: 12px;">🔄 Actualizar QR</button>
+          <a href="https://wa.me/50765982118?text=Hola%20MedPulse,%20quiero%20agendar%20una%20cita%20m%C3%A9dica" target="_blank" rel="noopener noreferrer" class="button secondary" style="padding: 8px 14px; font-size: 12px;">💬 Abrir en WhatsApp</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #f8fafc;">📋 Últimas Citas Agendadas por WhatsApp</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Paciente</th>
+              <th>Médico / Hora</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="sec-wa-tbody">
+            <tr><td colspan="4" class="muted" style="text-align: center;">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</Layout>
+
+<script>
+  import { apiUrl, escapeHtml, getAuthHeaders } from '../../data/api';
+
+  async function initSecretariaWa() {
+    const img = document.getElementById('sec-wa-qr-image') as HTMLImageElement | null;
+    const ph = document.getElementById('sec-wa-qr-placeholder');
+    const st = document.getElementById('wa-sec-status');
+    try {
+      const res = await fetch(apiUrl('/api/whatsapp/qr'), { headers: getAuthHeaders() });
+      const data = await res.json();
+      const src = data?.data?.qrDataUrl || data?.data?.qrWaMeDataUrl;
+      if (src && img) {
+        img.src = src;
+        img.style.display = 'block';
+        if (ph) ph.style.display = 'none';
+      }
+      if (st) st.textContent = data?.data?.estado === 'CONECTADO' ? 'Conectado en Vivo' : 'QR Disponible';
+    } catch {}
+
+    const tbody = document.getElementById('sec-wa-tbody');
+    const countEl = document.getElementById('wa-sec-citas');
+    if (!tbody) return;
+    try {
+      const res = await fetch(apiUrl('/api/citas'), { headers: getAuthHeaders() });
+      const data = await res.json();
+      const citasWa = (Array.isArray(data?.data) ? data.data : []).filter((c: any) => (c.canalOrigen || c.canal_origen) === 'CHATBOT_WHATSAPP');
+      if (countEl) countEl.textContent = String(citasWa.length);
+      if (citasWa.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="muted" style="text-align: center;">Sin reservas recientes desde WhatsApp.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = citasWa.slice(0, 10).map((c: any) => {
+        const badgeCls = c.estado === 'CONFIRMADA' || c.estado === 'COMPLETADA' ? 'green' : c.estado === 'CANCELADA' ? 'red' : 'amber';
+        return `
+          <tr>
+            <td><strong>${escapeHtml(c.codigoCita)}</strong></td>
+            <td>${escapeHtml(c.pacienteNombre)}</td>
+            <td>${escapeHtml(c.medicoNombre)}<br/><small class="muted">${escapeHtml(String(c.fechaHoraInicio || '').slice(0, 16).replace('T', ' '))}</small></td>
+            <td><span class="badge ${badgeCls}">${escapeHtml(c.estado)}</span></td>
+          </tr>
+        `;
+      }).join('');
+    } catch {
+      tbody.innerHTML = '<tr><td colspan="4" class="muted" style="text-align: center;">No se pudieron cargar las citas.</td></tr>';
+    }
+  }
+
+  document.getElementById('sec-btn-refresh-qr')?.addEventListener('click', async () => {
+    await fetch(apiUrl('/api/whatsapp/qr/iniciar'), { method: 'POST', headers: getAuthHeaders() });
+    initSecretariaWa();
+  });
+
+  initSecretariaWa();
+</script>

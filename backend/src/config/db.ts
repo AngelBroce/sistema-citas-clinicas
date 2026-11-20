@@ -1,15 +1,40 @@
-import pg from 'pg';
+import pg, { PoolConfig } from 'pg';
 import { config } from './env.js';
 import fs from 'fs';
 import path from 'path';
 
 const { Pool } = pg;
 
-export const pool = new Pool({
-  connectionString: config.databaseUrl,
-  connectionTimeoutMillis: 2000, // 2s timeout rápido para no bloquear si no está activo
-  idleTimeoutMillis: 10000
-});
+function buildPoolConfig(rawUrl: string): PoolConfig {
+  let sanitizedUrl = rawUrl;
+  let isLocal = false;
+
+  try {
+    const parsed = new URL(rawUrl);
+    const host = parsed.hostname.toLowerCase();
+    const sslMode = parsed.searchParams.get('sslmode');
+    isLocal = host === 'localhost' || host === '127.0.0.1' || sslMode === 'disable';
+
+    // Eliminar sslmode del query string para evitar que pg ignore ssl.rejectUnauthorized=false en Supabase Pooler
+    if (parsed.searchParams.has('sslmode')) {
+      parsed.searchParams.delete('sslmode');
+      sanitizedUrl = parsed.toString();
+    }
+  } catch {
+    isLocal = rawUrl.includes('localhost') || rawUrl.includes('127.0.0.1');
+  }
+
+  return {
+    connectionString: sanitizedUrl,
+    ...(isLocal ? {} : { ssl: { rejectUnauthorized: false } }),
+    max: process.env.VERCEL ? 3 : 10,
+    connectionTimeoutMillis: 8000,
+    idleTimeoutMillis: 10000,
+    allowExitOnIdle: true
+  };
+}
+
+export const pool = new Pool(buildPoolConfig(config.databaseUrl));
 
 export interface DBStatus {
   conectado: boolean;
@@ -22,15 +47,19 @@ export interface DBStatus {
 export class DatabaseService {
   private static statusCache: DBStatus = {
     conectado: false,
-    motor: 'PostgreSQL 14+',
-    url: config.databaseUrl.replace(/(:[^:@]+@)/, ':****@'), // ocultar contraseña
+    motor: 'Supabase PostgreSQL',
+    url: 'hidden',
     mensaje: 'Inicializando comprobación de conexión...'
   };
 
   /**
-   * Verifica la conectividad con la base de datos PostgreSQL
+   * Verifica la conectividad con la base de datos PostgreSQL / Supabase.
    */
   public static async verificarConexion(): Promise<DBStatus> {
+    const maskedUrl = config.isProduction
+      ? 'supabase://pooler'
+      : config.databaseUrl.replace(/(:[^:@]+@)/, ':****@');
+
     try {
       const client = await pool.connect();
       try {
@@ -47,7 +76,7 @@ export class DatabaseService {
         this.statusCache = {
           conectado: true,
           motor: res.rows[0].version.split(' on ')[0],
-          url: config.databaseUrl.replace(/(:[^:@]+@)/, ':****@'),
+          url: maskedUrl,
           mensaje: `Conectado exitosamente a PostgreSQL (Base de datos: ${res.rows[0].current_database}).`,
           tablasDetectadas: tablas
         };
@@ -57,9 +86,11 @@ export class DatabaseService {
     } catch (err: any) {
       this.statusCache = {
         conectado: false,
-        motor: 'PostgreSQL 14+ (Modo Standby / Memoria Activa)',
-        url: config.databaseUrl.replace(/(:[^:@]+@)/, ':****@'),
-        mensaje: `No se detecta servicio PostgreSQL activo en ${config.databaseUrl.split('@')[1] || 'localhost:5432'}. El backend opera en modo resiliente con datos de prueba (Seeds) precargados. Código: ${err.code || err.message}`
+        motor: 'Supabase PostgreSQL (Modo Standby / Memoria Activa)',
+        url: maskedUrl,
+        mensaje: config.isProduction
+          ? 'Servicio de base de datos temporalmente no disponible.'
+          : `No se detecta servicio PostgreSQL activo. El backend opera en modo resiliente. Código: ${err.code || err.message}`
       };
     }
 
@@ -67,14 +98,14 @@ export class DatabaseService {
   }
 
   /**
-   * Ejecuta los scripts SQL DDL y Seeds iniciales en PostgreSQL
+   * Ejecuta los scripts SQL DDL y Seeds iniciales en PostgreSQL.
    */
   public static async ejecutarInicializacionSQL(rutaRaizProyecto: string): Promise<{ ok: boolean; mensaje: string }> {
     const status = await this.verificarConexion();
     if (!status.conectado) {
       return {
         ok: false,
-        mensaje: 'PostgreSQL no está activo en este momento. Inicie el servicio PostgreSQL para cargar las tablas.'
+        mensaje: 'PostgreSQL / Supabase no está conectado en este momento.'
       };
     }
 
@@ -86,26 +117,25 @@ export class DatabaseService {
       const rutaSchema = path.join(rutaRaizProyecto, 'database', 'schemas', 'schema.sql');
       const rutaSeeds = path.join(rutaRaizProyecto, 'database', 'seeds', '01_initial_seeds.sql');
 
-      if (fs.existsSync(rutaInitCompleto)) {
-        const sqlInit = fs.readFileSync(rutaInitCompleto, 'utf8');
-        await client.query(sqlInit);
-      } else {
+      if (fs.existsSync(rutaSchema) || fs.existsSync(rutaSeeds)) {
         if (fs.existsSync(rutaSchema)) {
           const sqlSchema = fs.readFileSync(rutaSchema, 'utf8');
           await client.query(sqlSchema);
         }
-
         if (fs.existsSync(rutaSeeds)) {
           const sqlSeeds = fs.readFileSync(rutaSeeds, 'utf8');
           await client.query(sqlSeeds);
         }
+      } else if (fs.existsSync(rutaInitCompleto)) {
+        const sqlInit = fs.readFileSync(rutaInitCompleto, 'utf8');
+        await client.query(sqlInit);
       }
 
       await client.query('COMMIT');
 
       return {
         ok: true,
-        mensaje: 'Tablas DDL y datos de prueba (Seeds) cargados exitosamente en PostgreSQL.'
+        mensaje: 'Tablas DDL y datos iniciales cargados exitosamente en PostgreSQL.'
       };
     } catch (error: any) {
       await client.query('ROLLBACK');

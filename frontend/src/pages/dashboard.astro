@@ -844,9 +844,12 @@ const consultorios = data.consultorios;
 
 <script>
   import data from '../data/seeds.json';
+  import { apiUrl, escapeHtml, getAuthHeaders } from '../data/api';
 
   const STORAGE_KEY_CITAS = 'medpulse_citas_v2';
   const STORAGE_KEY_PATIENTS = 'medpulse_custom_patients';
+  let liveCitasFromBackend: any[] | null = null;
+  let livePatientsCountFromBackend: number | null = null;
 
   // Función animadora de números (Interpolación Suave de Conteo)
   function animateNumber(element: HTMLElement | null, endVal: number, duration = 650, suffix = '') {
@@ -872,27 +875,54 @@ const consultorios = data.consultorios;
     requestAnimationFrame(update);
   }
 
-  // Carga unificada de todas las citas (seeds + creadas en la app)
+  // Carga unificada de todas las citas (Supabase prioritario + caché local)
   function getAllCitas(): any[] {
-    const list = [...data.citas];
+    if (liveCitasFromBackend) return liveCitasFromBackend;
     try {
       const custom = JSON.parse(localStorage.getItem(STORAGE_KEY_CITAS) || '[]');
-      custom.forEach((cc: any) => {
-        const exists = list.some(c => c.id === cc.id || c.codigo_cita === cc.codigo_cita);
-        if (!exists) list.push(cc);
-      });
+      if (Array.isArray(custom) && custom.length > 0) return custom;
     } catch {}
-    return list;
+    return [...data.citas];
   }
 
   // Carga unificada de pacientes
   function getAllPatientsCount(): number {
+    if (typeof livePatientsCountFromBackend === 'number') return livePatientsCountFromBackend;
     let count = data.pacientes.length;
     try {
       const custom = JSON.parse(localStorage.getItem(STORAGE_KEY_PATIENTS) || '[]');
       count += custom.length;
     } catch {}
     return count;
+  }
+
+  async function loadBackendTelemetry() {
+    try {
+      const [citasResp, catResp] = await Promise.all([
+        fetch(apiUrl('/api/citas'), { headers: getAuthHeaders() }),
+        fetch(apiUrl('/api/citas/catalogos'), { headers: getAuthHeaders() })
+      ]);
+      const citasJson = await citasResp.json().catch(() => null);
+      const catJson = await catResp.json().catch(() => null);
+      if (citasResp.ok && Array.isArray(citasJson?.data)) {
+        liveCitasFromBackend = citasJson.data.map((bc: any) => ({
+          ...bc,
+          codigo_cita: bc.codigoCita,
+          paciente_id: bc.pacienteId,
+          paciente_nombre: bc.pacienteNombre,
+          medico_id: bc.medicoId,
+          medico_nombre: bc.medicoNombre,
+          especialidad_id: bc.especialidadId,
+          especialidad_nombre: bc.especialidadNombre,
+          fecha_hora_inicio: bc.fechaHoraInicio,
+          canal_origen: bc.canalOrigen
+        }));
+      }
+      if (catResp.ok && Array.isArray(catJson?.data?.pacientes)) {
+        livePatientsCountFromBackend = catJson.data.pacientes.length;
+      }
+      renderDashboard();
+    } catch {}
   }
 
   // Paleta de gradientes para barras de especialidad
@@ -1139,14 +1169,14 @@ const consultorios = data.consultorios;
     // 6. Tabla de Citas Recientes
     const recentTbody = document.getElementById('recent-citas-tbody');
     if (recentTbody) {
-      const recents = [...citas].reverse().slice(0, 6);
+      const recents = [...citas].slice(0, 6);
       recentTbody.innerHTML = recents.map(c => {
         const pac = data.pacientes.find(p => p.id === c.paciente_id);
-        const pacName = pac ? `${pac.nombres} ${pac.apellidos}` : 'Paciente Clínico';
+        const pacName = c.paciente_nombre || (pac ? `${pac.nombres} ${pac.apellidos}` : 'Paciente Clínico');
         const med = data.medicos.find(m => m.id === c.medico_id);
-        const medName = med ? `Dr(a). ${med.nombres} ${med.apellidos}` : 'Médico Asignado';
+        const medName = c.medico_nombre || (med ? `Dr(a). ${med.nombres} ${med.apellidos}` : 'Médico Asignado');
         const esp = data.especialidades.find(e => e.id === Number(c.especialidad_id));
-        const espName = esp?.nombre || 'Consulta General';
+        const espName = c.especialidad_nombre || esp?.nombre || 'Consulta General';
 
         const isWhats = c.canal_origen === 'CHATBOT_WHATSAPP';
         const isWeb = c.canal_origen === 'WEB_PACIENTE';
@@ -1154,19 +1184,19 @@ const consultorios = data.consultorios;
         return `
           <tr>
             <td>
-              <strong style="color: #38bdf8; font-family: monospace; font-size: 13px;">${c.codigo_cita || 'CIT-' + c.id?.slice(0, 6)}</strong>
+              <strong style="color: #38bdf8; font-family: monospace; font-size: 13px;">${escapeHtml(c.codigo_cita || 'CIT-' + (c.id?.slice(0, 6) || ''))}</strong>
             </td>
             <td>
-              <strong style="color: #f1f5f9; font-size: 13px;">${pacName}</strong>
+              <strong style="color: #f1f5f9; font-size: 13px;">${escapeHtml(pacName)}</strong>
             </td>
             <td>
-              <span style="color: #cbd5e1; font-size: 13px;">${medName}</span>
+              <span style="color: #cbd5e1; font-size: 13px;">${escapeHtml(medName)}</span>
             </td>
             <td>
-              <span class="badge blue" style="font-size: 11px;">${espName}</span>
+              <span class="badge blue" style="font-size: 11px;">${escapeHtml(espName)}</span>
             </td>
             <td>
-              <span style="color: #94a3b8; font-size: 12px;">${(c.fecha_hora_inicio || '').slice(0, 16) || 'Programada'}</span>
+              <span style="color: #94a3b8; font-size: 12px;">${escapeHtml((c.fecha_hora_inicio || '').slice(0, 16).replace('T', ' ') || 'Programada')}</span>
             </td>
             <td>
               <span class="badge ${isWhats ? 'green' : (isWeb ? 'blue' : 'amber')}" style="font-size: 10px;">
@@ -1174,8 +1204,8 @@ const consultorios = data.consultorios;
               </span>
             </td>
             <td>
-              <span class="badge ${c.estado === 'CONFIRMADA' ? 'green' : 'amber'}" style="font-size: 11px;">
-                ${c.estado || 'CONFIRMADA'}
+              <span class="badge ${c.estado === 'CONFIRMADA' ? 'green' : c.estado === 'CANCELADA' ? 'red' : 'amber'}" style="font-size: 11px;">
+                ${escapeHtml(c.estado || 'PENDIENTE')}
               </span>
             </td>
           </tr>
@@ -1209,9 +1239,11 @@ const consultorios = data.consultorios;
     document.addEventListener('DOMContentLoaded', () => {
       setupFilters();
       renderDashboard();
+      loadBackendTelemetry();
     });
   } else {
     setupFilters();
     renderDashboard();
+    loadBackendTelemetry();
   }
 </script>

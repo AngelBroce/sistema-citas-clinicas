@@ -1,10 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { DatabaseService } from '../config/db.js';
+import { requerirRoles } from '../middlewares/auth.middleware.js';
 import path from 'path';
 
 const router = Router();
 
-// Consultar estado de conexión con PostgreSQL
+// Consultar estado de conexión con Supabase PostgreSQL
 router.get('/status', async (_req: Request, res: Response) => {
   const status = await DatabaseService.verificarConexion();
   return res.json({
@@ -13,8 +14,8 @@ router.get('/status', async (_req: Request, res: Response) => {
   });
 });
 
-// Inicializar / Cargar tablas DDL y Seeds en PostgreSQL
-router.post('/init', async (_req: Request, res: Response) => {
+// Inicializar / Cargar tablas DDL y Seeds (exclusivo Administrador autenticado)
+router.post('/init', requerirRoles(['ADMINISTRADOR'], { permitirSinTokenEnDemo: false }), async (_req: Request, res: Response) => {
   const rutaRaiz = path.resolve(process.cwd(), '..');
   const resultado = await DatabaseService.ejecutarInicializacionSQL(rutaRaiz);
   return res.status(resultado.ok ? 200 : 503).json(resultado);

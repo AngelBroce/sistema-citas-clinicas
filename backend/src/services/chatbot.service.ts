@@ -133,6 +133,24 @@ REGLAS DE CÓMO NO RESPONDER (GUARDRAILS ESTRICTOS):
       return this.estadoQR;
     }
 
+    // En entornos serverless (Vercel) no hay disco persistente para Baileys (.wa_auth_session):
+    // generamos el código QR oficial de enlace directo a WhatsApp Empresarial (+507 6598-2118).
+    if (process.env.VERCEL || process.env.DISABLE_BAILEYS === 'true') {
+      const digits = this.configEmpresa.numeroWhatsAppEmpresa.replace(/\D/g, '') || '50765982118';
+      const waMeUrl = `https://wa.me/${digits}?text=${encodeURIComponent('Hola MedPulse, quiero agendar una cita médica')}`;
+      const qrDataUrl = await QRCode.toDataURL(waMeUrl, { width: 300, margin: 2 });
+      this.estadoQR = {
+        estado: 'ESPERANDO_ESCANEO_QR',
+        qrDataUrl,
+        qrRaw: waMeUrl,
+        numeroConectado: this.configEmpresa.numeroWhatsAppEmpresa,
+        nombreConectado: this.configEmpresa.nombreEmpresa,
+        ultimaActualizacion: new Date().toISOString(),
+        mensajeEstado: `Código QR oficial de WhatsApp (${this.configEmpresa.numeroWhatsAppEmpresa}) listo para escanear desde cualquier celular.`
+      };
+      return this.estadoQR;
+    }
+
     try {
       this.iniciandoSocket = true;
       const authDir = path.resolve(process.cwd(), '.wa_auth_session');

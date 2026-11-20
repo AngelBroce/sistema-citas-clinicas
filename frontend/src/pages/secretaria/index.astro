@@ -9,9 +9,9 @@ import Appointments from '../../components/Appointments.astro';
   <!-- Métricas de mesa de recepción -->
   <div class="grid" style="margin-bottom: 20px;">
     <section class="card metric" style="border-top: 3px solid #f59e0b;">
-      <span>Llegadas de hoy</span>
-      <strong style="color: #fbbf24; font-size: 26px;">4 citas</strong>
-      <small style="color: #fbbf24;">Sede Principal</small>
+      <span>Citas en agenda</span>
+      <strong id="sec-metric-citas" style="color: #fbbf24; font-size: 26px;">0 citas</strong>
+      <small style="color: #fbbf24;">Sede Central</small>
     </section>
 
     <section class="card metric" style="border-top: 3px solid #10b981;">
@@ -101,3 +101,23 @@ import Appointments from '../../components/Appointments.astro';
     </div>
   </section>
 </Layout>
+
+<script>
+  import { apiUrl, getAuthHeaders } from '../../data/api';
+
+  async function refreshSecretariaMetric() {
+    const el = document.getElementById('sec-metric-citas');
+    if (!el) return;
+    try {
+      const resp = await fetch(apiUrl('/api/citas'), { headers: getAuthHeaders() });
+      const json = await resp.json();
+      if (resp.ok && Array.isArray(json?.data)) {
+        const activas = json.data.filter((c: any) => c.estado !== 'CANCELADA').length;
+        el.textContent = `${activas} ${activas === 1 ? 'cita' : 'citas'}`;
+      }
+    } catch {}
+  }
+
+  refreshSecretariaMetric();
+  window.addEventListener('medpulse:cita-synced', refreshSecretariaMetric);
+</script>

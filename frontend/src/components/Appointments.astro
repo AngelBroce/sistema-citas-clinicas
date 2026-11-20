@@ -395,133 +395,105 @@ if (propRole) {
 
 <script>
   import data from '../data/seeds.json';
-  import { apiUrl, getAuthHeaders } from '../data/api';
+  import { apiUrl, escapeHtml, getAuthHeaders, getSession } from '../data/api';
 
   const STORAGE_KEY = 'medpulse_citas_v2';
   const section = document.getElementById('appointments-section');
   const role = section?.dataset.role || (window.location.pathname.startsWith('/paciente') ? 'paciente' : window.location.pathname.startsWith('/doctor') ? 'doctor' : window.location.pathname.startsWith('/secretaria') ? 'secretaria' : 'admin');
+  const activeSession = getSession();
+
   function getCurrentPatientId() {
     if (section?.dataset.patientId) return section.dataset.patientId;
-    try {
-      const session = JSON.parse(localStorage.getItem('medpulse_session') || '{}');
-      if (session?.paciente?.id) return session.paciente.id;
-      if (session?.usuario?.id && session?.usuario?.rol === 'PACIENTE') return session.usuario.id;
-    } catch {}
+    if (activeSession?.paciente?.id) return activeSession.paciente.id;
+    if (activeSession?.usuario?.pacienteId) return activeSession.usuario.pacienteId;
+    if (activeSession?.usuario?.id && activeSession?.usuario?.rol === 'PACIENTE') return activeSession.usuario.id;
     return data.pacientes[0].id;
   }
-  const defaultDoctorId = data.medicos[0]?.id || 'MED-01';
-  const targetDoctorId = section?.dataset.doctorId || defaultDoctorId;
+  const defaultDoctorId = data.medicos[0]?.id || 'c0000000-0000-0000-0000-000000000001';
+  const targetDoctorId =
+    (role === 'doctor' ? (activeSession?.usuario?.medicoId || activeSession?.usuario?.id) : '') ||
+    section?.dataset.doctorId ||
+    defaultDoctorId;
   const targetPatientId = getCurrentPatientId();
 
   function getAllCitas() {
     try {
-      if (!localStorage.getItem('medpulse_reset_zero_v2')) {
-        localStorage.setItem(STORAGE_KEY, '[]');
-        localStorage.setItem('medpulse_reset_zero_v2', '1');
-      }
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) return parsed;
       }
     } catch {}
-    const defaults = [...data.citas];
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaults));
-    } catch {}
-    return defaults;
+    return [...data.citas];
   }
 
   /**
-   * Sincroniza automáticamente todas las citas del Backend (incluyendo las creadas por WhatsApp desde el celular o simulador)
-   * hacia localStorage para que Admin, Médico, Secretaria y Paciente las vean en tiempo real.
+   * Sincroniza autoritativamente todas las citas desde Supabase (/api/citas)
    */
   async function syncCitasFromBackend() {
     try {
-      const resp = await fetch(apiUrl('/api/citas'));
+      const resp = await fetch(apiUrl('/api/citas'), { headers: getAuthHeaders() });
+      if (!resp.ok) return;
       const json = await resp.json();
       if (!json.ok || !Array.isArray(json.data)) return;
 
-      const localCitas = getAllCitas();
       const customPatients = JSON.parse(localStorage.getItem('medpulse_custom_patients') || '[]');
-      let huboCambios = false;
-      let ultimaFechaNueva = '';
+      let customChanged = false;
 
-      for (const bc of json.data) {
+      const synced = json.data.map((bc: any) => {
         const codigo = bc.codigoCita || bc.codigo_cita;
-        const existingIdx = localCitas.findIndex((lc: any) => lc.id === bc.id || lc.codigo_cita === codigo);
-        if (existingIdx !== -1) {
-          const ex = localCitas[existingIdx];
-          if (bc.pacienteNombre && !ex.paciente_nombre_directo) {
-            ex.paciente_nombre_directo = bc.pacienteNombre;
-            ex.paciente_documento_directo = bc.pacienteDocumento;
-            huboCambios = true;
-          }
-          if (bc.medicoId && ex.canal_origen === 'CHATBOT_WHATSAPP' && ex.medico_id !== bc.medicoId) {
-            ex.medico_id = bc.medicoId;
-            huboCambios = true;
-          }
-          if (bc.estado && ex.estado !== bc.estado) {
-            ex.estado = bc.estado;
-            huboCambios = true;
-          }
-        } else {
-          let pacId = bc.pacienteId || bc.paciente_id || 'e0000000-0000-0000-0000-000000000001';
+        let pacId = bc.pacienteId || bc.paciente_id || 'e0000000-0000-0000-0000-000000000001';
 
-          // Si viene con nombre o cédula desde WhatsApp, crear o localizar la ficha en custom_patients
-          if (bc.pacienteNombre || bc.pacienteDocumento) {
-            const docNum = bc.pacienteDocumento || '8-1234-56789';
-            let pFound = customPatients.find((p: any) => p.documento_numero === docNum && p.nombreCompleto === bc.pacienteNombre);
-            if (!pFound) {
-              const partes = (bc.pacienteNombre || 'Paciente WhatsApp').trim().split(/\s+/);
-              const nuevoPid = 'p-wa-' + bc.id.slice(0, 8);
-              pFound = {
-                id: nuevoPid,
-                nombres: partes[0] || 'Paciente',
-                apellidos: partes.slice(1).join(' ') || 'WhatsApp',
-                nombreCompleto: bc.pacienteNombre || 'Paciente WhatsApp',
-                documento_tipo: 'CEDULA_PANAMA',
-                documento_numero: docNum,
-                telefono: bc.pacienteTelefono || '+507 6598-2118',
-                email: 'whatsapp@medpulse.clinic'
-              };
-              customPatients.push(pFound);
-            }
-            pacId = pFound.id;
+        if (bc.pacienteNombre || bc.pacienteDocumento) {
+          const exists = customPatients.some((p: any) => p.id === pacId);
+          if (!exists) {
+            const partes = (bc.pacienteNombre || 'Paciente').trim().split(/\s+/);
+            customPatients.push({
+              id: pacId,
+              nombres: partes[0] || 'Paciente',
+              apellidos: partes.slice(1).join(' ') || '',
+              nombreCompleto: bc.pacienteNombre || 'Paciente',
+              documento_tipo: 'CEDULA_NACIONAL',
+              documento_numero: bc.pacienteDocumento || '8-0000-00000',
+              telefono: bc.pacienteTelefono || '+507 6598-2118',
+              email: 'paciente@medpulse.clinic'
+            });
+            customChanged = true;
           }
-
-          const inicioClean = (bc.fechaHoraInicio || '').replace('T', ' ').replace('Z', '').slice(0, 19);
-          const finClean = (bc.fechaHoraFin || '').replace('T', ' ').replace('Z', '').slice(0, 19);
-
-          localCitas.unshift({
-            id: bc.id,
-            codigo_cita: codigo,
-            paciente_id: pacId,
-            paciente_nombre_directo: bc.pacienteNombre,
-            paciente_documento_directo: bc.pacienteDocumento,
-            paciente_telefono_directo: bc.pacienteTelefono,
-            medico_id: bc.medicoId || bc.medico_id || 'c0000000-0000-0000-0000-000000000001',
-            especialidad_id: Number(bc.especialidadId || bc.especialidad_id || 1),
-            consultorio_id: Number(bc.consultorioId || bc.consultorio_id || 3),
-            fecha_hora_inicio: `${inicioClean}-05`,
-            fecha_hora_fin: `${finClean}-05`,
-            estado: bc.estado || 'PENDIENTE',
-            motivo_consulta: bc.motivoConsulta || bc.motivo_consulta || 'Cita agendada por WhatsApp',
-            canal_origen: bc.canalOrigen || bc.canal_origen || 'CHATBOT_WHATSAPP',
-            reservado_por: bc.reservadoPor || bc.reservado_por || 'PACIENTE'
-          });
-          ultimaFechaNueva = inicioClean.slice(0, 10);
-          huboCambios = true;
         }
+
+        const inicioClean = (bc.fechaHoraInicio || '').replace('T', ' ').replace('Z', '').slice(0, 19);
+        const finClean = (bc.fechaHoraFin || '').replace('T', ' ').replace('Z', '').slice(0, 19);
+
+        return {
+          id: bc.id,
+          codigo_cita: codigo,
+          paciente_id: pacId,
+          paciente_nombre_directo: bc.pacienteNombre,
+          paciente_documento_directo: bc.pacienteDocumento,
+          paciente_telefono_directo: bc.pacienteTelefono,
+          medico_id: bc.medicoId || bc.medico_id || 'c0000000-0000-0000-0000-000000000001',
+          especialidad_id: Number(bc.especialidadId || bc.especialidad_id || 1),
+          consultorio_id: Number(bc.consultorioId || bc.consultorio_id || 3),
+          fecha_hora_inicio: `${inicioClean}-05`,
+          fecha_hora_fin: `${finClean}-05`,
+          estado: bc.estado || 'PENDIENTE',
+          motivo_consulta: bc.motivoConsulta || bc.motivo_consulta || 'Consulta programada',
+          canal_origen: bc.canalOrigen || bc.canal_origen || 'WEB_PACIENTE',
+          reservado_por: bc.reservadoPor || bc.reservado_por || 'PACIENTE'
+        };
+      });
+
+      if (customChanged) {
+        localStorage.setItem('medpulse_custom_patients', JSON.stringify(customPatients));
       }
 
-      if (huboCambios) {
-        localStorage.setItem('medpulse_custom_patients', JSON.stringify(customPatients));
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(localCitas));
+      const prevRaw = localStorage.getItem(STORAGE_KEY) || '';
+      const nextRaw = JSON.stringify(synced);
+      if (prevRaw !== nextRaw) {
+        localStorage.setItem(STORAGE_KEY, nextRaw);
         renderAppointments();
-        window.dispatchEvent(new CustomEvent('medpulse:cita-creada', {
-          detail: { fecha: ultimaFechaNueva }
-        }));
+        window.dispatchEvent(new CustomEvent('medpulse:cita-creada', { detail: {} }));
       }
     } catch {}
   }
@@ -533,44 +505,70 @@ if (propRole) {
     window.dispatchEvent(new CustomEvent('medpulse:cita-creada', { detail: {} }));
   }
 
-  // Hacer accesible globalmente para cambiar estados (Admin / Secretaria -> CONFIRMADA)
-  (window as any).cambiarEstadoCita = function(citaId: string, nuevoEstado: string) {
+  function showToastMsg(msg: string, isError = false) {
+    const toast = document.querySelector('#toast') as HTMLElement | null;
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.style.background = isError ? '#7f1d1d' : '';
+    toast.style.color = isError ? '#fecaca' : '';
+    toast.style.display = 'block';
+    setTimeout(() => {
+      toast.style.display = 'none';
+      toast.style.background = '';
+      toast.style.color = '';
+    }, 3500);
+  }
+
+  // Cambiar estado verificando respuesta del servidor Supabase
+  (window as any).cambiarEstadoCita = async function(citaId: string, nuevoEstado: string) {
     const citas = getAllCitas();
     const idx = citas.findIndex((c: any) => c.id === citaId || c.codigo_cita === citaId);
-    if (idx !== -1) {
-      const targetCita = citas[idx];
-      targetCita.estado = nuevoEstado;
-      saveAllCitas(citas);
-      renderAppointments();
+    if (idx === -1) return;
 
-      // Sincronizar también el estado en el servidor backend (:4000)
-      fetch(apiUrl(`/api/citas/${encodeURIComponent(targetCita.id || citaId)}/estado`), {
+    const targetCita = citas[idx];
+    const estadoPrevio = targetCita.estado;
+    try {
+      const resp = await fetch(apiUrl(`/api/citas/${encodeURIComponent(targetCita.id || citaId)}/estado`), {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify({ estado: nuevoEstado })
-      }).catch(() => {});
-
-      const toast = document.querySelector('#toast') as HTMLElement | null;
-      if (toast) {
-        toast.textContent = `✓ Cita ${targetCita.codigo_cita} actualizada a: ${nuevoEstado}`;
-        toast.style.display = 'block';
-        setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3000);
+      });
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok || !json?.ok) {
+        showToastMsg(json?.error || `No se pudo actualizar la cita ${targetCita.codigo_cita}.`, true);
+        return;
       }
+
+      targetCita.estado = nuevoEstado;
+      saveAllCitas(citas);
+      renderAppointments();
+      showToastMsg(`✓ Cita ${targetCita.codigo_cita} actualizada a: ${nuevoEstado}`);
+    } catch {
+      targetCita.estado = estadoPrevio;
+      showToastMsg('Error de conexión al actualizar estado de la cita.', true);
     }
   };
 
-  // Vaciar todas las citas en localStorage y en el Backend
+  // Vaciar citas verificando permisos RBAC reales en servidor
   (window as any).limpiarTodasLasCitas = async function() {
     try {
-      localStorage.setItem(STORAGE_KEY, '[]');
-      await fetch(apiUrl('/api/citas'), {
+      const resp = await fetch(apiUrl('/api/citas'), {
         method: 'DELETE',
         headers: getAuthHeaders()
-      }).catch(() => {});
+      });
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok || !json?.ok) {
+        showToastMsg(json?.error || 'Solo el personal autorizado puede limpiar la agenda.', true);
+        return;
+      }
+      localStorage.setItem(STORAGE_KEY, '[]');
       renderAppointments();
       window.dispatchEvent(new CustomEvent('medpulse:cita-creada', { detail: {} }));
       window.dispatchEvent(new CustomEvent('medpulse:cita-synced'));
-    } catch {}
+      showToastMsg('Agenda clínica limpiada correctamente.');
+    } catch {
+      showToastMsg('Error de red al limpiar agenda.', true);
+    }
   };
 
   // Cancelar cita por el paciente
@@ -787,9 +785,9 @@ if (propRole) {
 
     let citas = getAllCitas();
 
-    // Filtros por rol
+    // Filtros estrictos por rol (cada paciente ve solo sus citas; cada médico ve solo las suyas)
     if (role === 'paciente') {
-      citas = citas.filter((c: any) => c.paciente_id === targetPatientId || c.canal_origen === 'CHATBOT_WHATSAPP');
+      citas = citas.filter((c: any) => c.paciente_id === targetPatientId);
     } else if (role === 'doctor') {
       citas = citas.filter((c: any) => c.medico_id === targetDoctorId);
     }
@@ -877,16 +875,15 @@ if (propRole) {
                 <button 
                   type="button" 
                   class="cal-btn btn-ticket-pass" 
-                  onclick="window.abrirTicketDesdeBoton(this)"
-                  data-cita-id="${c.id}"
-                  data-codigo="${c.codigo_cita}"
-                  data-fecha="${c.fecha_hora_inicio}"
-                  data-paciente="${p.nombres} ${p.apellidos}"
-                  data-medico="Dr(a). ${m.nombres} ${m.apellidos}"
-                  data-especialidad="${esp.nombre}"
-                  data-consultorio="${room.nombre}"
-                  data-motivo="${c.motivo_consulta || 'Control de rutina'}"
-                  data-estado="${c.estado}"
+                  data-cita-id="${escapeHtml(c.id)}"
+                  data-codigo="${escapeHtml(c.codigo_cita)}"
+                  data-fecha="${escapeHtml(c.fecha_hora_inicio)}"
+                  data-paciente="${escapeHtml(`${p.nombres} ${p.apellidos}`)}"
+                  data-medico="${escapeHtml(`Dr(a). ${m.nombres} ${m.apellidos}`)}"
+                  data-especialidad="${escapeHtml(esp.nombre)}"
+                  data-consultorio="${escapeHtml(room.nombre)}"
+                  data-motivo="${escapeHtml(c.motivo_consulta || 'Control de rutina')}"
+                  data-estado="${escapeHtml(c.estado)}"
                   style="font-size: 12px; padding: 5px 10px; background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"
                   title="Ver pase digital y ticket"
                 >
@@ -1026,20 +1023,10 @@ if (propRole) {
       `;
     }).join('');
 
-    // Asignar listeners a los botones de Pase Clínico
+    // Único listener limpio para botones de Pase Clínico (evita doble invocación y pasa paciente completo)
     document.querySelectorAll('.btn-ticket-pass').forEach(btn => {
       btn.addEventListener('click', () => {
-        const b = btn as HTMLElement;
-        openTicketModal({
-          id: b.dataset.citaId,
-          codigo: b.dataset.codigo,
-          fecha: b.dataset.fecha,
-          medico: b.dataset.medico,
-          especialidad: b.dataset.especialidad,
-          consultorio: b.dataset.consultorio,
-          motivo: b.dataset.motivo,
-          estado: b.dataset.estado
-        });
+        (window as any).abrirTicketDesdeBoton(btn as HTMLElement);
       });
     });
   }

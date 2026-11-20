@@ -89,7 +89,7 @@ const isPatient = role === 'paciente' || patient;
           <span id="cal-selected-summary" class="appt-subtext">Selecciona un día para ver sus citas</span>
         </div>
         {role === 'doctor' ? (
-          <a href="#doctor-appointments-section" class="button secondary" style="font-size: 12px; padding: 7px 14px;">
+          <a href="#doctor-appointments-wrapper" class="button secondary" style="font-size: 12px; padding: 7px 14px;">
             📋 Ver pacientes citados
           </a>
         ) : (
@@ -107,22 +107,28 @@ const isPatient = role === 'paciente' || patient;
 
 <script>
   import data from '../data/seeds.json';
-  import { apiUrl } from '../data/api';
+  import { apiUrl, escapeHtml, getAuthHeaders, getSession } from '../data/api';
   const STORAGE_KEY = 'medpulse_citas_v2';
   const card = document.getElementById('calendar-card');
   const role = card?.dataset.role || (window.location.pathname.startsWith('/paciente') ? 'paciente' : window.location.pathname.startsWith('/doctor') ? 'doctor' : window.location.pathname.startsWith('/secretaria') ? 'secretaria' : 'admin');
-  const defaultDoctorId = data.medicos[0]?.id || 'MED-01';
-  const targetDoctorId = card?.dataset.doctorId || defaultDoctorId;
-  const currentPatientId = data.pacientes[0].id;
+  const activeSession = getSession();
+  const defaultDoctorId = data.medicos[0]?.id || 'c0000000-0000-0000-0000-000000000001';
+  const targetDoctorId =
+    (role === 'doctor' ? (activeSession?.usuario?.medicoId || activeSession?.usuario?.id) : '') ||
+    card?.dataset.doctorId ||
+    defaultDoctorId;
+  const currentPatientId =
+    (role === 'paciente' ? (activeSession?.paciente?.id || activeSession?.usuario?.pacienteId || activeSession?.usuario?.id) : '') ||
+    data.pacientes[0].id;
   let userManuallySelectedDate = false;
+
+  function getPanamaTodayIso(): string {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Panama' }).format(new Date());
+  }
 
   // Función para obtener todas las citas activas
   function getAllCitas() {
     try {
-      if (!localStorage.getItem('medpulse_reset_zero_v2')) {
-        localStorage.setItem(STORAGE_KEY, '[]');
-        localStorage.setItem('medpulse_reset_zero_v2', '1');
-      }
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
@@ -133,33 +139,23 @@ const isPatient = role === 'paciente' || patient;
     } catch (e) {
       console.warn('Error al leer citas de localStorage:', e);
     }
-    const defaultCitas = [...data.citas];
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultCitas));
-    } catch {}
-    return defaultCitas;
+    return [...data.citas];
   }
 
-  // Sincronización en tiempo real desde Backend (WhatsApp / API REST)
+  // Sincronización autoritativa desde Backend (Supabase)
   async function syncCalendarFromBackend() {
     try {
-      const res = await fetch(apiUrl('/api/citas'));
+      const res = await fetch(apiUrl('/api/citas'), { headers: getAuthHeaders() });
       if (!res.ok) return;
       const json = await res.json();
       const rawList = json.data || json.datos;
-      const backendCitas = Array.isArray(rawList) ? rawList : [];
-      if (backendCitas.length === 0) return;
-
-      const localCitas = getAllCitas();
-      let changed = false;
+      if (!Array.isArray(rawList)) return;
 
       const customPatients = JSON.parse(localStorage.getItem('medpulse_custom_patients') || '[]');
       let customChanged = false;
 
-      for (const bc of backendCitas) {
+      const syncedCitas = rawList.map((bc: any) => {
         const codigo = bc.codigoCita || bc.codigo_cita;
-        const id = bc.id;
-
         if (bc.pacienteNombre && bc.pacienteId) {
           const existsPat = customPatients.some((p: any) => p.id === bc.pacienteId);
           if (!existsPat) {
@@ -167,62 +163,45 @@ const isPatient = role === 'paciente' || patient;
             customPatients.push({
               id: bc.pacienteId,
               nombres: parts[0] || 'Paciente',
-              apellidos: parts.slice(1).join(' ') || 'WhatsApp',
+              apellidos: parts.slice(1).join(' ') || 'Registrado',
               documento_numero: bc.pacienteDocumento || '8-000-0000',
               telefono: bc.pacienteTelefono || '+507 6598-2118',
-              email: 'whatsapp@medpulse.pa'
+              email: 'paciente@medpulse.clinic'
             });
             customChanged = true;
           }
         }
 
-        const existingIdx = localCitas.findIndex((lc: any) => lc.codigo_cita === codigo || lc.id === id);
-        if (existingIdx !== -1) {
-          const ex = localCitas[existingIdx];
-          if (bc.pacienteNombre && !ex.paciente_nombre_directo) {
-            ex.paciente_nombre_directo = bc.pacienteNombre;
-            ex.paciente_documento_directo = bc.pacienteDocumento;
-            changed = true;
-          }
-          if (bc.medicoId && ex.canal_origen === 'CHATBOT_WHATSAPP' && ex.medico_id !== bc.medicoId) {
-            ex.medico_id = bc.medicoId;
-            changed = true;
-          }
-          if (bc.estado && ex.estado !== bc.estado) {
-            ex.estado = bc.estado;
-            changed = true;
-          }
-        } else {
-          const inicioClean = String(bc.fechaHoraInicio || '').replace('T', ' ').replace('Z', '').slice(0, 19);
-          const finClean = String(bc.fechaHoraFin || '').replace('T', ' ').replace('Z', '').slice(0, 19);
+        const inicioClean = String(bc.fechaHoraInicio || '').replace('T', ' ').replace('Z', '').slice(0, 19);
+        const finClean = String(bc.fechaHoraFin || '').replace('T', ' ').replace('Z', '').slice(0, 19);
 
-          localCitas.unshift({
-            id: bc.id,
-            codigo_cita: codigo,
-            paciente_id: bc.pacienteId || 'd0000000-0000-0000-0000-000000000001',
-            paciente_nombre_directo: bc.pacienteNombre || null,
-            paciente_documento_directo: bc.pacienteDocumento || null,
-            paciente_telefono_directo: bc.pacienteTelefono || null,
-            medico_id: bc.medicoId || 'c0000000-0000-0000-0000-000000000001',
-            especialidad_id: bc.especialidadId || 1,
-            consultorio_id: bc.consultorioId || 1,
-            fecha_hora_inicio: `${inicioClean}-05`,
-            fecha_hora_fin: `${finClean}-05`,
-            estado: bc.estado || 'PENDIENTE',
-            canal_origen: bc.canalOrigen || 'CHATBOT_WHATSAPP',
-            motivo_consulta: bc.motivoConsulta || 'Cita agendada vía WhatsApp IA',
-            reservado_por: 'PACIENTE'
-          });
-          changed = true;
-        }
-      }
+        return {
+          id: bc.id,
+          codigo_cita: codigo,
+          paciente_id: bc.pacienteId || 'e0000000-0000-0000-0000-000000000001',
+          paciente_nombre_directo: bc.pacienteNombre || null,
+          paciente_documento_directo: bc.pacienteDocumento || null,
+          paciente_telefono_directo: bc.pacienteTelefono || null,
+          medico_id: bc.medicoId || 'c0000000-0000-0000-0000-000000000001',
+          especialidad_id: Number(bc.especialidadId || 1),
+          consultorio_id: Number(bc.consultorioId || 1),
+          fecha_hora_inicio: `${inicioClean}-05`,
+          fecha_hora_fin: `${finClean}-05`,
+          estado: bc.estado || 'PENDIENTE',
+          canal_origen: bc.canalOrigen || 'WEB_PACIENTE',
+          motivo_consulta: bc.motivoConsulta || 'Consulta programada',
+          reservado_por: bc.reservadoPor || ((bc.canalOrigen === 'WEB_PACIENTE' || bc.canalOrigen === 'CHATBOT_WHATSAPP') ? 'PACIENTE' : 'ADMINISTRADOR')
+        };
+      });
 
       if (customChanged) {
         localStorage.setItem('medpulse_custom_patients', JSON.stringify(customPatients));
       }
 
-      if (changed) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(localCitas));
+      const prevJson = localStorage.getItem(STORAGE_KEY) || '';
+      const nextJson = JSON.stringify(syncedCitas);
+      if (prevJson !== nextJson) {
+        localStorage.setItem(STORAGE_KEY, nextJson);
         renderCalendar();
         window.dispatchEvent(new CustomEvent('medpulse:cita-synced'));
       }
@@ -236,18 +215,19 @@ const isPatient = role === 'paciente' || patient;
     let citas = getAllCitas();
 
     if (role === 'paciente') {
-      citas = citas.filter((c: any) => c.paciente_id === currentPatientId || c.canal_origen === 'CHATBOT_WHATSAPP');
+      citas = citas.filter((c: any) => c.paciente_id === currentPatientId);
     } else if (role === 'doctor') {
       citas = citas.filter((c: any) => c.medico_id === targetDoctorId);
     }
-    // Para 'secretaria' o 'admin' se visualizan todas
     return citas;
   }
 
-  let currentYear = 2026;
-  let currentMonth = 9; // 9 = Octubre (0-indexed)
+  const panamaToday = getPanamaTodayIso();
+  const [initY, initM] = panamaToday.split('-').map(Number);
+  let currentYear = initY || 2026;
+  let currentMonth = (initM ? initM - 1 : 10);
   let currentFilter = 'ALL';
-  let selectedDateStr = '2026-10-05';
+  let selectedDateStr = panamaToday;
 
   const monthNames = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -341,10 +321,10 @@ const isPatient = role === 'paciente' || patient;
     if (!grid || !monthTitle) return;
 
     const citas = getCitasForCurrentRole();
-    if (!userManuallySelectedDate) {
-      const latestWa = citas.find((c: any) => c.canal_origen === 'CHATBOT_WHATSAPP' && c.fecha_hora_inicio);
-      if (latestWa) {
-        selectedDateStr = latestWa.fecha_hora_inicio.slice(0, 10);
+    if (!userManuallySelectedDate && citas.length > 0) {
+      const firstActive = citas.find((c: any) => c.estado !== 'CANCELADA' && c.fecha_hora_inicio) || citas[0];
+      if (firstActive?.fecha_hora_inicio) {
+        selectedDateStr = firstActive.fecha_hora_inicio.slice(0, 10);
         const [y, m] = selectedDateStr.split('-').map(Number);
         if (!isNaN(y) && !isNaN(m)) {
           currentYear = y;
@@ -409,12 +389,11 @@ const isPatient = role === 'paciente' || patient;
           const icon = c.canal_origen === 'CHATBOT_WHATSAPP' ? '📱' : (isPatientCreator ? '👤' : '🛡️');
           const pillClass = isPatientCreator ? 'patient' : 'admin';
           
-          // En la vista de doctor, mostrar el nombre del paciente; en otras, el del médico
           const textLabel = role === 'doctor' 
-            ? `${icon} ${time12} · ${pat.nombres.split(' ')[0]}`
-            : `${icon} ${time12} · ${c.canal_origen === 'CHATBOT_WHATSAPP' ? pat.nombres.split(' ')[0] : 'Dr. ' + doc.apellidos.split(' ')[0]}`;
+            ? `${icon} ${time12} · ${escapeHtml(pat.nombres.split(' ')[0])}`
+            : `${icon} ${time12} · ${c.canal_origen === 'CHATBOT_WHATSAPP' ? escapeHtml(pat.nombres.split(' ')[0]) : 'Dr. ' + escapeHtml(doc.apellidos.split(' ')[0])}`;
 
-          pillsHtml += `<div class="cal-pill ${pillClass}" title="Cita médica a las ${time12} — Paciente: ${pat.nombres} ${pat.apellidos} · Dr. ${doc.apellidos} (${specialty.nombre})"><span>${textLabel}</span></div>`;
+          pillsHtml += `<div class="cal-pill ${pillClass}" title="${escapeHtml(`Cita médica a las ${time12} — Paciente: ${pat.nombres} ${pat.apellidos} · Dr. ${doc.apellidos} (${specialty.nombre})`)}"><span>${textLabel}</span></div>`;
         });
         pillsHtml += '</div>';
       }
@@ -582,9 +561,12 @@ const isPatient = role === 'paciente' || patient;
     });
 
     document.getElementById('cal-today')?.addEventListener('click', () => {
-      currentYear = 2026;
-      currentMonth = 9;
-      selectedDateStr = '2026-10-05';
+      const todayIso = getPanamaTodayIso();
+      const [y, m] = todayIso.split('-').map(Number);
+      userManuallySelectedDate = true;
+      currentYear = y;
+      currentMonth = m - 1;
+      selectedDateStr = todayIso;
       renderCalendar();
       animateGrid();
     });

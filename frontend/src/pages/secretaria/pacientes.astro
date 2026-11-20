@@ -108,7 +108,7 @@ import data from '../../data/seeds.json';
 
 <script>
   import data from '../../data/seeds.json';
-  import { apiUrl } from '../../data/api';
+  import { apiUrl, getAuthHeaders } from '../../data/api';
 
   const STORAGE_KEY = 'medpulse_custom_patients';
   const CEDULA_REGEX = /^(\d{1,2}|E|N|PE|\d{1,2}AV|\d{1,2}PI)-\d{1,4}-\d{1,6}$/i;
@@ -178,7 +178,6 @@ import data from '../../data/seeds.json';
   function docLabel(tipo: string): string {
     if (tipo === 'PASAPORTE') return 'Pasaporte';
     if (tipo === 'CEDULA_E') return 'Cédula E';
-    if (tipo === 'DNI') return 'DNI';
     return 'Cédula';
   }
 
@@ -295,7 +294,7 @@ import data from '../../data/seeds.json';
       const timeout = setTimeout(() => controller.abort(), 8000);
       const res = await fetch(apiUrl('/api/auth/register-paciente'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(payload),
         signal: controller.signal
       });

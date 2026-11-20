@@ -17,20 +17,20 @@ const consultorio = data.consultorios.find(c => c.id === 3); // Consultorio 201
         <span class="live-pulse-dot"></span>
         <span style="font-weight: 700; color: #38bdf8; letter-spacing: 0.5px;">CONSULTORIO CLÍNICO ACTIVO</span>
         <span class="separator" style="color: #475569;">·</span>
-        <span class="verified-tag" style="color: #34d399; font-weight: 600;">✓ Dr. Roberto Mendoza Valdivia</span>
+        <span class="verified-tag" id="doc-hero-name" style="color: #34d399; font-weight: 600;">✓ Dr. Roberto Mendoza Valdivia</span>
       </div>
       
       <h2 style="font-size: 26px; margin: 10px 0 8px 0; color: #ffffff;">Panel Médico y Control de Atenciones 🩺</h2>
-      <p style="margin: 0 0 16px 0; color: #cbd5e1; max-width: 720px; font-size: 14px; line-height: 1.6;">
-        Bienvenido a tu consola clínica, Dr. Mendoza. Consulta el calendario de turnos asignados a mes completo, revisa los motivos clínicos declarados por tus pacientes y gestiona el flujo de consultas en tiempo real.
+      <p id="doc-hero-desc" style="margin: 0 0 16px 0; color: #cbd5e1; max-width: 720px; font-size: 14px; line-height: 1.6;">
+        Bienvenido a tu consola clínica. Consulta el calendario de turnos asignados a mes completo, revisa los motivos clínicos declarados por tus pacientes y gestiona el flujo de consultas en tiempo real.
       </p>
 
       <div class="patient-quick-tags">
-        <span class="tag-chip"><strong>Consultorio:</strong> {consultorio?.nombre} ({consultorio?.piso})</span>
-        <span class="tag-chip"><strong>Especialidad:</strong> {especialidad?.nombre}</span>
-        <span class="tag-chip"><strong>Colegiatura:</strong> {doctor.numero_colegiatura}</span>
-        <span class="tag-chip"><strong>Turno habitual:</strong> 08:00 AM – 01:00 PM</span>
-        <span class="tag-chip"><strong>Sincronización:</strong> Google Calendar Activa</span>
+        <span class="tag-chip" id="doc-tag-room"><strong>Consultorio:</strong> {consultorio?.nombre} ({consultorio?.piso})</span>
+        <span class="tag-chip" id="doc-tag-esp"><strong>Especialidad:</strong> {especialidad?.nombre}</span>
+        <span class="tag-chip" id="doc-tag-cmp"><strong>Colegiatura:</strong> {doctor.numero_colegiatura}</span>
+        <span class="tag-chip"><strong>Turno habitual:</strong> Lunes a Sábado</span>
+        <span class="tag-chip"><strong>Agenda:</strong> Supabase + Anti-Colisión</span>
       </div>
     </div>
 
@@ -86,8 +86,8 @@ const consultorio = data.consultorios.find(c => c.id === 3); // Consultorio 201
       </div>
       <div class="bento-body">
         <span class="bento-label">COLEGIATURA OFICIAL</span>
-        <strong class="bento-value">{doctor.numero_colegiatura}</strong>
-        <p class="bento-subtext">Colegio Médico del Perú · RNE-Cardiología activo.</p>
+        <strong class="bento-value" id="doc-bento-cmp">{doctor.numero_colegiatura}</strong>
+        <p class="bento-subtext">Registro Médico Idóneo · República de Panamá.</p>
       </div>
       <div class="bento-footer">
         <span class="bento-link" style="color: #c084fc; font-size: 12px;">Firma y sello digital</span>
@@ -98,12 +98,12 @@ const consultorio = data.consultorios.find(c => c.id === 3); // Consultorio 201
     <div class="card bento-card card-accent-amber">
       <div class="bento-header">
         <span class="bento-icon">⚡</span>
-        <span class="badge amber">Tarifa S/ {doctor.tarifa_consulta}</span>
+        <span class="badge amber" id="doc-bento-fee">Tarifa USD ${doctor.tarifa_consulta}</span>
       </div>
       <div class="bento-body">
         <span class="bento-label">DISPONIBILIDAD SEMANAL</span>
-        <strong class="bento-value">Lunes a Viernes</strong>
-        <p class="bento-subtext">Horarios recurrentes con descansos programados.</p>
+        <strong class="bento-value">Lunes a Sábado</strong>
+        <p class="bento-subtext">Horarios recurrentes con bloqueos temporales en Supabase.</p>
       </div>
       <div class="bento-footer">
         <a href="/doctor/horarios" class="bento-link" style="color: #fbbf24; font-size: 12px;">Gestionar descansos →</a>
@@ -145,6 +145,25 @@ const consultorio = data.consultorios.find(c => c.id === 3); // Consultorio 201
     <Appointments role="doctor" doctorId={doctor.id} />
   </div>
 </Layout>
+
+<script>
+  import data from '../../data/seeds.json';
+  import { getSession } from '../../data/api';
+
+  const session = getSession();
+  const medicoId = session?.usuario?.medicoId || session?.usuario?.id;
+  const doc = data.medicos.find(m => m.id === medicoId);
+  if (doc) {
+    const heroName = document.getElementById('doc-hero-name');
+    const cmpEl = document.getElementById('doc-bento-cmp');
+    const feeEl = document.getElementById('doc-bento-fee');
+    const tagCmp = document.getElementById('doc-tag-cmp');
+    if (heroName) heroName.textContent = `✓ Dr(a). ${doc.nombres} ${doc.apellidos}`;
+    if (cmpEl) cmpEl.textContent = doc.numero_colegiatura;
+    if (feeEl) feeEl.textContent = `Tarifa USD $${doc.tarifa_consulta}`;
+    if (tagCmp) tagCmp.innerHTML = `<strong>Colegiatura:</strong> ${doc.numero_colegiatura}`;
+  }
+</script>
 
 <style>
   .patient-section-nav {

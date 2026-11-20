@@ -456,6 +456,14 @@ p {
   flex-shrink: 0 !important;
 }
 
+.badge.red {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
 /* Badges específicos para Paciente y Administrador */
 .badge-patient {
   background: rgba(16, 185, 129, 0.16) !important;
@@ -598,16 +606,28 @@ input:focus, select:focus, textarea:focus {
 
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
 }
 
 label {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
   gap: 6px;
   color: #cbd5e1;
   font-size: 13px;
   font-weight: 500;
+  min-width: 0;
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  min-width: 0;
+  max-width: 100%;
 }
 
 label small {

@@ -1,27 +1,30 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import data from '../data/seeds.json';
-
 ---
 <Layout title="Asistente Virtual WhatsApp · MedPulse" role="admin">
-  <div style="max-width: 720px; margin: 40px auto; text-align: center;">
+  <div style="max-width: 720px; margin: 32px auto; text-align: center;">
     <section class="card" style="padding: 36px 28px; border: 1px solid rgba(16, 185, 129, 0.35); background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.95) 100%);">
-      <div style="font-size: 48px; margin-bottom: 16px;">💬</div>
-      <span class="badge green" style="font-size: 13px; padding: 4px 12px; margin-bottom: 12px; display: inline-block;">Canal Oficial WhatsApp</span>
-      <h2 style="font-size: 24px; color: #ffffff; margin: 10px 0;">El Asistente Virtual ahora atiende en WhatsApp</h2>
-      <p style="color: #cbd5e1; font-size: 15px; line-height: 1.6; margin: 0 auto 24px auto; max-width: 580px;">
-        Para mayor comodidad de los pacientes, el servicio de triaje clínico y asignación automática de citas opera exclusivamente a través de nuestra línea de WhatsApp 24/7.
+      <div style="font-size: 48px; margin-bottom: 12px;">💬</div>
+      <span class="badge green" style="font-size: 13px; padding: 4px 12px; margin-bottom: 12px; display: inline-block;">Canal Oficial Único: WhatsApp</span>
+      <h2 style="font-size: 24px; color: #ffffff; margin: 10px 0;">El Asistente Virtual atiende solo por WhatsApp</h2>
+      <p style="color: #cbd5e1; font-size: 15px; line-height: 1.6; margin: 0 auto 20px auto; max-width: 580px;">
+        Para evitar duplicidad de canales, el triaje clínico automatizado y la reserva conversacional de citas operan exclusivamente en nuestra línea oficial <strong>+507 6598-2118</strong>.
       </p>
 
+      <div style="background: #ffffff; padding: 12px; border-radius: 12px; display: inline-block; margin-bottom: 20px;">
+        <img id="asist-wa-qr" src="" alt="QR WhatsApp +507 6598-2118" style="width: 180px; height: 180px; display: none;" />
+        <small id="asist-wa-qr-loading" style="color: #0f172a; display: block; padding: 24px;">Cargando QR...</small>
+      </div>
+
       <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;">
-        <a 
-          href="https://wa.me/50760000000?text=Hola%20MedPulse,%20deseo%20consultar%20por%20una%20cita%20m%C3%A9dica" 
-          target="_blank" 
-          rel="noopener noreferrer" 
+        <a
+          href="https://wa.me/50765982118?text=Hola%20MedPulse,%20deseo%20consultar%20por%20una%20cita%20m%C3%A9dica"
+          target="_blank"
+          rel="noopener noreferrer"
           class="button primary-glow"
           style="background: #10b981; color: #ffffff; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; text-decoration: none;"
         >
-          <span>📱</span> Abrir WhatsApp (+507 6000-0000)
+          <span>📱</span> Abrir WhatsApp (+507 6598-2118)
         </a>
         <a href="/citas" class="button secondary" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">
           Volver a Citas
@@ -30,3 +33,20 @@ import data from '../data/seeds.json';
     </section>
   </div>
 </Layout>
+
+<script>
+  import { apiUrl } from '../data/api';
+  fetch(apiUrl('/api/whatsapp/qr'))
+    .then(r => r.json())
+    .then(d => {
+      const src = d?.data?.qrDataUrl || d?.data?.qrWaMeDataUrl;
+      const img = document.getElementById('asist-wa-qr') as HTMLImageElement | null;
+      const ph = document.getElementById('asist-wa-qr-loading');
+      if (src && img) {
+        img.src = src;
+        img.style.display = 'block';
+        if (ph) ph.style.display = 'none';
+      }
+    })
+    .catch(() => {});
+</script>

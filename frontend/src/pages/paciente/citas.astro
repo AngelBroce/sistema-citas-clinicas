@@ -25,8 +25,8 @@ const paciente = data.pacientes[0];
 
       <div class="patient-quick-tags">
         <span class="tag-chip" id="hero-patient-name"><strong>Titular:</strong> {paciente.nombres} {paciente.apellidos}</span>
-        <span class="tag-chip" id="hero-patient-doc"><strong>DNI:</strong> {paciente.documento_numero}</span>
-        <span class="tag-chip"><strong>Historial:</strong> HCL-10492</span>
+        <span class="tag-chip" id="hero-patient-doc"><strong>Cédula:</strong> {paciente.documento_numero}</span>
+        <span class="tag-chip"><strong>Portal:</strong> Panamá Salud</span>
         <span class="tag-chip"><strong>Sede:</strong> Sede Central</span>
       </div>
     </div>
@@ -44,12 +44,12 @@ const paciente = data.pacientes[0];
     <div class="card bento-card card-accent-green">
       <div class="bento-header">
         <span class="bento-icon">🩺</span>
-        <span class="badge green">Confirmada</span>
+        <span id="citas-bento-estado" class="badge green">En Agenda</span>
       </div>
       <div class="bento-body">
         <span class="bento-label">PRÓXIMA CONSULTA</span>
-        <strong class="bento-value">05 Oct · 09:00 AM</strong>
-        <p class="bento-subtext">Dr. Roberto Mendoza Valdivia<br><span style="color: #34d399; font-weight: 600;">Cardiología · Consultorio 201</span></p>
+        <strong class="bento-value" id="citas-bento-proxima">Cargando...</strong>
+        <p class="bento-subtext" id="citas-bento-doctor">Consultando tu próxima atención...</p>
       </div>
       <div class="bento-footer">
         <button type="button" onclick="window.abrirPaseProximaCita()" class="bento-link" style="background: none; border: none; padding: 0; cursor: pointer; color: #34d399; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
@@ -62,12 +62,12 @@ const paciente = data.pacientes[0];
     <div class="card bento-card card-accent-purple">
       <div class="bento-header">
         <span class="bento-icon">📅</span>
-        <span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.45);">2 en Agenda</span>
+        <span id="citas-bento-badge-count" class="badge" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.45);">0 en Agenda</span>
       </div>
       <div class="bento-body">
         <span class="bento-label">ESTADO DE RESERVAS</span>
-        <strong class="bento-value">2 Atenciones</strong>
-        <p class="bento-subtext">1 autogestión web + 1 agendada por recepción clínica.</p>
+        <strong class="bento-value" id="citas-bento-count">0 Atenciones</strong>
+        <p class="bento-subtext">Reservas sincronizadas en tiempo real con Supabase.</p>
       </div>
       <div class="bento-footer">
         <a href="#appointments-section" class="bento-link" style="color: #c084fc;">Ver lista completa ↓</a>
@@ -83,7 +83,7 @@ const paciente = data.pacientes[0];
       <div class="bento-body">
         <span class="bento-label">ANTES DE ACUDIR</span>
         <strong class="bento-value">Llegar 10 min antes</strong>
-        <p class="bento-subtext">Presenta tu DNI físico en la ventanilla de recepción o muestra tu pase digital.</p>
+        <p class="bento-subtext">Presenta tu cédula o pasaporte en recepción o muestra tu pase digital.</p>
       </div>
       <div class="bento-footer">
         <span class="bento-link" style="color: #fbbf24; font-size: 12px;">Admisión rápida en sede</span>
@@ -182,22 +182,46 @@ const paciente = data.pacientes[0];
 </style>
 
 <script>
-  function hydratePatientInfo() {
+  import { apiUrl, getAuthHeaders, getSession } from '../../data/api';
+
+  async function hydratePatientInfo() {
     try {
-      const session = JSON.parse(localStorage.getItem('medpulse_session') || '{}');
+      const session = getSession();
       if (session?.paciente) {
         const p = session.paciente;
         const nameEl = document.getElementById('hero-patient-name');
         const docEl = document.getElementById('hero-patient-doc');
         if (nameEl) nameEl.innerHTML = `<strong>Titular:</strong> ${p.nombres} ${p.apellidos}`;
-        if (docEl) docEl.innerHTML = `<strong>${p.documento_tipo || 'DNI'}:</strong> ${p.documento_numero || '—'}`;
+        if (docEl) docEl.innerHTML = `<strong>${p.documento_tipo || 'Cédula'}:</strong> ${p.documento_numero || '—'}`;
+      }
+
+      const resp = await fetch(apiUrl('/api/citas'), { headers: getAuthHeaders() });
+      const json = await resp.json();
+      const pid = session?.paciente?.id || session?.usuario?.pacienteId || session?.usuario?.id;
+      const misCitas = (Array.isArray(json?.data) ? json.data : [])
+        .filter((c: any) => !pid || c.pacienteId === pid)
+        .filter((c: any) => c.estado !== 'CANCELADA');
+
+      const elCount = document.getElementById('citas-bento-count');
+      const elBadgeCount = document.getElementById('citas-bento-badge-count');
+      const elProxima = document.getElementById('citas-bento-proxima');
+      const elDoctor = document.getElementById('citas-bento-doctor');
+      const elEstado = document.getElementById('citas-bento-estado');
+
+      if (elCount) elCount.textContent = `${misCitas.length} ${misCitas.length === 1 ? 'Atención' : 'Atenciones'}`;
+      if (elBadgeCount) elBadgeCount.textContent = `${misCitas.length} en Agenda`;
+      if (misCitas.length > 0) {
+        const nextC = misCitas[0];
+        if (elProxima) elProxima.textContent = String(nextC.fechaHoraInicio || '').slice(0, 16).replace('T', ' · ');
+        if (elDoctor) elDoctor.innerHTML = `${nextC.medicoNombre || 'Médico'}<br><span style="color: #34d399; font-weight: 600;">${nextC.especialidadNombre || ''} · ${nextC.consultorioNombre || ''}</span>`;
+        if (elEstado) elEstado.textContent = nextC.estado || 'PROGRAMADA';
+      } else {
+        if (elProxima) elProxima.textContent = 'Sin citas activas';
+        if (elDoctor) elDoctor.textContent = 'Reserva un turno desde Portal Paciente.';
+        if (elEstado) elEstado.textContent = 'Disponible';
       }
     } catch {}
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', hydratePatientInfo);
-  } else {
-    hydratePatientInfo();
-  }
+  hydratePatientInfo();
 </script>

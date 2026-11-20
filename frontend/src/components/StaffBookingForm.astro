@@ -129,7 +129,7 @@ const submitLabel = isAdmin ? '🛡️ Guardar y Confirmar Cita (Admin)' : '📋
       <input type="hidden" name="paciente_id" id="patient-id-input" value={data.pacientes[0].id} />
       <input type="hidden" name="reservado_por" id="reservado-por-input" value="ADMINISTRADOR" />
 
-      <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+      <div class="form-grid" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start;">
         <label>
           Especialidad médica
           <select name="especialidad_id" id="specialty" required style="height: 44px;">
@@ -197,7 +197,7 @@ const submitLabel = isAdmin ? '🛡️ Guardar y Confirmar Cita (Admin)' : '📋
       <input type="hidden" name="hora" id="slot-assigned-value" value="" />
 
       <!-- Motivo de consulta -->
-      <label style="margin-top: 16px; display: block;">
+      <label style="margin-top: 16px;">
         Motivo de la consulta / Observación de recepción
         <textarea
           name="motivo_consulta"
@@ -210,6 +210,7 @@ const submitLabel = isAdmin ? '🛡️ Guardar y Confirmar Cita (Admin)' : '📋
       </label>
 
       <p id="booking-info" style="font-size: 12px; color: #94a3b8; margin: 8px 0 0;"></p>
+      <div id="booking-error-alert" style="display: none; margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: rgba(239, 68, 68, 0.14); border: 1px solid #ef4444; color: #fca5a5; font-size: 13px;"></div>
 
       <!-- Botones de Acción -->
       <div style="margin-top: 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
@@ -285,7 +286,7 @@ const submitLabel = isAdmin ? '🛡️ Guardar y Confirmar Cita (Admin)' : '📋
 
 <script>
   import data from '../data/seeds.json';
-  import { apiUrl } from '../data/api';
+  import { apiUrl, escapeHtml, getAuthHeaders } from '../data/api';
 
   const STORAGE_KEY = 'medpulse_citas_v2';
 
@@ -300,36 +301,14 @@ const submitLabel = isAdmin ? '🛡️ Guardar y Confirmar Cita (Admin)' : '📋
     return [...data.citas];
   }
 
-  function saveCita(nuevaCita: any) {
+  function appendCitaLocal(nuevaCita: any) {
     const list = getAllCitas();
-    list.unshift(nuevaCita);
+    if (!list.some((c: any) => c.id === nuevaCita.id || c.codigo_cita === nuevaCita.codigo_cita)) {
+      list.unshift(nuevaCita);
+    }
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-    } catch (e) {
-      console.warn('Error al guardar localmente:', e);
-    }
-
-    fetch(apiUrl('/api/citas/reservar'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        pacienteId: nuevaCita.paciente_id,
-        pacienteNombre: nuevaCita.paciente_nombre_directo,
-        pacienteDocumento: nuevaCita.paciente_documento_directo,
-        pacienteTelefono: nuevaCita.paciente_telefono_directo,
-        medicoId: nuevaCita.medico_id,
-        especialidadId: nuevaCita.especialidad_id,
-        consultorioId: nuevaCita.consultorio_id,
-        fecha: nuevaCita.fecha_hora_inicio.slice(0, 10),
-        horaInicio: nuevaCita.fecha_hora_inicio.slice(11, 16),
-        duracionMin: 30,
-        motivoConsulta: nuevaCita.motivo_consulta,
-        canalOrigen: nuevaCita.canal_origen,
-        reservadoPor: 'ADMINISTRADOR',
-        sincronizarGoogleCalendar: true
-      })
-    }).catch(() => {});
-
+    } catch {}
     window.dispatchEvent(new CustomEvent('medpulse:cita-creada', {
       detail: {
         fecha: nuevaCita.fecha_hora_inicio.slice(0, 10),
@@ -339,14 +318,10 @@ const submitLabel = isAdmin ? '🛡️ Guardar y Confirmar Cita (Admin)' : '📋
   }
 
   function getDefaultWeekdayIso(): string {
-    const d = new Date();
-    // Si es sábado (6) o domingo (0), avanzar al próximo lunes para mostrar turnos laborales válidos
-    if (d.getDay() === 6) d.setDate(d.getDate() + 2);
-    else if (d.getDay() === 0) d.setDate(d.getDate() + 1);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
+    const panamaStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Panama' }).format(new Date());
+    const d = new Date(`${panamaStr}T12:00:00`);
+    if (d.getDay() === 0) d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
   }
 
   function formatTime12h(timeStr: string) {
@@ -503,7 +478,20 @@ const submitLabel = isAdmin ? '🛡️ Guardar y Confirmar Cita (Admin)' : '📋
 
     const dayNames: Record<number, string> = { 1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 7: 'Domingo' };
 
-    const calculateAutomaticSlot = () => {
+    const errorAlert = document.getElementById('booking-error-alert');
+    const showBookingError = (msg: string) => {
+      if (!errorAlert) return;
+      errorAlert.textContent = msg;
+      errorAlert.style.display = 'block';
+    };
+    const clearBookingError = () => {
+      if (!errorAlert) return;
+      errorAlert.textContent = '';
+      errorAlert.style.display = 'none';
+    };
+
+    const calculateAutomaticSlot = async () => {
+      clearBookingError();
       slotAssignedValue.value = '';
       const medicoId = doctor.value;
       const fechaStr = dateInput.value;
@@ -517,15 +505,13 @@ const submitLabel = isAdmin ? '🛡️ Guardar y Confirmar Cita (Admin)' : '📋
 
       const docSchedule = data.horarios_medicos.find(h => h.medico_id === medicoId && h.dia_semana === dayOfWeek);
       if (!docSchedule) {
-        const docShifts = data.horarios_medicos.filter(h => h.medico_id === medicoId);
-        const shiftDaysStr = docShifts.map(h => dayNames[h.dia_semana]).join(', ');
         if (assignedSlotDisplay) {
           assignedSlotDisplay.textContent = `Sin atención el ${dayNames[dayOfWeek]}`;
           assignedSlotDisplay.style.color = '#ef4444';
         }
         roomInput.value = 'Sin consultorio';
         if (assignedRoomBadge) assignedRoomBadge.textContent = 'No programado';
-        if (infoText) infoText.textContent = `⚠️ Este médico atiende los días: ${shiftDaysStr}. Selecciona una de esas fechas.`;
+        if (infoText) infoText.textContent = '⚠️ Este médico atiende de Lunes a Sábado. Selecciona otro día hábil.';
         if (submitBtn) submitBtn.disabled = true;
         return;
       }
@@ -535,69 +521,47 @@ const submitLabel = isAdmin ? '🛡️ Guardar y Confirmar Cita (Admin)' : '📋
       roomInput.dataset.id = String(docSchedule.consultorio_id);
       if (assignedRoomBadge) assignedRoomBadge.textContent = assignedRoom ? assignedRoom.nombre : 'Consultorio';
 
-      const existingCitas = getAllCitas().filter(c =>
-        c.medico_id === medicoId &&
-        c.fecha_hora_inicio.slice(0, 10) === fechaStr &&
-        c.estado !== 'CANCELADA'
-      );
-
-      const toMinutes = (timeStr: string) => {
-        const [h, m] = timeStr.split(':').map(Number);
-        return h * 60 + m;
-      };
-
-      const toTimeString = (totalMinutes: number) => {
-        const h = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
-        const m = (totalMinutes % 60).toString().padStart(2, '0');
-        return `${h}:${m}`;
-      };
-
-      const startMinutes = toMinutes(docSchedule.hora_inicio.slice(0, 5));
-      const endMinutes = toMinutes(docSchedule.hora_fin.slice(0, 5));
-      const duration = docSchedule.duracion_cita_min || 30;
-
-      let foundStart: string | null = null;
-      let foundEnd: string | null = null;
-      let totalAvailable = 0;
-
-      for (let cur = startMinutes; cur + duration <= endMinutes; cur += duration) {
-        const slotStart = toTimeString(cur);
-        const slotEnd = toTimeString(cur + duration);
-
-        const isOccupied = existingCitas.some(c => {
-          const cStart = c.fecha_hora_inicio.slice(11, 16);
-          const cEnd = c.fecha_hora_fin ? c.fecha_hora_fin.slice(11, 16) : toTimeString(toMinutes(cStart) + duration);
-          return Math.max(toMinutes(cStart), cur) < Math.min(toMinutes(cEnd), cur + duration);
-        });
-
-        if (!isOccupied) {
-          totalAvailable++;
-          if (!foundStart) {
-            foundStart = slotStart;
-            foundEnd = slotEnd;
-            slotAssignedValue.value = slotStart;
-          }
-        }
+      if (assignedSlotDisplay) {
+        assignedSlotDisplay.textContent = 'Consultando turnos disponibles...';
+        assignedSlotDisplay.style.color = '#38bdf8';
       }
 
-      if (foundStart && foundEnd) {
-        const time12 = `${formatTime12h(foundStart)} - ${formatTime12h(foundEnd)}`;
+      try {
+        const resp = await fetch(
+          apiUrl(`/api/citas/disponibilidad?medicoId=${encodeURIComponent(medicoId)}&fecha=${encodeURIComponent(fechaStr)}`),
+          { headers: getAuthHeaders() }
+        );
+        const payload = await resp.json();
+        const slots = Array.isArray(payload?.data?.slots) ? payload.data.slots : [];
+
+        if (resp.ok && slots.length > 0) {
+          const primero = slots[0];
+          const duration = primero.duracionMin || docSchedule.duracion_cita_min || 30;
+          slotAssignedValue.value = primero.horaInicio;
+          const time12 = `${formatTime12h(primero.horaInicio)} - ${formatTime12h(primero.horaFin)}`;
+          if (assignedSlotDisplay) {
+            assignedSlotDisplay.textContent = `✓ ${time12}`;
+            assignedSlotDisplay.style.color = '#34d399';
+          }
+          if (infoText) {
+            infoText.textContent = `✓ ${slots.length} cupos disponibles en Supabase. Primer turno libre asignado: ${time12} (${duration} min).`;
+          }
+          if (submitBtn) submitBtn.disabled = false;
+        } else {
+          if (assignedSlotDisplay) {
+            assignedSlotDisplay.textContent = 'Turnos completos o bloqueados para esta fecha';
+            assignedSlotDisplay.style.color = '#f59e0b';
+          }
+          slotAssignedValue.value = '';
+          if (infoText) {
+            infoText.textContent = '❌ No hay cupos disponibles con este médico para la fecha seleccionada.';
+          }
+          if (submitBtn) submitBtn.disabled = true;
+        }
+      } catch {
         if (assignedSlotDisplay) {
-          assignedSlotDisplay.textContent = `✓ ${time12}`;
-          assignedSlotDisplay.style.color = '#34d399';
-        }
-        if (infoText) {
-          infoText.textContent = `✓ ${totalAvailable} cupos disponibles. Primer turno libre asignado: ${time12} (${duration} min).`;
-        }
-        if (submitBtn) submitBtn.disabled = false;
-      } else {
-        if (assignedSlotDisplay) {
-          assignedSlotDisplay.textContent = 'Turnos completos para esta fecha';
-          assignedSlotDisplay.style.color = '#f59e0b';
-        }
-        slotAssignedValue.value = '';
-        if (infoText) {
-          infoText.textContent = '❌ No hay cupos disponibles con este médico para la fecha seleccionada. Elige otra fecha.';
+          assignedSlotDisplay.textContent = 'Error consultando disponibilidad';
+          assignedSlotDisplay.style.color = '#ef4444';
         }
         if (submitBtn) submitBtn.disabled = true;
       }
@@ -640,36 +604,28 @@ const submitLabel = isAdmin ? '🛡️ Guardar y Confirmar Cita (Admin)' : '📋
       updateDoctors();
     }
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      clearBookingError();
       if (!slotAssignedValue.value) {
-        alert('No hay un turno válido disponible para esta fecha. Por favor selecciona otra fecha.');
+        showBookingError('No hay un turno válido disponible para esta fecha. Selecciona otra fecha.');
         return;
       }
 
       const fecha = dateInput.value;
       const hora = slotAssignedValue.value;
-      const [hh, mm] = hora.split(':').map(Number);
-      const endMins = hh * 60 + mm + 30;
-      const horaFin = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`;
-
-      const fechaHoraInicio = `${fecha} ${hora}:00-05`;
-      const fechaHoraFin = `${fecha} ${horaFin}:00-05`;
-
-      const numRandom = Math.floor(1000 + Math.random() * 9000);
-      const codigoCita = `CIT-ADM-${numRandom}`;
-
       const pacienteId = patientIdInput?.value || data.pacientes[0].id;
       const medicoId = doctor.value;
       const especialidadId = Number(specialty.value);
       const consultorioId = Number(roomInput.dataset.id || '1');
-      const motivoConsulta = (document.getElementById('motivo') as HTMLTextAreaElement)?.value || 'Consulta médica programada en clínica';
+      const motivoConsulta = (document.getElementById('motivo') as HTMLTextAreaElement)?.value.trim() || 'Consulta médica programada en clínica';
       const canalOrigen = channelSelect?.value || 'RECEPCION_PRESENCIAL';
 
       let pacNombre = 'Paciente';
-      let pacDoc = '—';
+      let pacDoc = '8-1234-56789';
       let pacTel = '+507 6598-2118';
 
+      const selectedText = patientSelect?.selectedOptions?.[0]?.textContent || '';
       const pSeed = data.pacientes.find(p => p.id === pacienteId);
       if (pSeed) {
         pacNombre = `${pSeed.nombres} ${pSeed.apellidos}`;
@@ -681,52 +637,106 @@ const submitLabel = isAdmin ? '🛡️ Guardar y Confirmar Cita (Admin)' : '📋
           const cp = customP.find((x: any) => x.id === pacienteId);
           if (cp) {
             pacNombre = `${cp.nombres} ${cp.apellidos}`;
-            pacDoc = cp.documento_numero || cp.documentoNumero || '—';
+            pacDoc = cp.documento_numero || cp.documentoNumero || '8-0000-00000';
             pacTel = cp.telefono || '+507 6598-2118';
+          } else if (selectedText) {
+            pacNombre = selectedText.replace(/\s*\(.*\)\s*$/, '').replace(/^[^\wÁÉÍÓÚÑ]+/i, '').trim() || 'Paciente';
           }
         } catch {}
       }
 
-      const nuevaCita = {
-        id: 'f' + Date.now().toString(16),
-        codigo_cita: codigoCita,
-        paciente_id: pacienteId,
-        paciente_nombre_directo: pacNombre,
-        paciente_documento_directo: pacDoc,
-        paciente_telefono_directo: pacTel,
-        medico_id: medicoId,
-        especialidad_id: especialidadId,
-        consultorio_id: consultorioId,
-        fecha_hora_inicio: fechaHoraInicio,
-        fecha_hora_fin: fechaHoraFin,
-        estado: 'CONFIRMADA',
-        motivo_consulta: motivoConsulta,
-        canal_origen: canalOrigen,
-        reservado_por: 'ADMINISTRADOR'
-      };
-
-      saveCita(nuevaCita);
-
-      const m = data.medicos.find(x => x.id === medicoId);
-      const esp = data.especialidades.find(x => x.id === especialidadId);
-
-      if (summaryContent) {
-        summaryContent.innerHTML = `
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-            <div><strong style="color: #94a3b8;">Código de Cita:</strong> <span style="font-family: monospace; font-size: 15px; color: #a78bfa; font-weight: 700;">${codigoCita}</span></div>
-            <div><strong style="color: #94a3b8;">Estado:</strong> <span class="badge green">CONFIRMADA</span></div>
-            <div><strong style="color: #94a3b8;">Paciente:</strong> <span style="color: #f8fafc; font-weight: 600;">${pacNombre}</span></div>
-            <div><strong style="color: #94a3b8;">Cédula:</strong> <span style="font-family: monospace; color: #34d399;">${pacDoc}</span></div>
-            <div><strong style="color: #94a3b8;">Médico:</strong> Dr(a). ${m?.nombres} ${m?.apellidos}</div>
-            <div><strong style="color: #94a3b8;">Especialidad:</strong> ${esp?.nombre}</div>
-            <div><strong style="color: #94a3b8;">Fecha y Horario:</strong> <span style="color: #38bdf8; font-weight: 700;">${fecha} · ${formatTime12h(hora)} - ${formatTime12h(horaFin)}</span></div>
-            <div><strong style="color: #94a3b8;">Consultorio:</strong> ${roomInput.value}</div>
-          </div>
-        `;
+      const originalBtnLabel = submitBtn?.textContent || '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Guardando en Supabase...';
       }
 
-      form.style.display = 'none';
-      if (successBox) successBox.style.display = 'block';
+      try {
+        const res = await fetch(apiUrl('/api/citas/reservar'), {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            pacienteId,
+            pacienteNombre: pacNombre,
+            pacienteDocumento: pacDoc,
+            pacienteTelefono: pacTel,
+            medicoId,
+            especialidadId,
+            consultorioId,
+            fecha,
+            horaInicio: hora,
+            duracionMin: 30,
+            motivoConsulta,
+            canalOrigen,
+            reservadoPor: 'ADMINISTRADOR',
+            sincronizarGoogleCalendar: true
+          })
+        });
+
+        const payload = await res.json();
+        if (!res.ok || !payload?.ok || !payload?.data) {
+          showBookingError(payload?.error || 'El servidor rechazó la reserva. Verifica disponibilidad.');
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalBtnLabel || 'Confirmar Cita';
+          }
+          await calculateAutomaticSlot();
+          return;
+        }
+
+        const citaBackend = payload.data;
+        const codigoCita = citaBackend.codigoCita || 'CIT-ADM';
+        const horaFin = String(citaBackend.fechaHoraFin || '').slice(11, 16) || hora;
+
+        appendCitaLocal({
+          id: citaBackend.id,
+          codigo_cita: codigoCita,
+          paciente_id: citaBackend.pacienteId,
+          paciente_nombre_directo: citaBackend.pacienteNombre || pacNombre,
+          paciente_documento_directo: citaBackend.pacienteDocumento || pacDoc,
+          paciente_telefono_directo: pacTel,
+          medico_id: citaBackend.medicoId,
+          especialidad_id: citaBackend.especialidadId,
+          consultorio_id: citaBackend.consultorioId || consultorioId,
+          fecha_hora_inicio: `${fecha} ${hora}:00-05`,
+          fecha_hora_fin: `${fecha} ${horaFin}:00-05`,
+          estado: citaBackend.estado || 'CONFIRMADA',
+          motivo_consulta: motivoConsulta,
+          canal_origen: canalOrigen,
+          reservado_por: 'ADMINISTRADOR'
+        });
+
+        const m = data.medicos.find(x => x.id === medicoId);
+        const esp = data.especialidades.find(x => x.id === especialidadId);
+
+        if (summaryContent) {
+          summaryContent.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;">
+              <div><strong style="color: #94a3b8;">Código de Cita:</strong> <span style="font-family: monospace; font-size: 15px; color: #a78bfa; font-weight: 700;">${escapeHtml(codigoCita)}</span></div>
+              <div><strong style="color: #94a3b8;">Estado:</strong> <span class="badge green">${escapeHtml(citaBackend.estado || 'CONFIRMADA')}</span></div>
+              <div><strong style="color: #94a3b8;">Paciente:</strong> <span style="color: #f8fafc; font-weight: 600;">${escapeHtml(pacNombre)}</span></div>
+              <div><strong style="color: #94a3b8;">Cédula:</strong> <span style="font-family: monospace; color: #34d399;">${escapeHtml(pacDoc)}</span></div>
+              <div><strong style="color: #94a3b8;">Médico:</strong> Dr(a). ${escapeHtml(m?.nombres)} ${escapeHtml(m?.apellidos)}</div>
+              <div><strong style="color: #94a3b8;">Especialidad:</strong> ${escapeHtml(esp?.nombre)}</div>
+              <div><strong style="color: #94a3b8;">Fecha y Horario:</strong> <span style="color: #38bdf8; font-weight: 700;">${escapeHtml(fecha)} · ${escapeHtml(formatTime12h(hora))} - ${escapeHtml(formatTime12h(horaFin))}</span></div>
+              <div><strong style="color: #94a3b8;">Consultorio:</strong> ${escapeHtml(roomInput.value)}</div>
+            </div>
+          `;
+        }
+
+        form.style.display = 'none';
+        if (successBox) successBox.style.display = 'block';
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalBtnLabel || 'Confirmar Cita';
+        }
+      } catch {
+        showBookingError('Error de red al conectar con el servidor. Verifica tu conexión.');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalBtnLabel || 'Confirmar Cita';
+        }
+      }
     });
 
     btnBookAnother?.addEventListener('click', () => {

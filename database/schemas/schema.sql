@@ -20,12 +20,15 @@ CREATE EXTENSION IF NOT EXISTS "btree_gist";
 -- ----------------------------------------------------------------------------
 -- Función para actualización automática de timestamps 'actualizado_en'
 CREATE OR REPLACE FUNCTION actualizar_marca_tiempo_modificacion()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
 BEGIN
     NEW.actualizado_en = CURRENT_TIMESTAMP;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- ----------------------------------------------------------------------------
 -- 3. MÓDULO DE SEGURIDAD, ROLES Y ACCESOS

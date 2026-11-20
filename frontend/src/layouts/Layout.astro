@@ -39,7 +39,7 @@ const roleConfig = {
       ['/paciente', 'Mi panel', '◈'],
       ['/paciente/citas', 'Mis citas y agenda', '▦'],
       ['/paciente/reservar', 'Reservar cita', '＋'],
-      ['/whatsapp', 'WhatsApp IA & QR', '💬'],
+      ['/paciente/asistente', 'Asistente WhatsApp', '💬'],
       ['/paciente/perfil', 'Mi perfil médico', '♡'],
     ]
   },
@@ -72,7 +72,7 @@ const roleConfig = {
       ['/secretaria', 'Mesa de recepción', '◈'],
       ['/secretaria/citas', 'Gestión de citas', '▦'],
       ['/secretaria/pacientes', 'Recepción de pacientes', '👤'],
-      ['/whatsapp', 'WhatsApp IA & QR', '💬'],
+      ['/secretaria/whatsapp', 'WhatsApp IA & QR', '💬'],
       ['/secretaria/medicos', 'Médicos y consultorios', '✚'],
     ]
   },
@@ -229,6 +229,8 @@ const cleanPath = pathname.replace(/\/$/, '') || '/';
   <div id="toast" role="status"></div>
   <script>
     import '../data/interactions.js';
+    import { getSession } from '../data/api';
+
     document.getElementById('mobile-backdrop')?.addEventListener('click', () => {
       document.body.classList.remove('menu-open');
     });
@@ -243,7 +245,7 @@ const cleanPath = pathname.replace(/\/$/, '') || '/';
         }
         setTimeout(() => {
           window.location.href = '/login';
-        }, 500);
+        }, 350);
       }
     }
 
@@ -251,28 +253,59 @@ const cleanPath = pathname.replace(/\/$/, '') || '/';
     document.getElementById('btn-logout-aside')?.addEventListener('click', ejecutarDeslogueo);
     document.querySelectorAll('.btn-logout-mobile').forEach(b => b.addEventListener('click', ejecutarDeslogueo));
 
-    try {
-      const session = JSON.parse(localStorage.getItem('medpulse_session') || '{}');
-      if (session?.paciente && window.location.pathname.startsWith('/paciente')) {
+    // Guarda estricta de autenticación y aislamiento de portales por rol
+    const session = getSession();
+    const curPath = window.location.pathname.replace(/\/$/, '') || '/';
+
+    if (!session) {
+      localStorage.removeItem('medpulse_session');
+      window.location.replace('/login');
+    } else {
+      const rol = session.usuario.rol;
+      const homeByRole: Record<string, string> = {
+        ADMINISTRADOR: '/citas',
+        RECEPCIONISTA: '/secretaria',
+        MEDICO: '/doctor/agenda',
+        PACIENTE: '/paciente'
+      };
+
+      const isPatientPath = curPath === '/paciente' || curPath.startsWith('/paciente/');
+      const isDoctorPath = curPath === '/doctor' || curPath.startsWith('/doctor/');
+      const isSecretariaPath = curPath === '/secretaria' || curPath.startsWith('/secretaria/');
+      const isAllowed =
+        (rol === 'PACIENTE' && isPatientPath) ||
+        (rol === 'MEDICO' && isDoctorPath) ||
+        (rol === 'RECEPCIONISTA' && isSecretariaPath) ||
+        (rol === 'ADMINISTRADOR' && !isPatientPath && !isDoctorPath && !isSecretariaPath);
+
+      if (!isAllowed) {
+        window.location.replace(homeByRole[rol] || '/login');
+      } else {
         const nameEl = document.querySelector('header .identity strong');
         const avatarEl = document.querySelector('header .identity .avatar');
         const roleEl = document.querySelector('header .identity small');
-        if (nameEl) nameEl.textContent = `${session.paciente.nombres} ${session.paciente.apellidos}`;
+
+        const displayName = session.paciente
+          ? `${session.paciente.nombres || ''} ${session.paciente.apellidos || ''}`.trim() || session.usuario.nombreCompleto
+          : session.usuario.nombreCompleto;
+
+        if (nameEl && displayName) nameEl.textContent = displayName;
         if (avatarEl) {
-          const initials = ((session.paciente.nombres?.[0] || 'P') + (session.paciente.apellidos?.[0] || 'T')).toUpperCase();
+          const initials = session.usuario.avatar ||
+            displayName
+              .split(/\s+/)
+              .filter(Boolean)
+              .slice(0, 2)
+              .map(p => p[0])
+              .join('')
+              .toUpperCase() || 'MP';
           avatarEl.textContent = initials;
         }
-        if (roleEl) roleEl.textContent = session.paciente.email || session.paciente.correo || 'Paciente Verificado';
+        if (roleEl) {
+          roleEl.textContent = session.usuario.detalleRol || session.usuario.email;
+        }
       }
-
-      // Guarda estricta: si el usuario activo es paciente, jamás debe saltar a rutas administrativas
-      const isPatientUser = session?.usuario?.rol === 'PACIENTE' || (session?.paciente && !session?.usuario?.rol);
-      const adminRestricted = ['/citas', '/pacientes', '/medicos', '/horarios', '/especialidades', '/consultorios', '/usuarios'];
-      const curPath = window.location.pathname.replace(/\/$/, '');
-      if (isPatientUser && (adminRestricted.includes(curPath) || curPath === '/secretaria' || curPath.startsWith('/secretaria/'))) {
-        window.location.replace('/paciente/citas');
-      }
-    } catch {}
+    }
   </script>
 </body>
 </html>
